@@ -1,6 +1,5 @@
-const btnSetTitle = document.querySelector('button');
-const title = document.querySelector('#title');
-btnSetTitle.addEventListener('click', () => {
-    const theTitle = title.value;
-    window.eAPI.setTitle(theTitle);
-});
+const btnOpenFile = document.querySelector('#openFile');
+const filePath = document.querySelector('#filePath');
+btnOpenFile.addEventListener('click', async () => {
+    filePath.innerText = await window.eAPI.openFile();
+})
