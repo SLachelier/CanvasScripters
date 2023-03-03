@@ -1,9 +1,6 @@
-const information = document.getElementById('info');
-information.innerText = `This document is using Chrome v${versions.chrome()}, Node v${versions.node()}, electron v${versions.electron()}`;
-
-const func = async () => {
-    const response = await window.versions.ping();
-    console.log(response);
-}
-
-func();
+const btnSetTitle = document.querySelector('button');
+const title = document.querySelector('#title');
+btnSetTitle.addEventListener('click', () => {
+    const theTitle = title.value;
+    window.eAPI.setTitle(theTitle);
+});
