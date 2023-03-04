@@ -1,5 +1,5 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('eAPI', {
-    openFile: () => ipcRenderer.invoke('dialog:fileOpen')
+    onUpdateCounter: (callback) => ipcRenderer.on('update-counter', callback)
 });
