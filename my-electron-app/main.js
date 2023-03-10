@@ -16,38 +16,20 @@ const createWindow = () => {
         }
     })
 
-    const menu = Menu.buildFromTemplate([
-        {
-            label: app.name,
-            submenu: [
-                {
-                    click: () => win.webContents.send('update-counter', 1),
-                    label: 'Increment'
-                },
-                {
-                    click: () => win.webContents.send('update-counter', -1),
-                    label: 'Decrement'
-                }
-            ]
-        }
-    ])
-    Menu.setApplicationMenu(menu)
-
     win.loadFile('index.html');
     win.webContents.openDevTools();
 }
 
 app.whenReady().then(() => {
-    ipcMain.on('counter-value', (event, value) => {
-        console.log(value);
-    })
     createWindow();
 
+    // for max os creates new window when activated
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) createWindow();
     })
 })
 
+// for windows and linux closes app when all windows are closed
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
 })
