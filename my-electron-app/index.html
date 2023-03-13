@@ -29,29 +29,69 @@
         <div class="container-fluid custom-border-bottom mb-3">
             <div class="row justify-content-start">
                 <div class="col">
-                    <div class="input-group flex-nowrap">
-                        <div class="input-group flex-nowrap mb-3 mt-2">
+                    <div class="input-group flex-nowrap mt-2 mb-3">
+                        <!-- <div class="input-group flex-nowrap mb-3 mt-2">
                             <span class="input-group-text" id="https">https://</span>
                             <input type="text" id="domain" class="form-control" placeholder="canvas.instructure.com">
+                        </div> -->
+                        <span class="input-group-text">https://</span>
+                        <div class="form-floating ">
+                            <input type="text" class="form-control" placeholder="domain" id="domain">
+                            <label for="domain">instructure instance</label>
                         </div>
                     </div>
                 </div>
                 <div class="col">
-                    <div class="input-group flex-nowrap mb-3 mt-2">
+                    <!-- <div class="input-group flex-nowrap mb-3 mt-2">
                         <span class="input-group-text">Token</span>
                         <input type="text" id="token" class="form-control" placeholder="keep it secret, keep it safe">
+                    </div> -->
+                    <div class="form-floating mt-2 mb-3">
+                        <input type=" text" class="form-control" placeholder="Token" id="token">
+                        <label for="token">Token</label>
                     </div>
+
                 </div>
             </div>
             <div class="row mb-2">
-                <div class="input-group">
-                    <span class="input-group-text">api/v1/</span>
-                    <input type="text" class="form-control">
+                <div class="col-2">
+                    <div class="input-group flex-nowrap">
+                        <span class="input-group-text">method</span>
+                        <select class="form-select form-select p-3" name="method-select" id="method-select">
+                            <option value="create">Create</option>
+                            <option value="get">Get</option>
+                            <option value="update">Update</option>
+                            <option value="delete">Delete</option>
+                        </select>
+                    </div>
                 </div>
+                <div class="col">
+                    <div class="input-group">
+                        <span class="input-group-text">api/v1/</span>
+                        <div class="form-floating">
+                            <input type="text" class="form-control" id="apiEndpoint" placeholder="apiEndpoint">
+                            <label for="apiEndpoint">api endpoint</label>
+                        </div>
+
+                    </div>
+                </div>
+
             </div>
         </div>
     </header>
+    <main class="container ms-0">
+        <div class="row">
+            <div class="col-2">
+                <ul class="list-group">
+                    <li class="list-group-item">Courses</li>
+                    <li class="list-group-item">Assignments</li>
+                    <li class="list-group-item">Discussions</li>
+                    <li class="list-group-item">Enrollments</li>
+                </ul>
+            </div>
+        </div>
 
+    </main>
 </body>
 
 </html>
