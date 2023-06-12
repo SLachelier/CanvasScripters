@@ -9,21 +9,21 @@ const {
 
 const createWindow = () => {
     const win = new BrowserWindow({
-        width: 800,
-        height: 600,
+        width: 1080,
+        height: 720,
         webPreferences: {
+            nodeIntegration: true,
             preload: path.join(__dirname, './preload.js')
         }
     })
 
     win.loadFile('index.html');
-    win.webContents.openDevTools();
 }
 
 app.whenReady().then(() => {
     createWindow();
 
-    // for max os creates new window when activated
+    // for mac os creates new window when activated
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) createWindow();
     })
