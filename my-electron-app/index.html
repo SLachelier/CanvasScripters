@@ -1,16 +1,132 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Bootstrap</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:" />
+    <meta http-equiv="X-Content-Security-Policy" content="default-src 'self'; script-src 'self'" />
+    <title>Hello from Electron renderer!</title>
     <link rel="stylesheet" href="./node_modules/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="styles.css">
     <script src="./node_modules/bootstrap/dist/js/bootstrap.min.js" defer></script>
+    <script src="./renderer.js" defer></script>
 </head>
 
 <body>
-    <h1>My Bootstrap Template</h1>
+    <header>
+        <div class="container-fluid custom-border-bottom mb-3">
+            <div class="row justify-content-start">
+                <div class="col">
+                    <div class="input-group flex-nowrap mt-2 mb-3">
+                        <span class="input-group-text">https://</span>
+                        <div class="form-floating ">
+                            <input type="text" class="form-control" placeholder="domain" id="domain">
+                            <label for="domain">instructure instance</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-floating mt-2 mb-3">
+                        <input type=" text" class="form-control" placeholder="Token" id="token">
+                        <label for="token">Token</label>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </header>
+    <div class="row">
+        <div class="col-3">
+            <div class="accordion" id="endpoints">
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#courses" aria-expanded="false" aria-controls="courses">
+                            Courses
+                        </button>
+                    </h2>
+                    <div id="courses" class="accordion-collapse collapse">
+                        <div class="accordion-body">
+                            <div id="course-endpoints" class="list-group">
+                                <button id="create-courses"
+                                    class="list-group-item list-group-item-action border-start-0 border-end-0">
+                                    Create Course
+                                </button>
+                                <button id="delete-courses"
+                                    class="list-group-item list-group-item-action border-start-0 border-end-0">
+                                    Delete Course
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#assignments" aria-expanded="false" aria-controls="assignments">
+                            Assignments
+                        </button>
+                    </h2>
+                    <div id="assignments" class="accordion-collapse collapse">
+                        <div class="accordion-body">
+                            <div id="assignment-endpoints" class="list-group">
+                                <button id="delete-empty-assignment-groups"
+                                    class="list-group-item list-group-item-action border-start-0 border-end-0">
+                                    Delete empty Assignment Groups
+                                </button>
+                                <button id="delete-nosubmission-assignments"
+                                    class="list-group-item list-group-item-action border-start-0 border-end-0">
+                                    Delete assignments without
+                                    submissions
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#users" aria-expanded="false" aria-controls="users">
+                            Users
+                        </button>
+                    </h2>
+                    <div id="users" class="accordion-collapse collapse">
+                        <div class="accordion-body">
+                            <div id="user-endpoints" class="list-group">
+                                <buton id="page-view"
+                                    class="list-group-item list-group-item-action list-group-item-action border-start-0 border-end-0">
+                                    Get users Page Views
+                                </buton>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#conversations" aria-expanded="false" aria-controls="conversations">
+                            Conversations
+                        </button>
+                    </h2>
+                    <div id="conversations" class="accordion-collapse collapse">
+                        <div class="accordion-body">
+                            <div id="conversation-endpoints" class="list-group">
+                                <button id="delete-conversations-subject"
+                                    class="list-group-item list-group-item-action border-start-0 border-end-0">
+                                    Delete conversations with specific
+                                    subject
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col border-start" id="endpoint-content"></div>
+    </div> <!-- end of row -->
+
 </body>
 
 </html>
