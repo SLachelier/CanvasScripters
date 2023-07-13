@@ -4,7 +4,8 @@
   "description": "Hello World!",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "test": "electron ./index_bs_example.html"
   },
   "author": "Caleb Kruger",
   "license": "MIT",
@@ -12,6 +13,7 @@
     "electron": "^23.1.1"
   },
   "dependencies": {
+    "axios": "^1.4.0",
     "bootstrap": "^5.3.0"
   }
 }
