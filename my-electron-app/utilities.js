@@ -97,7 +97,7 @@ async function createRequester(method, url, params, num, endpoint) {
     return arrayOfResults;
 }
 
-async function deleteRequester(content, baseURL, afterID = null) {
+async function deleteRequester(content, baseURL, afterID = null, token) {
     // content = array of conversations
     // baseURL = /converations
     let apiLimit = 35;
@@ -115,7 +115,10 @@ async function deleteRequester(content, baseURL, afterID = null) {
 
             requests.push(axios({
                 method: 'delete',
-                url: myURL
+                url: myURL,
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
             }));
             index++;
         }
@@ -132,12 +135,23 @@ async function deleteRequester(content, baseURL, afterID = null) {
 
         requests.push(axios({
             method: 'delete',
-            url: myURL
+            url: myURL,
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
         }));
         index++;
     }
-    await Promise.all(requests);
-    console.log('Processing last requests');
+    try {
+        await Promise.all(requests);
+        console.log('Done');
+
+        return true;
+    } catch (error) {
+        console.log('There was an error');
+
+        return false;
+    }
 }
 
 function holdPlease(ms) {
