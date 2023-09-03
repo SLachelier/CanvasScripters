@@ -103,5 +103,8 @@ dist
 # TernJS port file
 .tern-port
 
+# debugging configs
+.vscode/
+
 # asset folder used for testing, no reason to backup
 assets/
