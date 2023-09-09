@@ -53,6 +53,9 @@ app.whenReady().then(() => {
         console.log(url);
 
         const inboxMessages = await convos.getConversations(userID, url, 'inbox', apiToken);
+        if (!inboxMessages) {
+            return false;
+        }
         console.log('Total inbox messages: ', inboxMessages.length)
 
         // getting messages in 'sent'
@@ -112,6 +115,9 @@ app.whenReady().then(() => {
         console.log('main.js > axios:getPageViews');
 
         const results = await getPageViews(data.domain, data.token, data.user, data.start, data.end);
+        if (!results) {
+            return results;
+        }
         console.log(results.length);
         if (results.length > 0) {
             //const filteredResults = convertToPageViewsCsv(result);
@@ -126,8 +132,10 @@ app.whenReady().then(() => {
             if (fileDetails) {
                 await csvExporter.exportToCSV(results, fileDetails);
             }
+            return true;
         } else {
             console.log('no page views');
+            return 'empty';
         }
     });
 
