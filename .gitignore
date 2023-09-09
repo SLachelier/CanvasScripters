@@ -111,3 +111,6 @@ assets/
 
 # make folder
 out/
+
+# config for forge file
+forge.config.js
