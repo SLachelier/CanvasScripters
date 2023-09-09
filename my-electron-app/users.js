@@ -78,34 +78,40 @@ async function getPageViews(domain, token, user_id, startDate = null, endDate = 
         // const response = await error_check.errorCheck(async () => {
         //     return await axios.get(nextPage);
         // });
-        const response = await axios.get(nextPage, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
+        try {
+            const response = await axios.get(nextPage, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            pageViews.push(...response.data);
 
-        //console.log(response.data);
-        pageViews.push(...response.data);
-
-        if (response.headers.get('link')) {
-            nextPage = pagination.getNextPage(response.headers.get('link'));
-        } else {
-            nextPage = false;
-        }
-
-
-        if (nextPage != false) {
-            pageNum++;
-            if (dupPage.includes(nextPage)) {
-                console.log('This is a dupe page');
+            if (response.headers.get('link')) {
+                nextPage = pagination.getNextPage(response.headers.get('link'));
             } else {
-                dupPage.push(nextPage);
+                nextPage = false;
             }
+
+            if (nextPage != false) {
+                pageNum++;
+                if (dupPage.includes(nextPage)) {
+                    console.log('This is a dupe page');
+                } else {
+                    dupPage.push(nextPage);
+                }
+            }
+
+        } catch (error) {
+            return false;
         }
-        // for (let view of response.data) {
-        //     pageViews.push(view);
-        // }
     }
+
+    //console.log(response.data);
+
+    // for (let view of response.data) {
+    //     pageViews.push(view);
+    // }
+
 
     // csvExporter.exportToCSV(pageViews, `${user_id}_pageViews`)
     return pageViews;
