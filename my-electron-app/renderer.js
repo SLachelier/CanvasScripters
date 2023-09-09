@@ -2,7 +2,6 @@
 //     const result = await window.axios.get();
 //     console.log(result);
 // })();
-
 const endpointSelect = document.querySelector('#endpoints');
 endpointSelect.addEventListener('click', (e) => {
 
@@ -98,6 +97,7 @@ function emptyAssignmentGroups() {
         e.stopPropagation();
         e.preventDefault();
 
+        checkBtn.disabled = true;
         console.log('Inside renderer check');
 
         const responseContainer = eContent.querySelector('#response-container');
@@ -114,10 +114,14 @@ function emptyAssignmentGroups() {
                 course: courseID.value
             }
             emptyGroups = await window.axios.getEmptyAssignmentGroups(requestData);
-            console.log('found emtpy groups', emptyGroups.length);
+            if (!emptyGroups) {
+                checkBtn.disabled = false;
+                responseContainer.innerHTML = 'Search Failed. Check domain, token or course id.';
+            } else {
+                console.log('found emtpy groups', emptyGroups.length);
 
-            //const eContent = document.querySelector('#endpoint-content');
-            responseContainer.innerHTML = `
+                //const eContent = document.querySelector('#endpoint-content');
+                responseContainer.innerHTML = `
                 <div>
                     <div class="row align-items-center">
                         <div id="response-details" class="col-auto">
@@ -136,40 +140,43 @@ function emptyAssignmentGroups() {
                 </div>    
             `;
 
-            const cancelBtn = document.querySelector('#cancel-btn');
-            cancelBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
+                const cancelBtn = document.querySelector('#cancel-btn');
+                cancelBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
 
-                courseID.value = '';
-                responseContainer.innerHTML = '';
-                //clearData(courseID, responseContent);
-            });
+                    courseID.value = '';
+                    responseContainer.innerHTML = '';
+                    checkBtn.disabled = false;
+                    //clearData(courseID, responseContent);
+                });
 
-            const removeBtn = document.querySelector('#remove-btn');
-            removeBtn.addEventListener('click', async (e) => {
-                e.preventDefault();
-                e.stopPropagation();
+                const removeBtn = document.querySelector('#remove-btn');
+                removeBtn.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
 
-                console.log('inside remove');
-                const responseDetails = responseContainer.querySelector('#response-details');
-                responseDetails.innerHTML = `Removing ${emptyGroups.length} assignment groups...`;
+                    console.log('inside remove');
+                    const responseDetails = responseContainer.querySelector('#response-details');
+                    responseDetails.innerHTML = `Removing ${emptyGroups.length} assignment groups...`;
 
-                const messageData = {
-                    domain: domain.value,
-                    token: apiToken.value,
-                    course: courseID,
-                    groups: emptyGroups
-                }
+                    const messageData = {
+                        domain: domain.value,
+                        token: apiToken.value,
+                        course: courseID,
+                        groups: emptyGroups
+                    }
 
-                const result = await window.axios.deleteEmptyAssignmentGroups(messageData);
-                if (result) {
-                    responseDetails.innerHTML = `Successfully removed ${emptyGroups.length} assignment groups.`
-                } else {
-                    responseDetails.innerHTML = 'Failed to remove assignment groups';
-                }
+                    const result = await window.axios.deleteEmptyAssignmentGroups(messageData);
+                    if (result) {
+                        responseDetails.innerHTML = `Successfully removed ${emptyGroups.length} assignment groups.`
+                    } else {
+                        responseDetails.innerHTML = 'Failed to remove assignment groups';
+                    }
 
-            });
+                });
+            }
+
         } else {
             document.querySelector('#courseChecker').style.display = 'inline';
         }
@@ -218,6 +225,7 @@ function noSubmissionAssignments() {
         e.stopPropagation();
         e.preventDefault();
 
+        checkBtn.disabled = true;
         console.log('renderer > noSubmissionAssignments > check');
 
         const responseContainer = eContent.querySelector('#response-container');
@@ -236,10 +244,15 @@ function noSubmissionAssignments() {
             }
 
             assignments = await window.axios.getNoSubmissionAssignments(requestData);
-            console.log(`found ${assignments.length} assignments with no submissions`);
+            if (!assignments) {
+                checkBtn.disabled = false;
+                responseContainer.innerHTML = 'Search failed. Check domain, token or course id.';
 
-            //const eContent = document.querySelector('#endpoint-content');
-            responseContainer.innerHTML = `
+            } else {
+                console.log(`found ${assignments.length} assignments with no submissions`);
+
+                //const eContent = document.querySelector('#endpoint-content');
+                responseContainer.innerHTML = `
                 <div>
                     <div class="row align-items-center">
                         <div id="response-details" class="col-auto">
@@ -258,47 +271,49 @@ function noSubmissionAssignments() {
                 </div>    
             `;
 
-            const cancelBtn = document.querySelector('#cancel-btn');
-            cancelBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
+                const cancelBtn = document.querySelector('#cancel-btn');
+                cancelBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
 
-                courseID.value = '';
-                responseContainer.innerHTML = '';
-                //clearData(courseID, responseContent);
-            });
-
-            const removeBtn = document.querySelector('#remove-btn');
-            removeBtn.addEventListener('click', async (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-
-                console.log('renderer > getNoSubmissionAssignments > removeBtn');
-                const responseDetails = responseContainer.querySelector('#response-details');
-                responseDetails.innerHTML = `Removing ${assignments.length} assignments...`;
-
-                const assignmentIDs = assignments.map((assignment) => {
-                    return {
-                        name: assignment.name,
-                        id: assignment.id
-                    };
+                    courseID.value = '';
+                    responseContainer.innerHTML = '';
+                    //clearData(courseID, responseContent);
                 });
 
-                const messageData = {
-                    domain: domain.value,
-                    token: apiToken.value,
-                    course: courseID.value,
-                    assignments: assignmentIDs
-                }
+                const removeBtn = document.querySelector('#remove-btn');
+                removeBtn.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
 
-                const result = await window.axios.deleteNoSubmissionAssignments(messageData);
-                if (result) {
-                    responseDetails.innerHTML = `Successfully removed ${assignments.length} assignments without submissions.`
-                } else {
-                    responseDetails.innerHTML = 'Failed to remove assignment groups';
-                }
+                    console.log('renderer > getNoSubmissionAssignments > removeBtn');
+                    const responseDetails = responseContainer.querySelector('#response-details');
+                    responseDetails.innerHTML = `Removing ${assignments.length} assignments...`;
 
-            });
+                    const assignmentIDs = assignments.map((assignment) => {
+                        return {
+                            name: assignment.name,
+                            id: assignment.id
+                        };
+                    });
+
+                    const messageData = {
+                        domain: domain.value,
+                        token: apiToken.value,
+                        course: courseID.value,
+                        assignments: assignmentIDs
+                    }
+
+                    const result = await window.axios.deleteNoSubmissionAssignments(messageData);
+                    if (result) {
+                        responseDetails.innerHTML = `Successfully removed ${assignments.length} assignments without submissions.`
+                    } else {
+                        responseDetails.innerHTML = 'Failed to remove assignment groups';
+                    }
+
+                });
+            }
+
         } else {
             document.querySelector('#courseChecker').style.display = 'inline';
         }
@@ -352,6 +367,8 @@ async function getPageViews(e) {
             </div>
         </div>
         <button type="button" class="btn btn-primary mt-3" id="search">Search</button>
+        <div id="response-container" class="mt-5">
+        </div>
         `;
 
     eContent.append(eForm);
@@ -361,7 +378,10 @@ async function getPageViews(e) {
         e.stopPropagation();
         e.preventDefault();
 
+
         console.log('renderer.js > getPageViews > searchBtn');
+
+
 
         const domain = document.querySelector('#domain').value.trim();
         const apiToken = document.querySelector('#token').value.trim();
@@ -378,8 +398,20 @@ async function getPageViews(e) {
                 end: endDate
             };
 
+            searchBtn.disabled = true;
+            const responseContainer = document.querySelector('#response-container');
+            responseContainer.innerHTML = 'Loading...';
             // const pageViews = await window.axios.getPageViews(searchData);
-            await window.axios.getPageViews(searchData);
+            const result = await window.axios.getPageViews(searchData);
+            if (!result) {
+                searchBtn.disabled = false;
+                responseContainer.innerHTML = 'Search failed. Check domain, token or user id.';
+            } else if (result === 'empty') {
+                searchBtn.disabled = false;
+                responseContainer.innerHTML = 'No page views found for user.';
+            } else {
+                responseContainer.innerHTML = 'Page views saved to file.';
+            }
         } else {
             eContent.querySelector('#userChecker').style.display = 'inline';
         }
@@ -428,6 +460,10 @@ async function deleteConvos(e) {
                 <div class="col-2">
                     <input type="text" id="user-id" class="form-control">
                 </div>
+                <div class="col-auto">
+                    <span id="userChecker" class="form-text" style="display: none;">Must only contain numbers</span>
+                </div>
+            </div>
             </div>
         <div class="row mt-3">
             <div class="col-auto">
@@ -465,34 +501,44 @@ async function deleteConvos(e) {
         e.preventDefault();
         searchBtn.disabled = true;
 
-        const responseContainer = document.querySelector('#response-container');
-        responseContainer.innerHTML = 'Loading...';
+
 
         const convoSubject = document.querySelector('#conversation-subject');
-        const userID = document.querySelector('#user-id');
+        const userID = parseInt(document.querySelector('#user-id').value.trim());
 
         console.log(`Subject: ${convoSubject.value}, User_ID: ${userID.value}`);
 
-        const searchData = {
-            domain: domain.value,
-            token: apiToken.value,
-            subject: convoSubject.value.trim(),
-            user_id: userID.value.trim()
-        };
+        if (userID) {
+            const responseContainer = document.querySelector('#response-container');
+            responseContainer.innerHTML = 'Loading...';
 
-        console.log(searchData);
-        const messages = await getMessages(searchData);
-        console.log('Inside renderer total messages ', messages.length);
+            const searchData = {
+                domain: domain.value,
+                token: apiToken.value,
+                subject: convoSubject.value.trim(),
+                user_id: userID
+            };
 
-        // ********************************
-        // Step 2. Filtering messages
-        //
-        // ********************************
+            console.log(searchData);
 
-        const filteredMessages = filterMessages(messages, convoSubject.value);
-        const flattenedMessages = flattenMessages(filteredMessages);
+            const messages = await getMessages(searchData);
+            if (!messages) {
+                //alert('Query failed, check domain, token or user id.');
 
-        responseContainer.innerHTML = `
+                searchBtn.disabled = false;
+                responseContainer.innerHTML = 'Search Failed. Check domain, token or user id.';
+            } else {
+                console.log('renderer.js ', messages.length);
+
+                // ********************************
+                // Step 2. Filtering messages
+                //
+                // ********************************
+
+                const filteredMessages = filterMessages(messages, convoSubject.value);
+                const flattenedMessages = flattenMessages(filteredMessages);
+
+                responseContainer.innerHTML = `
             <div id="response-info" class="container">Total messages searched: ${messages.length}. Found ${filteredMessages.length}.
                 <div class="row justify-content-start my-2">
                     <div id="response-details" class="col-auto">
@@ -512,59 +558,57 @@ async function deleteConvos(e) {
             </div>`
 
 
-        const removeBtn = document.querySelector('#remove-btn');
-        const cancelBtn = document.querySelector('#cancel-btn');
-        const sendToCSV = document.querySelector('#csv-btn');
+                const removeBtn = document.querySelector('#remove-btn');
+                const cancelBtn = document.querySelector('#cancel-btn');
+                const sendToCSV = document.querySelector('#csv-btn');
 
-        removeBtn.addEventListener('click', async (e) => {
-            e.preventDefault();
-            e.stopPropagation();
+                removeBtn.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
 
-            console.log('inside remove');
-            const responseDetails = responseContainer.querySelector('#response-details');
-            responseDetails.innerHTML = `Removing ${filteredMessages.length} conversations...`;
+                    console.log('inside remove');
+                    const responseDetails = responseContainer.querySelector('#response-details');
+                    responseDetails.innerHTML = `Removing ${filteredMessages.length} conversations...`;
 
-            const messageData = {
-                domain: domain.value,
-                token: apiToken.value,
-                user_id: userID.value.trim(),
-                messages: flattenedMessages
+                    const messageData = {
+                        domain: domain.value,
+                        token: apiToken.value,
+                        user_id: userID.value.trim(),
+                        messages: flattenedMessages
+                    }
+                    const result = await window.axios.deleteConvos(messageData);
+                    if (result) {
+                        responseDetails.innerHTML = `Successfully removed ${filteredMessages.length}`
+                    } else {
+                        responseDetails.innerHTML = 'Failed to remove conversations';
+                    }
+
+                });
+
+                cancelBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    clearData(userID, convoSubject, responseContainer, searchBtn);
+
+                });
+
+                sendToCSV.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    console.log('inside sendTocCSV');
+                    //console.log(filteredMessages);
+
+                    window.csv.sendToCSV(flattenedMessages);
+                })
+
             }
-            const result = await window.axios.deleteConvos(messageData);
-            if (result) {
-                responseDetails.innerHTML = `Successfully removed ${filteredMessages.length}`
-            } else {
-                responseDetails.innerHTML = 'Failed to remove conversations';
-            }
-
-        });
-
-        cancelBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-
-            clearData(userID, convoSubject, responseContainer, searchBtn);
-
-        });
-
-        sendToCSV.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-
-            console.log('inside sendTocCSV');
-            //console.log(filteredMessages);
-
-            window.csv.sendToCSV(flattenedMessages);
-        })
-
+        } else {
+            eContent.querySelector('#userChecker').style.display = 'inline';
+            searchBtn.disabled = false;
+        }
     });
-
-    // *********************************************
-    // starting step 3. Delete Messages (or cancel)
-    //
-    // *********************************************
-
-    const deletedMessages = await deleteMessages(filterMessages);
 }
 
 // creates a new conversation object simplified to basic data
@@ -672,10 +716,4 @@ function filterMessages(messages, myFilter) {
     });
 
     return filteredConversations;
-}
-
-function deleteMessages(fMessages) {
-    //     const dResults = window.
-
-    //     return dResults;
 }
