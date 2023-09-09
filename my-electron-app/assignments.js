@@ -101,6 +101,7 @@ async function getAssignments(domain, courseID, token) {
             } else {
                 console.log('A different error', error.message);
             }
+            return false;
         }
     }
 
