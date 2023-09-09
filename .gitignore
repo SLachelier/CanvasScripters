@@ -108,3 +108,6 @@ dist
 
 # asset folder used for testing, no reason to backup
 assets/
+
+# make folder
+out/
