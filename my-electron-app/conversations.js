@@ -53,6 +53,7 @@ async function getConversations(user, url, scope, token) {
             }
         } catch (error) {
             console.log('ERROR: ', error);
+            return false;
         }
     }
 
