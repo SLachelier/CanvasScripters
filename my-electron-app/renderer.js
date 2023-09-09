@@ -31,13 +31,13 @@ endpointSelect.addEventListener('click', (e) => {
 });
 
 function courseTemplate(e) {
-    const eContent = document.querySelector('#endpoint-content');
-    eContent.innerHTML = `${e.target.id} was clicked`;
+    // const eContent = document.querySelector('#endpoint-content');
+    // eContent.innerHTML = `${e.target.id} was clicked`;
 }
 
 function assignmentTemplate(e) {
-    const eContent = document.querySelector('#endpoint-content');
-    eContent.innerHTML = `${e.target.id} was clicked`;
+    // const eContent = document.querySelector('#endpoint-content');
+    // eContent.innerHTML = `${e.target.id} was clicked`;
 
     switch (e.target.id) {
         case 'delete-empty-assignment-groups':
@@ -57,7 +57,11 @@ function emptyAssignmentGroups() {
     let emptyGroups = [];
 
     const eContent = document.querySelector('#endpoint-content');
-    eContent.innerHTML = '';
+    eContent.innerHTML = `
+        <div>
+            <h3>Delete Empty Assignment Groups</h3>
+        </div>
+    `;
 
     const eForm = document.createElement('form');
 
@@ -96,27 +100,28 @@ function emptyAssignmentGroups() {
 
         console.log('Inside renderer check');
 
+        const responseContainer = eContent.querySelector('#response-container');
         const domain = document.querySelector('#domain');
         const apiToken = document.querySelector('#token');
-        const courseID = document.querySelector('#course-id').value;
+        const courseID = document.querySelector('#course-id');
 
-        if (parseInt(courseID)) {
+        if (parseInt(courseID.value)) {
+            responseContainer.innerHTML = '<span>Checking...</span>'
             document.querySelector('#courseChecker').style.display = 'none';
             const requestData = {
                 domain: domain.value,
                 token: apiToken.value,
-                course: courseID
+                course: courseID.value
             }
             emptyGroups = await window.axios.getEmptyAssignmentGroups(requestData);
             console.log('found emtpy groups', emptyGroups.length);
 
             //const eContent = document.querySelector('#endpoint-content');
-            const responseContainer = eContent.querySelector('#response-container');
             responseContainer.innerHTML = `
                 <div>
                     <div class="row align-items-center">
                         <div id="response-details" class="col-auto">
-                            <span>Found ${emptyGroups.length} empty assignments.</span>
+                            <span>Found ${emptyGroups.length} empty assignment groups.</span>
                         </div>
 
                         <div class="w-100"></div>
@@ -172,14 +177,218 @@ function emptyAssignmentGroups() {
     })
 }
 
-function userTemplate(e) {
+function noSubmissionAssignments() {
+    console.log('renderer > noSubmissionAssignments');
+
+    let assignments = [];
+
     const eContent = document.querySelector('#endpoint-content');
-    eContent.innerHTML = `${e.target.id} was clicked`;
+    eContent.innerHTML = `
+        <div>
+            <h3>Delete No Submission Assignments</h3>
+        </div>
+    `;
+
+    const eForm = document.createElement('form');
+
+    eForm.innerHTML = `
+        <div class="row align-items-center">
+            <div class="col-auto">
+                <label class="form-label">Course</label>
+            </div>
+            <div class="w-100"></div>
+            <div class="col-2">
+                <input id="course-id" type="text" class="form-control" aria-describedby="courseChecker" />
+            </div>
+            <div class="col-auto" >
+                <span id="courseChecker" class="form-text" style="display: none;">Must only contain numbers</span>
+            </div>
+            <div class="w-100"></div>
+            <div class="col-auto">
+                <button id="check-btn" class="btn btn-primary mt-3">Check</button>
+            </div>
+        </div>
+        <div id="response-container" class="mt-5">
+        </div>
+    `;
+
+    eContent.append(eForm);
+    const checkBtn = eForm.querySelector('#check-btn');
+    checkBtn.addEventListener('click', async function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+
+        console.log('renderer > noSubmissionAssignments > check');
+
+        const responseContainer = eContent.querySelector('#response-container');
+
+        const domain = document.querySelector('#domain');
+        const apiToken = document.querySelector('#token');
+        const courseID = document.querySelector('#course-id');
+
+        if (parseInt(courseID.value)) {
+            responseContainer.innerHTML = '<span>Checking...</span>'
+            document.querySelector('#courseChecker').style.display = 'none';
+            const requestData = {
+                domain: domain.value.trim(),
+                token: apiToken.value.trim(),
+                course: courseID.value.trim()
+            }
+
+            assignments = await window.axios.getNoSubmissionAssignments(requestData);
+            console.log(`found ${assignments.length} assignments with no submissions`);
+
+            //const eContent = document.querySelector('#endpoint-content');
+            responseContainer.innerHTML = `
+                <div>
+                    <div class="row align-items-center">
+                        <div id="response-details" class="col-auto">
+                            <span>Found ${assignments.length} assignments with no submissions.</span>
+                        </div>
+
+                        <div class="w-100"></div>
+
+                        <div class="col-2">
+                            <button id="remove-btn" type="button" class="btn btn-danger">Remove</button>
+                        </div>
+                        <div class="col-2">
+                            <button id="cancel-btn" type="button" class="btn btn-secondary">Cancel</button>
+                        </div>
+                    </div>
+                </div>    
+            `;
+
+            const cancelBtn = document.querySelector('#cancel-btn');
+            cancelBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                courseID.value = '';
+                responseContainer.innerHTML = '';
+                //clearData(courseID, responseContent);
+            });
+
+            const removeBtn = document.querySelector('#remove-btn');
+            removeBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                console.log('renderer > getNoSubmissionAssignments > removeBtn');
+                const responseDetails = responseContainer.querySelector('#response-details');
+                responseDetails.innerHTML = `Removing ${assignments.length} assignments...`;
+
+                const assignmentIDs = assignments.map((assignment) => {
+                    return {
+                        name: assignment.name,
+                        id: assignment.id
+                    };
+                });
+
+                const messageData = {
+                    domain: domain.value,
+                    token: apiToken.value,
+                    course: courseID.value,
+                    assignments: assignmentIDs
+                }
+
+                const result = await window.axios.deleteNoSubmissionAssignments(messageData);
+                if (result) {
+                    responseDetails.innerHTML = `Successfully removed ${assignments.length} assignments without submissions.`
+                } else {
+                    responseDetails.innerHTML = 'Failed to remove assignment groups';
+                }
+
+            });
+        } else {
+            document.querySelector('#courseChecker').style.display = 'inline';
+        }
+    });
+}
+
+function userTemplate(e) {
+    switch (e.target.id) {
+        case 'page-view':
+            getPageViews(e);
+            break;
+        default:
+            break;
+    }
+}
+
+async function getPageViews(e) {
+    const eContent = document.querySelector('#endpoint-content');
+    eContent.innerHTML = `
+        <div>
+            <h3>Get User Page Views</h3>
+        </div>
+        <hr />
+        `;
+
+    const eForm = document.createElement('form');
+    eForm.innerHTML = `
+        <div class="row align-items-center" >
+            <div class="col-auto">
+                <label for="user-id" class="form-label">Canvas user ID</label>
+            </div>
+            <div class="col-2">
+                <input type="text" id="user-id" class="form-control" aria-describedby="userChecker">
+            </div>
+            <div class="col-auto" >
+                <span id="userChecker" class="form-text" style="display: none;">Must only contain numbers</span>
+            </div>
+        </div >
+        <div class="row mt-3 align-items-center">
+            <div class="col-auto">
+                <label for="start-date" class="form-label">Start</label>
+            </div>
+            <div class="col-auto">
+                <input id="start-date" type="date" class="form-control">
+            </div>
+            <div class="col-auto">
+                <label for="end-date" class="form-label">End</label>
+            </div>
+            <div class="col-auto">
+                <input id="end-date" type="date" class="form-control">
+            </div>
+        </div>
+        <button type="button" class="btn btn-primary mt-3" id="search">Search</button>
+        `;
+
+    eContent.append(eForm);
+
+    const searchBtn = eContent.querySelector('#search');
+    searchBtn.addEventListener('click', async function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+
+        console.log('renderer.js > getPageViews > searchBtn');
+
+        const domain = document.querySelector('#domain').value.trim();
+        const apiToken = document.querySelector('#token').value.trim();
+        const userID = parseInt(eContent.querySelector('#user-id').value.trim());
+        const startDate = eContent.querySelector('#start-date').value;
+        const endDate = eContent.querySelector('#end-date').value;
+
+        if (userID) {
+            const searchData = {
+                domain: domain,
+                token: apiToken,
+                user: userID,
+                start: startDate,
+                end: endDate
+            };
+
+            // const pageViews = await window.axios.getPageViews(searchData);
+            await window.axios.getPageViews(searchData);
+        } else {
+            eContent.querySelector('#userChecker').style.display = 'inline';
+        }
+    });
 }
 
 async function conversationTemplate(e) {
-    const eContent = document.querySelector('#endpoint-content');
-    eContent.innerHTML = '';
+    // const eContent = document.querySelector('#endpoint-content');
+    // eContent.innerHTML = '';
 
     switch (e.target.id) {
         case 'delete-conversations-subject':
@@ -199,10 +408,15 @@ async function conversationTemplate(e) {
 async function deleteConvos(e) {
     const domain = document.querySelector('#domain');
     const apiToken = document.querySelector('#token');
-    const eHeader = document.createElement('div');
-    eHeader.innerHTML = `<h3>${e.target.id}</h3>`;
+    // const eHeader = document.createElement('div');
+    // eHeader.innerHTML = `<h3>${e.target.id}</h3>`;
     const eContent = document.querySelector('#endpoint-content');
-    eContent.append(eHeader);
+    // eContent.append(eHeader);
+    eContent.innerHTML = `
+        <div>
+            <h3>Delete Specific Conversations</h3>
+        </div>
+    `;
 
     const eForm = document.createElement('form');
     eForm.innerHTML = `
@@ -374,16 +588,21 @@ async function getConvos(e) {
     const domain = document.querySelector('#domain');
     const apiToken = document.querySelector('#token');
 
-    const eHeader = document.createElement('div');
-    eHeader.classList.add('row');
-    eHeader.innerHTML = `
-        <div class="col border-bottom">
-            <h3>Get Conversations Between Two Users</h3>
-        </div>
-    </div>`
+    // const eHeader = document.createElement('div');
+    // eHeader.classList.add('row');
+    // eHeader.innerHTML = `
+    //     <div class="col border-bottom">
+    //         <h3>Get Conversations Between Two Users</h3>
+    //     </div>
+    // </div>`
 
     const eContent = document.querySelector('#endpoint-content');
-    eContent.append(eHeader);
+    // eContent.append(eHeader);
+    eContent.innerHTML = `
+        <div>
+            <h3>Get Conversations Between Two Users</h3>
+        </div>
+    `;
 
     const eForm = document.createElement('form');
     eForm.classList.add('row', 'mt-3');
