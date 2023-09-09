@@ -10,6 +10,10 @@ contextBridge.exposeInMainWorld('eAPI', {
 contextBridge.exposeInMainWorld('axios', {
     getConvos: async (data) => {
         const result = await ipcRenderer.invoke('axios:getConvos', data);
+        if (!result) {
+            return false;
+        }
+
         console.log('in preload total result ', result.length);
 
         return result;
