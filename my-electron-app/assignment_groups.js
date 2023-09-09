@@ -75,6 +75,7 @@ async function getAssignmentGroups(domain, course, token) {
             } else {
                 console.log('A different error', error.message);
             }
+            return false;
         }
     }
 
@@ -84,6 +85,9 @@ async function getAssignmentGroups(domain, course, token) {
 async function getEmptyAssignmentGroups(domain, course, token) {
     // let url = `https://${domain}/courses/${course}/assignment_groups/`;
     const theAssignmentGroups = await getAssignmentGroups(domain, course, token);
+    if (!theAssignmentGroups) {
+        return false;
+    }
 
 
     const emptyAssignmentGroups = theAssignmentGroups.filter(assignmentGroup => {
