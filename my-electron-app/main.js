@@ -1,14 +1,17 @@
 const path = require('path');
+const fs = require('fs');
 const {
     app,
     BrowserWindow,
     ipcMain,
-    Menu
+    dialog
 } = require('electron');
 //const axios = require('axios');
 const convos = require('./conversations');
 const csvExporter = require('./csvExporter');
 const assignmentGroups = require('./assignment_groups');
+const assignments = require('./assignments');
+const { getPageViews } = require('./users');
 const { send } = require('process');
 
 
@@ -23,7 +26,7 @@ const createWindow = () => {
         }
     })
 
-    win.webContents.openDevTools();
+    //win.webContents.openDevTools();
     win.loadFile('index.html');
 }
 
@@ -90,6 +93,44 @@ app.whenReady().then(() => {
         return result;
     });
 
+    ipcMain.handle('axios:getNoSubmissionAssignments', async (event, data) => {
+        console.log('main.js > axios:getNoSubmissionAssignments');
+
+        const result = await assignments.getAssignments(data.domain, data.course, data.token);
+        return result;
+    });
+
+    ipcMain.handle('axios:deleteNoSubmissionAssignments', async (event, data) => {
+        console.log('main.js > axios:deleteNoSubmissionAssignments');
+
+        const result = await assignments.deleteNoSubmissionAssignments(data.domain, data.course, data.token, data.assignments);
+
+        return result;
+    });
+
+    ipcMain.handle('axios:getPageViews', async (event, data) => {
+        console.log('main.js > axios:getPageViews');
+
+        const results = await getPageViews(data.domain, data.token, data.user, data.start, data.end);
+        console.log(results.length);
+        if (results.length > 0) {
+            //const filteredResults = convertToPageViewsCsv(result);
+
+            const fileDetails = dialog.showSaveDialogSync({
+                defaultPath: `${data.user}_pageviews.csv`,
+                properties: [
+                    'createDirectory',
+                    'showOverwriteConfirmation',
+                ]
+            });
+            if (fileDetails) {
+                await csvExporter.exportToCSV(results, fileDetails);
+            }
+        } else {
+            console.log('no page views');
+        }
+    });
+
     ipcMain.handle('csv:sendToCSV', async (event, data) => {
         console.log('inside cvs:sendtoCSV');
         //console.log(data);
@@ -113,3 +154,54 @@ app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
 })
 
+function convertToPageViewsCsv(data) {
+
+    const csvHeaders = [];
+    const csvRows = [];
+
+    // create the headers for the csv
+    for (const key in data[0]) {
+        // check if key is also an object
+        if (typeof (data[0][key]) === 'object' && data[0][key] !== null) {
+            for (const nkey in data[0][key]) {
+                csvHeaders.push(nkey);
+            }
+        } else {
+            csvHeaders.push(key);
+        }
+    }
+
+    // convert headers to comma separated string
+    csvRows.push(csvHeaders.map(header => `"${header}"`).join(','));
+
+    // loop through each object and push the values 
+    // onto the array as a comma separated string
+    for (const row of data) {
+        const values = csvHeaders.map((header) => {
+            let value;
+            switch (header) {
+                case 'user':
+                    value = row.links.user;
+                    break;
+                case 'context':
+                    value = row.links.context;
+                    break;
+                case 'asset':
+                    value = row.links.asset;
+                    break;
+                case 'real_user':
+                    value = row.links.real_user;
+                    break;
+                case 'account':
+                    value = row.links.account;
+                    break;
+                default:
+                    value = row[header];
+                    break;
+            }
+            return isNaN(value) ? `"${value.replace(/"/g, '""')}"` : value;
+        });
+        csvRows.push(values.join(','));
+    }
+    return csvRows;
+}
