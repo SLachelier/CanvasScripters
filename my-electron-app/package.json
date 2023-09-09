@@ -1,9 +1,10 @@
 {
-  "name": "my-electron-app",
+  "name": "canvascripter",
   "version": "1.0.0",
-  "description": "Hello World!",
+  "description": "Provides a UI for some common support Scripts.",
   "main": "main.js",
   "scripts": {
+    "myStart": "electron .",
     "start": "electron-forge start",
     "test": "electron ./index_bs_example.html",
     "package": "electron-forge package",
