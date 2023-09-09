@@ -28,6 +28,21 @@ contextBridge.exposeInMainWorld('axios', {
         console.log('Inside axios:deleteEmptyAssignmentGroups');
 
         return await ipcRenderer.invoke('axios:deleteEmptyAssignmentGroups', data);
+    },
+    getNoSubmissionAssignments: async (data) => {
+        console.log('preload > getNoSubmissionAssignments');
+
+        return await ipcRenderer.invoke('axios:getNoSubmissionAssignments', data);
+    },
+    deleteNoSubmissionAssignments: async (data) => {
+        console.log('preload > deleteNoSubmissionAssignments');
+
+        return await ipcRenderer.invoke('axios:deleteNoSubmissionAssignments', data);
+    },
+    getPageViews: async (data) => {
+        console.log('preload.js > getPageViews');
+
+        return await ipcRenderer.invoke('axios:getPageViews', data);
     }
 });
 
