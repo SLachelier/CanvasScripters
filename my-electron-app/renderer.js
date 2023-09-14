@@ -210,7 +210,18 @@ function noSubmissionAssignments() {
             <div class="col-auto" >
                 <span id="courseChecker" class="form-text" style="display: none;">Must only contain numbers</span>
             </div>
-            <div class="w-100"></div>
+            <div class="w-100"></div> 
+            <div class="col-auto form-check form-switch mt-3 ms-3">
+                <input id="graded-submissions" class="form-check-input" type="checkbox" role="switch" />
+                <label for="graded-submissions" class="form-check-label">Delete assignments without submissions but with grades</label>
+                    <div id="graded-help" class="form-text">
+                        (otherwise this will only delete assignments with no submissions <em>AND</em> no grades)
+                    </div>
+            </div>
+            <div class="col-auto">
+
+            </div>
+            <div class="w-100"></div> 
             <div class="col-auto">
                 <button id="check-btn" class="btn btn-primary mt-3">Check</button>
             </div>
@@ -224,6 +235,9 @@ function noSubmissionAssignments() {
     checkBtn.addEventListener('click', async function (e) {
         e.stopPropagation();
         e.preventDefault();
+
+        const gradedSubmissions = eForm.querySelector('#graded-submissions').checked;
+        console.log(gradedSubmissions);
 
         checkBtn.disabled = true;
         console.log('renderer > noSubmissionAssignments > check');
@@ -240,7 +254,8 @@ function noSubmissionAssignments() {
             const requestData = {
                 domain: domain.value.trim(),
                 token: apiToken.value.trim(),
-                course: courseID.value.trim()
+                course: courseID.value.trim(),
+                graded: gradedSubmissions
             }
 
             assignments = await window.axios.getNoSubmissionAssignments(requestData);
@@ -278,6 +293,7 @@ function noSubmissionAssignments() {
 
                     courseID.value = '';
                     responseContainer.innerHTML = '';
+                    checkBtn.disabled = false;
                     //clearData(courseID, responseContent);
                 });
 
@@ -315,6 +331,7 @@ function noSubmissionAssignments() {
             }
 
         } else {
+            checkBtn.disabled = false;
             document.querySelector('#courseChecker').style.display = 'inline';
         }
     });
@@ -409,6 +426,9 @@ async function getPageViews(e) {
             } else if (result === 'empty') {
                 searchBtn.disabled = false;
                 responseContainer.innerHTML = 'No page views found for user.';
+            } else if (result === 'cancelled') {
+                searchBtn.disabled = false;
+                responseContainer.innerHTML = 'Save cancelled.';
             } else {
                 responseContainer.innerHTML = 'Page views saved to file.';
             }
@@ -515,7 +535,7 @@ async function deleteConvos(e) {
             const searchData = {
                 domain: domain.value,
                 token: apiToken.value,
-                subject: convoSubject.value.trim(),
+                subject: convoSubject.value,
                 user_id: userID
             };
 
@@ -573,12 +593,13 @@ async function deleteConvos(e) {
                     const messageData = {
                         domain: domain.value,
                         token: apiToken.value,
-                        user_id: userID.value.trim(),
+                        user_id: userID.value,
                         messages: flattenedMessages
                     }
                     const result = await window.axios.deleteConvos(messageData);
                     if (result) {
-                        responseDetails.innerHTML = `Successfully removed ${filteredMessages.length}`
+                        responseDetails.innerHTML = `Successfully removed ${filteredMessages.length}`;
+                        searchBtn.disabled = false;
                     } else {
                         responseDetails.innerHTML = 'Failed to remove conversations';
                     }
