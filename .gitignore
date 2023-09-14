@@ -114,3 +114,5 @@ out/
 
 # config for forge file
 #forge.config.js
+
+.DS_STORE
