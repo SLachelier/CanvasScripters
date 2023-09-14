@@ -108,6 +108,25 @@ async function getAssignments(domain, courseID, token) {
     return assignmentList;
 }
 
+async function getNoSubmissionAssignments(domain, courseID, token, graded) {
+
+    const assignments = await getAssignments(domain, courseID, token);
+
+    const noSubmissionAssignments = assignments.filter(assignment => {
+        if (graded) {
+            if (!assignment.has_submitted_submissions) {
+                return assignment;
+            }
+        } else {
+            if (!assignment.graded_submissions_exist) {
+                return assignment;
+            }
+        }
+    });
+
+    return noSubmissionAssignments;
+}
+
 async function deleteNoSubmissionAssignments(domain, course, token, assignments) {
     console.log('Deleting assignments with no submissions');
     const baseURL = `https://${domain}/api/v1/courses/${course}/assignments`;
@@ -124,7 +143,7 @@ async function deleteNoSubmissionAssignments(domain, course, token, assignments)
     //     console.log('This is the error', error)
     // }
 
-    // // filtering only unsubmitted assignments
+    // filtering only unsubmitted assignments
     // const noSubmissionAssignments = assignments.filter(assignment => {
     //     if (!assignment.has_submitted_submissions) {
     //         return assignment;
@@ -298,5 +317,5 @@ async function deleteAllAssignments(courseID, assignments) {
 // })();
 
 module.exports = {
-    createAssignments, getAssignments, deleteNoSubmissionAssignments, deleteAllAssignments
+    createAssignments, getAssignments, getNoSubmissionAssignments, deleteNoSubmissionAssignments, deleteAllAssignments
 }
