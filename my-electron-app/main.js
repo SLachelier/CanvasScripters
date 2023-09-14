@@ -52,17 +52,17 @@ app.whenReady().then(() => {
         let url = `https://${domain}/api/v1/conversations?as_user_id=${userID}&per_page=100`;
         console.log(url);
 
-        const inboxMessages = await convos.getConversations(userID, url, 'inbox', apiToken);
-        if (!inboxMessages) {
-            return false;
-        }
-        console.log('Total inbox messages: ', inboxMessages.length)
+        // const inboxMessages = await convos.getConversations(userID, url, 'inbox', apiToken);
+        // if (!inboxMessages) {
+        //     return false;
+        // }
+        // console.log('Total inbox messages: ', inboxMessages.length)
 
         // getting messages in 'sent'
         const sentMessages = await convos.getConversations(userID, url, 'sent', apiToken);
-        console.log('Total sent messages', sentMessages.length);
+        // console.log('Total sent messages', sentMessages.length);
 
-        const totalMessages = [...inboxMessages, ...sentMessages];
+        const totalMessages = [...sentMessages];
         console.log('Total messages ', totalMessages.length);
 
         return totalMessages;
@@ -99,7 +99,8 @@ app.whenReady().then(() => {
     ipcMain.handle('axios:getNoSubmissionAssignments', async (event, data) => {
         console.log('main.js > axios:getNoSubmissionAssignments');
 
-        const result = await assignments.getAssignments(data.domain, data.course, data.token);
+        const result = await assignments.getNoSubmissionAssignments(data.domain, data.course, data.token, data.graded);
+
         return result;
     });
 
@@ -122,15 +123,12 @@ app.whenReady().then(() => {
         if (results.length > 0) {
             //const filteredResults = convertToPageViewsCsv(result);
 
-            const fileDetails = dialog.showSaveDialogSync({
-                defaultPath: `${data.user}_pageviews.csv`,
-                properties: [
-                    'createDirectory',
-                    'showOverwriteConfirmation',
-                ]
-            });
+            const filename = `${data.user}_page_views.csv`;
+            const fileDetails = getFileLocation(filename);
             if (fileDetails) {
                 await csvExporter.exportToCSV(results, fileDetails);
+            } else {
+                return 'cancelled';
             }
             return true;
         } else {
@@ -143,7 +141,12 @@ app.whenReady().then(() => {
         console.log('inside cvs:sendtoCSV');
         //console.log(data);
 
-        csvExporter.exportToCSV(data, 'exported_convos');
+        const fileDetails = getFileLocation('exported_convos.csv')
+        if (fileDetails) {
+            csvExporter.exportToCSV(data, fileDetails);
+        } else {
+            return false;
+        }
     });
 
     //ipcMain.handle('')
@@ -161,6 +164,17 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
 })
+
+function getFileLocation(fileName) {
+    const fileDetails = dialog.showSaveDialogSync({
+        defaultPath: fileName,
+        properties: [
+            'createDirectory',
+            'showOverwriteConfirmation',
+        ]
+    });
+    return fileDetails;
+}
 
 function convertToPageViewsCsv(data) {
 
