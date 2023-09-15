@@ -13,6 +13,7 @@ const assignmentGroups = require('./assignment_groups');
 const assignments = require('./assignments');
 const { getPageViews } = require('./users');
 const { send } = require('process');
+const { deleteRequester } = require('./utilities');
 
 
 const createWindow = () => {
@@ -108,6 +109,23 @@ app.whenReady().then(() => {
         console.log('main.js > axios:deleteNoSubmissionAssignments');
 
         const result = await assignments.deleteNoSubmissionAssignments(data.domain, data.course, data.token, data.assignments);
+
+        return result;
+    });
+
+    ipcMain.handle('axios:getNonModuleAssignments', async (event, data) => {
+        console.log('main.js > axios:getNonModuleAssignments');
+
+        const results = await assignments.getNonModuleAssignments(data.domain, data.course, data.token);
+
+        return results;
+    });
+
+    ipcMain.handle('axios:deleteTheThings', async (event, data) => {
+        console.log('Inside axios:deleteTheThings')
+
+        const result = deleteRequester(data.content, data.url, null, data.token);
+        // const result = await assignmentGroups.deleteEmptyAssignmentGroups(data.domain, data.course, data.token, data.groups);
 
         return result;
     });
