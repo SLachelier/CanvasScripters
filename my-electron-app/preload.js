@@ -43,6 +43,16 @@ contextBridge.exposeInMainWorld('axios', {
 
         return await ipcRenderer.invoke('axios:deleteNoSubmissionAssignments', data);
     },
+    getNonModuleAssignments: async (data) => {
+        console.log('preload > deleteNonModuleAssignments');
+
+        return await ipcRenderer.invoke('axios:getNonModuleAssignments', data);
+    },
+    deleteTheThings: async (data) => {
+        console.log('preload.js > deleteTheThings');
+
+        return await ipcRenderer.invoke('axios:deleteTheThings', data);
+    },
     getPageViews: async (data) => {
         console.log('preload.js > getPageViews');
 
