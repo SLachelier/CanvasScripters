@@ -163,13 +163,12 @@ function emptyAssignmentGroups() {
                     responseDetails.innerHTML = `Removing ${emptyGroups.length} assignment groups...`;
 
                     const messageData = {
-                        domain: domain.value,
+                        url: `https://${domain.value}/api/v1/courses/${courseID.value}/assignment_groups`,
                         token: apiToken.value,
-                        course: courseID,
-                        groups: emptyGroups
+                        content: emptyGroups
                     }
 
-                    const result = await window.axios.deleteEmptyAssignmentGroups(messageData);
+                    const result = await window.axios.deleteTheThings(messageData);
                     if (result) {
                         responseDetails.innerHTML = `Successfully removed ${emptyGroups.length} assignment groups.`
                     } else {
