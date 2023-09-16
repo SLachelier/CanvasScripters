@@ -120,6 +120,7 @@ function emptyAssignmentGroups() {
                 checkBtn.disabled = false;
                 responseContainer.innerHTML = 'Search Failed. Check domain, token or course id.';
             } else {
+                checkBtn.disabled = false;
                 console.log('found emtpy groups', emptyGroups.length);
 
                 //const eContent = document.querySelector('#endpoint-content');
@@ -265,6 +266,7 @@ function noSubmissionAssignments() {
                 responseContainer.innerHTML = 'Search failed. Check domain, token or course id.';
 
             } else {
+                checkBtn.disabled = false;
                 console.log(`found ${assignments.length} assignments with no submissions`);
 
                 //const eContent = document.querySelector('#endpoint-content');
@@ -681,6 +683,8 @@ async function deleteConvos(e) {
                 searchBtn.disabled = false;
                 responseContainer.innerHTML = 'Search Failed. Check domain, token or user id.';
             } else {
+                searchBtn.disabled = false;
+
                 console.log('renderer.js ', messages.length);
 
                 // ********************************
