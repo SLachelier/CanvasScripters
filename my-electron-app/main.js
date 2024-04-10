@@ -41,6 +41,8 @@ app.whenReady().then(() => {
         const domain = searchData.domain;
         const userID = searchData.user_id;
         const apiToken = searchData.token;
+        const subject = searchData.subject;
+
         // const inboxMessages = [];
         // const sentMessages = [];
         // const totalMessages = [];
@@ -50,8 +52,50 @@ app.whenReady().then(() => {
         console.log('The apiToken ', apiToken);
 
         // getting messages in 'inbox'
-        let url = `https://${domain}/api/v1/conversations?as_user_id=${userID}&per_page=100`;
-        console.log(url);
+
+        // let url = `https://${domain}/api/v1/conversations?as_user_id=${userID}&per_page=100`;
+        // console.log(url);
+
+        //setting up graphql Query for messages
+        let query = `
+            query getMessages($userID: ID!, $nextPage: String) {
+                legacyNode(_id: $userID, type: User) {
+                    ... on User {
+                        id
+                        email
+                        conversationsConnection(scope: "sent", first: 200, after: $nextPage) {
+                            pageInfo {
+                                hasNextPage
+                                endCursor
+                                startCursor
+                            }
+                            edges {
+                                node {
+                                    conversation {
+                                        subject
+                                        _id
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        `;
+
+        let variables = {
+            "userID": userID,
+            "nextPage": ""
+        };
+
+        // let query = `query MyQuery {
+        //     legacyNode(type: User, _id: "26") {
+        //         ...on User {
+        //             email
+        //         }
+        //     }
+        // }`
+
 
         // const inboxMessages = await convos.getConversations(userID, url, 'inbox', apiToken);
         // if (!inboxMessages) {
@@ -60,13 +104,26 @@ app.whenReady().then(() => {
         // console.log('Total inbox messages: ', inboxMessages.length)
 
         // getting messages in 'sent'
-        const sentMessages = await convos.getConversations(userID, url, 'sent', apiToken);
+        // const sentMessages = await convos.getConversations(userID, url, 'sent', apiToken);
+
+        let url = `https://${domain}/api/graphql?as_user_id=${userID}`;
+        const sentMessages = await convos.getConversationsGraphQL(url, query, variables, apiToken);
+        console.log('Returned messages: ', sentMessages);
+
         // console.log('Total sent messages', sentMessages.length);
 
-        const totalMessages = [...sentMessages];
-        console.log('Total messages ', totalMessages.length);
+        // const totalMessages = [...sentMessages];
+        // console.log('Total messages ', totalMessages.length);
 
-        return totalMessages;
+        const filteredMessages = sentMessages.filter((message) => {
+            if (message.node.conversation.subject === subject) {
+                return message;
+            }
+        })
+
+        console.log('Total filtered messages ', filteredMessages.length);
+
+        return filteredMessages;
     });
 
     ipcMain.handle('axios:deleteConvos', async (event, data) => {
