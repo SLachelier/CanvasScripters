@@ -61,6 +61,74 @@ async function getConversations(user, url, scope, token) {
     return myConversations;
 }
 
+async function getConversationsGraphQL(url, query, variables, token) {
+    // const url = url;
+    // const query = query;
+    let response = '';
+    const responseData = [];
+    const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    };
+
+    console.log('The Query: ', query);
+
+    // const config = {
+    //     method: 'post',
+    //     url: url,
+    //     headers: headers,
+    //     data: JSON.stringify({
+    //         query: query,
+    //         variables: variables
+    //     })
+    // };
+
+    // const response = await axios(config);
+
+    // console.log('The graphql data response: ', response.data);
+
+    // responseData.push(...response.data.data.legacyNode.conversationsConnection.edges);
+    // console.log('The response data is ', responseData);
+
+    // console.log('The Next Page: ', response.data.data.legacyNode.conversationsConnection.pageInfo.endCursor);
+    // const variables = variables;
+    let nextPage = true;
+
+
+    while (nextPage) {
+        const config = {
+            method: 'post',
+            url: url,
+            headers: headers,
+            data: JSON.stringify({
+                query: query,
+                variables: variables
+            })
+        };
+
+        response = await axios(config);
+
+        // console.log('The graphql data response: ', response.data);
+        // const data = await response.json();
+        // console.log('The data is : ', data);
+        responseData.push(...response.data.data.legacyNode.conversationsConnection.edges);
+        //console.log('The response data is ', responseData);
+
+        if (response.data.data.legacyNode.conversationsConnection.pageInfo.hasNextPage === true) {
+            variables.nextPage = response.data.data.legacyNode.conversationsConnection.pageInfo.endCursor;
+            console.log('The variables are: ', variables);
+            //console.log('The next page is ', variables.nextPage);
+        } else {
+            nextPage = false;
+        }
+    }
+
+    //console.log('The completed response data is: ', response);
+
+    return responseData;
+
+}
+
 async function deleteForAll(conversationID) {
     console.log('Deleting conversation: ', conversationID);
     let myURL = `conversations/${conversationID}/delete_for_all`;
@@ -304,5 +372,5 @@ async function bulkDeleteNew(messages, url, token) {
 
 
 module.exports = {
-    getConversations, bulkDelete, bulkDeleteNew, deleteForAll
+    getConversations, getConversationsGraphQL, bulkDelete, bulkDeleteNew, deleteForAll
 };
