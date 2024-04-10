@@ -1,6 +1,7 @@
 // (async () => {
 //     const result = await window.axios.get();
 //     console.log(result);
+
 // })();
 const endpointSelect = document.querySelector('#endpoints');
 endpointSelect.addEventListener('click', (e) => {
@@ -39,8 +40,12 @@ function assignmentTemplate(e) {
     // eContent.innerHTML = `${e.target.id} was clicked`;
 
     switch (e.target.id) {
+        case 'create-assignments':
+            assignmentCreator();
+        case 'create-assignment-groups':
+            assignmentGroupCreator();
         case 'delete-empty-assignment-groups':
-            emptyAssignmentGroups(e);
+            emptyAssignmentGroups();
             break;
         case 'delete-nosubmission-assignments':
             noSubmissionAssignments();
@@ -54,6 +59,43 @@ function assignmentTemplate(e) {
 }
 
 // create html for empty Assignment group query
+function assignmentCreator() {
+    let emptyGroups = [];
+
+    const eContent = document.querySelector('#endpoint-content');
+    eContent.innerHTML = `
+        <div>
+            <h3>Create Assignments</h3>
+        </div>
+    `;
+
+    const eForm = document.createElement('form');
+
+    eForm.innerHTML = `
+        <div class="row align-items-center">
+            <div class="col-auto">
+                <label class="form-label">Course</label>
+            </div>
+            <div class="w-100"></div>
+            <div class="col-2">
+                <input id="course-id" type="text" class="form-control" aria-describedby="courseChecker" />
+            </div>
+            <div class="col-auto" >
+                <span id="courseChecker" class="form-text" style="display: none;">Must only contain numbers</span>
+            </div>
+            <div class="w-100"></div>
+            <div class="col-auto">
+                <button id="check-btn" class="btn btn-primary mt-3">Check</button>
+            </div>
+        </div>
+        <div id="response-container" class="mt-5">
+        </div>
+    `;
+
+    eContent.append(eForm);
+}
+
+
 function emptyAssignmentGroups() {
     let emptyGroups = [];
 
@@ -581,6 +623,9 @@ async function conversationTemplate(e) {
         case 'delete-conversations-subject':
             deleteConvos(e);
             break;
+        case 'download-conversations-csv':
+            downloadConvos(e);
+            break;
         case 'gc-between-users':
             getConvos(e);
             break;
@@ -692,27 +737,47 @@ async function deleteConvos(e) {
                 //
                 // ********************************
 
-                const filteredMessages = filterMessages(messages, convoSubject.value);
-                const flattenedMessages = flattenMessages(filteredMessages);
+                // const filteredMessages = filterMessages(messages, convoSubject.value);
+                // const flattenedMessages = flattenMessages(filteredMessages);
+
+                //     responseContainer.innerHTML = `
+                // <div id="response-info" class="container">Total messages searched: ${messages.length}. Found ${filteredMessages.length}.
+                //     <div class="row justify-content-start my-2">
+                //         <div id="response-details" class="col-auto">
+                //         </div>
+                //     </div>
+                //     <div class="row justify-content-start my-2">
+                //         <div class="col-2">
+                //             <button id="remove-btn" type="button" class="btn btn-danger">Remove</button>
+                //         </div>
+                //         <div class="col-2">
+                //             <button id="cancel-btn" type="button" class="btn btn-secondary">Cancel</button>
+                //         </div>
+                //         <div class="col-3">
+                //             <button id="csv-btn" type="button" class="btn btn-secondary">Send to CSV</button>
+                //         </div>
+                //     </div>
+                // </div>`
 
                 responseContainer.innerHTML = `
-            <div id="response-info" class="container">Total messages searched: ${messages.length}. Found ${filteredMessages.length}.
-                <div class="row justify-content-start my-2">
-                    <div id="response-details" class="col-auto">
+                    <div id="response-info" class="container">Found ${messages.length} messages.
+                        <div class="row justify-content-start my-2">
+                            <div id="response-details" class="col-auto">
+                        </div>
                     </div>
-                </div>
-                <div class="row justify-content-start my-2">
-                    <div class="col-2">
-                        <button id="remove-btn" type="button" class="btn btn-danger">Remove</button>
+                    <div class="row justify-content-start my-2">
+                        <div class="col-2">
+                            <button id="remove-btn" type="button" class="btn btn-danger">Remove</button>
+                        </div>
+                        <div class="col-2">
+                            <button id="cancel-btn" type="button" class="btn btn-secondary">Cancel</button>
+                        </div>
+                        <div class="col-3">
+                            <button id="csv-btn" type="button" class="btn btn-secondary">Send to CSV</button>
+                        </div>
                     </div>
-                    <div class="col-2">
-                        <button id="cancel-btn" type="button" class="btn btn-secondary">Cancel</button>
                     </div>
-                    <div class="col-3">
-                        <button id="csv-btn" type="button" class="btn btn-secondary">Send to CSV</button>
-                    </div>
-                </div>
-            </div>`
+            `;
 
 
                 const removeBtn = document.querySelector('#remove-btn');
@@ -725,17 +790,17 @@ async function deleteConvos(e) {
 
                     console.log('inside remove');
                     const responseDetails = responseContainer.querySelector('#response-details');
-                    responseDetails.innerHTML = `Removing ${filteredMessages.length} conversations...`;
+                    responseDetails.innerHTML = `Removing ${messages.length} conversations...`;
 
                     const messageData = {
                         domain: domain.value,
                         token: apiToken.value,
                         user_id: userID.value,
-                        messages: flattenedMessages
+                        messages: messages
                     }
                     const result = await window.axios.deleteConvos(messageData);
                     if (result) {
-                        responseDetails.innerHTML = `Successfully removed ${filteredMessages.length}`;
+                        responseDetails.innerHTML = `Successfully removed ${messages.length}`;
                         searchBtn.disabled = false;
                     } else {
                         responseDetails.innerHTML = 'Failed to remove conversations';
@@ -758,7 +823,7 @@ async function deleteConvos(e) {
                     console.log('inside sendTocCSV');
                     //console.log(filteredMessages);
 
-                    window.csv.sendToCSV(flattenedMessages);
+                    window.csv.sendToCSV(messages);
                 })
 
             }
@@ -769,6 +834,64 @@ async function deleteConvos(e) {
     });
 }
 
+async function downloadConvos(e) {
+    const domain = document.querySelector('#domain');
+    const apiToken = document.querySelector('#token');
+    // const eHeader = document.createElement('div');
+    // eHeader.innerHTML = `<h3>${e.target.id}</h3>`;
+    const eContent = document.querySelector('#endpoint-content');
+    // eContent.append(eHeader);
+    eContent.innerHTML = `
+        <div>
+            <h3>Download Converations to CSV</h3>
+        </div>
+    `;
+
+    const eForm = document.createElement('form');
+    eForm.innerHTML = `
+            <div class="row">
+                <div class="col-auto">
+                    <label for="user-id" class="form-label">Canvas user ID</label>
+                </div>
+                <div class="col-2">
+                    <input type="text" id="user-id" class="form-control" aria-desribedby="userChecker">
+                </div>
+                <div class="col-auto">
+                    <span id="userChecker" class="form-text" style="display: none;">Must only contain numbers</span>
+                </div>
+            </div>
+            <div class="row align-items-center">
+                <div class="col-auto form-check form-switch mt-2 ms-3 mb-2">
+                    <input id="delete-convos" class="form-check-input" type="checkbox" role="switch" />
+                    <label for="deleted-convos" class="form-check-label">Only search for <em>Deleted</em> Conversations</label>
+                        <div id="graded-help" class="form-text">
+                            (otherwise this will search for active and deleted)
+                        </div>
+                </div>
+                <div class="w-100"></div>
+                <div class="col-auto">
+                    <label for="start-date" class="form-label">Start</label>
+                </div>
+                <div class="col-auto">
+                    <input id="start-date" type="date" class="form-control">
+                </div>
+                <div class="col-auto">
+                    <label for="end-date" class="form-label">End</label>
+                </div>
+                <div class="col-auto">
+                    <input id="end-date" type="date" class="form-control">
+                </div>
+                <div class="w-100"></div>
+                <div class="col-auto">
+                    <button type="button" class="btn btn-primary mt-3" id="convo-search">Search</button>
+                </div>
+            </div>
+        <div id="response-container" class="mt-5"></div>`
+
+    eContent.append(eForm);
+
+
+}
 // creates a new conversation object simplified to basic data
 // to write to a csv before deletion
 function flattenMessages(conversations) {
