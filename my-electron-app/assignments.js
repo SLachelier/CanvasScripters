@@ -21,48 +21,88 @@ const { deleteRequester } = require('./utilities.js');
 async function createAssignments(course, number) {
 
     console.log(`Creating ${number} assignment(s)`);
-    let url = `courses/${course}/assignments`;
-    const data = {
-        assignment: {
-            name: 'Assignment 1',
-            submission_types: [
-                'online_upload',
-            ],
-            allowed_extensions: [
-            ],
-            points_possible: 10,
-            grading_type: 'points',
-            post_to_sis: false,
-            due_at: null,
-            lock_at: null,
-            unlock_at: null,
-            description: 'This is the assignment description',
-            published: false,
-            anonymous_grading: false,
-            allowed_attempts: -1,
-        }
-    }
+    // let url = `courses/${course}/assignments`;
+    // const data = {
+    //     assignment: {
+    //         name: 'Assignment 1',
+    //         submission_types: [
+    //             'online_upload',
+    //         ],
+    //         allowed_extensions: [
+    //         ],
+    //         points_possible: 10,
+    //         grading_type: 'points',
+    //         post_to_sis: false,
+    //         due_at: null,
+    //         lock_at: null,
+    //         unlock_at: null,
+    //         description: 'This is the assignment description',
+    //         published: false,
+    //         anonymous_grading: false,
+    //         allowed_attempts: -1,
+    //     }
+    // }
 
-    try {
-        let counter = 0;
-        let startTime = performance.now();
-        for (let num = 1; num <= number; num++) {
-            data.assignment.name = `Assignment ${num}`;
-            const response = await axios.post(url, data);
-            counter++;
+    // try {
+    //     let counter = 0;
+    //     let startTime = performance.now();
+    //     for (let num = 1; num <= number; num++) {
+    //         data.assignment.name = `Assignment ${num}`;
+    //         const response = await axios.post(url, data);
+    //         counter++;
+    //     }
+    //     let endTime = performance.now();
+    //     console.log(`Created ${counter} assignment(s) in ${Math.floor(endTime - startTime) / 1000} seconds`)
+    // } catch (error) {
+    //     if (error.response) {
+    //         console.log(error.response.status);
+    //         console.log(error.response.headers);
+    //     } else if (error.request) {
+    //         console.log(error.request);
+    //     } else {
+    //         console.log('A different error', error.message);
+    //     }
+    // }
+
+
+    //*******************************************
+    //
+    // Using Graph QL to create assignments
+    //
+    //********************************************
+
+    const createAssignmentMutation = `mutation createAssignments($courseId: ID!,$name: String!) {
+        createAssignment(input: {
+            courseId: $courseId,
+            name: $name,
+            description: "This is the description",
+            pointsPossible: 5,
+            gradingType: points,
+            submissionTypes: online_upload
+        }) {
+            assignment {
+                _id
+            }
+            errors {
+                attribute
+                message
+            }
         }
-        let endTime = performance.now();
-        console.log(`Created ${counter} assignment(s) in ${Math.floor(endTime - startTime) / 1000} seconds`)
-    } catch (error) {
-        if (error.response) {
-            console.log(error.response.status);
-            console.log(error.response.headers);
-        } else if (error.request) {
-            console.log(error.request);
-        } else {
-            console.log('A different error', error.message);
-        }
-    }
+    }`
+
+    const mutationVariables = {
+        "courseId": course,
+        "name": `Assignment `
+    };
+
+    const response = await axios.post('https://ckruger.instructure.com/api/graphql', {
+        query: createAssignmentMutation,
+        variables: mutationVariables
+    });
+
+    const data = await response.data;
+
+    console.log(data);
 }
 
 async function getAssignments(domain, courseID, token) {
