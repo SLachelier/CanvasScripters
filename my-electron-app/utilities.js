@@ -122,11 +122,19 @@ async function deleteRequester(content, baseURL, afterID = null, token) {
             }));
             index++;
         }
-        await Promise.all(requests);
-        console.log('Processed requests');
-        holdPlease(waitTime);
-        requests = [];
-        loops--;
+        try {
+            const results = await Promise.allSettled(requests);
+            for (let result of results) {
+                console.log(result);
+            }
+            console.log('Processed requests');
+            holdPlease(waitTime);
+            requests = [];
+            loops--;
+        } catch (error) {
+            console.log('There was an error');
+            return false;
+        }
     }
     for (let i = 0; i < content.length % apiLimit; i++) {
         let myURL = `${baseURL}/${content[index].id}`;
@@ -143,7 +151,10 @@ async function deleteRequester(content, baseURL, afterID = null, token) {
         index++;
     }
     try {
-        await Promise.all(requests);
+        await Promise.allSettled(requests);
+        for (let result of results) {
+            console.log(result);
+        }
         console.log('Done');
 
         return true;
