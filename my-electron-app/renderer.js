@@ -792,6 +792,10 @@ async function deleteConvos(e) {
                     const responseDetails = responseContainer.querySelector('#response-details');
                     responseDetails.innerHTML = `Removing ${messages.length} conversations...`;
 
+                    // const messageIDs = messages.map((message) => {
+                    //     return message.node.conversation;
+                    // });
+
                     const messageData = {
                         domain: domain.value,
                         token: apiToken.value,
