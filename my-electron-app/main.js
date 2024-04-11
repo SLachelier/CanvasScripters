@@ -108,7 +108,7 @@ app.whenReady().then(() => {
 
         let url = `https://${domain}/api/graphql?as_user_id=${userID}`;
         const sentMessages = await convos.getConversationsGraphQL(url, query, variables, apiToken);
-        console.log('Returned messages: ', sentMessages);
+        //console.log('Returned messages: ', sentMessages);
 
         // console.log('Total sent messages', sentMessages.length);
 
@@ -119,11 +119,15 @@ app.whenReady().then(() => {
             if (message.node.conversation.subject === subject) {
                 return message;
             }
-        })
+        });
 
-        console.log('Total filtered messages ', filteredMessages.length);
+        const formattedMesages = filteredMessages.map((message) => {
+            return { subject: message.node.conversation.subject, id: message.node.conversation._id };
+        });
 
-        return filteredMessages;
+        console.log('Total filtered messages ', formattedMesages.length);
+
+        return formattedMesages;
     });
 
     ipcMain.handle('axios:deleteConvos', async (event, data) => {
