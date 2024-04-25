@@ -98,8 +98,10 @@ async function getEmptyAssignmentGroups(domain, course, token) {
     return emptyAssignmentGroups;
 }
 
-async function deleteEmptyAssignmentGroups(domain, course, token, emptyGroups) {
-    //let url = `/courses/${course}/assignment_groups/`;
+async function deleteEmptyAssignmentGroups(domain, token, emptyGroups) {
+    let url = `${domain}/`;
+    console.log('The assignment groups: ', emptyGroups);
+    console.log('The url: ', url);
     // let params = {
     //     include: ['assignments']
     // };
@@ -114,30 +116,47 @@ async function deleteEmptyAssignmentGroups(domain, course, token, emptyGroups) {
     // });
 
     //const emptyAssignmentGroups = await getEmptyAssignmentGroups(course);
-    return await deleteRequester(emptyGroups, `https://${domain}/api/v1/courses/${course}/assignment_groups`, null, token)
+
+    // *******************************************************************
+    //
+    // deleterequester does requests in parallel and there are some issues
+    //  currently with deleting assignment groups, commenting out for now
+    //
+    // *********************************************************************
+
+
+    // return await deleteRequester(emptyGroups, `https://${domain}/api/v1/courses/${course}/assignment_groups`, null, token)
 
     // console.log('Number of assignment groups to delete', emptyAssignmentGroups.length);
-    // try {
-    //     const startTime = performance.now();
-    //     let counter = 0;
-    //     for (let emptyGroup of emptyAssignmentGroups) {
-    //         console.log('deleting assignment group');
-    //         const response = await axios.delete(url + emptyGroup.id)
-    //         counter++;
-    //     }
-    //     const endTime = performance.now();
-    //     console.log(`Deleted ${counter} assignment group(s) in ${Math.floor(endTime - startTime) / 1000} seconds.`)
-    // } catch (error) {
-    //     console.log('error deleting assignment group');
-    //     if (error.response) {
-    //         console.log(error.response.status);
-    //         console.log(error.response.headers);
-    //     } else if (error.request) {
-    //         console.log(error.request);
-    //     } else {
-    //         console.log('A different error', error.message);
-    //     }
-    // }
+    try {
+        //const startTime = performance.now();
+        let counter = 0;
+        for (let emptyGroup of emptyGroups) {
+            console.log('deleting assignment group');
+            const response = await axios({
+                method: 'delete',
+                url: url + emptyGroup.id,
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            counter++;
+        }
+        return true;
+        //const endTime = performance.now();
+        // console.log(`Deleted ${counter} assignment group(s) in ${Math.floor(endTime - startTime) / 1000} seconds.`)
+    } catch (error) {
+        console.log('error deleting assignment group');
+        if (error.response) {
+            console.log(error.response.status);
+            console.log(error.response.headers);
+        } else if (error.request) {
+            console.log(error.request);
+        } else {
+            console.log('A different error', error.message);
+        }
+        return false;
+    }
 }
 
 // (async () => {

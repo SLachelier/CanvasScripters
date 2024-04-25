@@ -211,7 +211,9 @@ function emptyAssignmentGroups() {
                         content: emptyGroups
                     }
 
-                    const result = await window.axios.deleteTheThings(messageData);
+                    //const result = await window.axios.deleteTheThings(messageData);
+                    const result = await window.axios.deleteEmptyAssignmentGroups(messageData);
+
                     if (result) {
                         responseDetails.innerHTML = `Successfully removed ${emptyGroups.length} assignment groups.`
                     } else {

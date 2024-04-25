@@ -151,9 +151,10 @@ app.whenReady().then(() => {
     });
 
     ipcMain.handle('axios:deleteEmptyAssignmentGroups', async (event, data) => {
-        console.log('Inside axios:getEmptyAssignmentGroups')
+        console.log('Inside axios:deleteEmptyAssignmentGroups')
+        console.log('They data: ', data);
 
-        const result = await assignmentGroups.deleteEmptyAssignmentGroups(data.domain, data.course, data.token, data.groups);
+        const result = await assignmentGroups.deleteEmptyAssignmentGroups(data.url, data.token, data.content);
 
         return result;
     });
