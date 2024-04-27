@@ -238,7 +238,7 @@ function noSubmissionAssignments() {
     const eContent = document.querySelector('#endpoint-content');
     eContent.innerHTML = `
         <div>
-            <h3>Delete No Submission Assignments</h3>
+            <h3>Delete Assignments With No Submissions</h3>
         </div>
     `;
 
@@ -259,7 +259,7 @@ function noSubmissionAssignments() {
             <div class="w-100"></div> 
             <div class="col-auto form-check form-switch mt-3 ms-3">
                 <input id="graded-submissions" class="form-check-input" type="checkbox" role="switch" />
-                <label for="graded-submissions" class="form-check-label">Delete assignments without submissions but with grades</label>
+                <label for="graded-submissions" class="form-check-label">Delete assignments with grades</label>
                     <div id="graded-help" class="form-text">
                         (otherwise this will only delete assignments with no submissions <em>AND</em> no grades)
                     </div>
