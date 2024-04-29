@@ -368,10 +368,10 @@ function noSubmissionAssignments() {
                     }
 
                     const result = await window.axios.deleteNoSubmissionAssignments(messageData);
-                    if (result) {
-                        responseDetails.innerHTML = `Successfully removed ${assignments.length} assignments without submissions.`
+                    if (result.status) {
+                        responseDetails.innerHTML = `<p>Successfully removed ${assignments.length} assignments without submissions.</p>`
                     } else {
-                        responseDetails.innerHTML = 'Failed to remove assignment groups';
+                        responseDetails.innerHTML = `<p>Failed to remove assignments<p><p>${result.message}`;
                     }
 
                 });
