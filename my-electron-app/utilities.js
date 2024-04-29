@@ -133,6 +133,7 @@ async function deleteRequester(content, baseURL, afterID = null, token) {
             loops--;
         } catch (error) {
             console.log('There was an error');
+            console.log(error)
             return false;
         }
     }
@@ -151,17 +152,19 @@ async function deleteRequester(content, baseURL, afterID = null, token) {
         index++;
     }
     try {
-        await Promise.allSettled(requests);
+        const results = await Promise.allSettled(requests);
         for (let result of results) {
-            console.log(result);
+            if (result.status === 'rejected') {
+                throw new Error(`There was an error trying to delete ${result.reason.response.request.path}: ${result.reason.response.status} ${result.reason.response.statusText} ${JSON.stringify(result.reason.response.data.errors[0])}`);
+            }
         }
         console.log('Done');
 
-        return true;
+        return { status: true, message: 'success' };
     } catch (error) {
-        console.log('There was an error');
-
-        return false;
+        // console.log('There was an error');
+        console.log(error.message);
+        return { status: false, message: error.message };
     }
 }
 
