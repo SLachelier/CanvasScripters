@@ -149,81 +149,91 @@ async function getAssignments(domain, courseID, token) {
 }
 
 async function getNoSubmissionAssignments(domain, courseID, token, graded) {
-    const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-    };
 
+    // **********************************************************************
+    //
+    // GraphQL doesn't have 'graded_submissions_exist' field to quickly
+    // -- see if an assignment has graded assignments so you'd need to get
+    // -- all submissions vs REST API where you can check that field 
+    // -- for the individual assignment
+    //
+    // **********************************************************************
 
-
-    // const assignments = await getAssignments(domain, courseID, token);
-    const query = `query getNoSubmissionAssignments($states: [SubmissionState!]) {
-        course(id: "2165") {
-            assignmentsConnection(filter: {gradingPeriodId: null}) {
-                edges {
-                    node {
-                        id
-                        _id
-                        hasSubmittedSubmissions
-                        submissionsConnection(filter: {states: $states}) {
-                            nodes {
-                                _id
-                                gradingStatus
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }`
-
-    const variables = {
-        "states": ["unsubmitted", "ungraded"]
-    }
-
-    const config = {
-        method: 'post',
-        url: `https://ckruger.instructure.com/api/graphql`,
-        headers: headers,
-        data: JSON.stringify({
-            query: query,
-            variables: variables
-        })
-
-    }
-
-    try {
-        const response = await axios.post(`https://ckruger.instructure.com/api/graphql`, JSON.stringify({
-            query: query,
-            variables: variables
-        }), {
-            headers: {
-
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-
-            }
-        });
-
-        console.log(response.data);
-        return response.data.data.course.assignmentsConnection.edges;
-    } catch (error) {
-        console.log(error)
-    }
-    // const noSubmissionAssignments = assignments.filter(assignment => {
-    //     if (graded) {
-    //         if (!assignment.has_submitted_submissions) {
-    //             return assignment;
-    //         }
-    //     } else {
-    //         if (!assignment.graded_submissions_exist) {
-    //             return assignment;
+    // const query = `query getNoSubmissionAssignments($states: [SubmissionState!]) {
+    //     course(id: "2165") {
+    //         assignmentsConnection(filter: {gradingPeriodId: null}) {
+    //             edges {
+    //                 node {
+    //                     id
+    //                     _id
+    //                     hasSubmittedSubmissions
+    //                     submissionsConnection(filter: {states: $states}) {
+    //                         nodes {
+    //                             _id
+    //                             gradingStatus
+    //                         }
+    //                     }
+    //                 }
+    //             }
     //         }
     //     }
-    // });
+    // }`
+
+    // const variables = {
+    //     "states": ["unsubmitted", "ungraded"]
+    // }
+
+    // const headers = {
+    //     'Authorization': `Bearer ${token}`,
+    //     'Content-Type': 'application/json'
+    // };
+
+    // const config = {
+    //     method: 'post',
+    //     url: `https://ckruger.instructure.com/api/graphql`,
+    //     headers: headers,
+    //     data: JSON.stringify({
+    //         query: query,
+    //         variables: variables
+    //     })
+
+    // }
+
+    // try {
+    //     const response = await axios.post(`https://ckruger.instructure.com/api/graphql`, JSON.stringify({
+    //         query: query,
+    //         variables: variables
+    //     }), {
+    //         headers: {
+
+    //             'Authorization': `Bearer ${token}`,
+    //             'Content-Type': 'application/json'
+
+    //         }
+    //     });
+
+    //     console.log(response.data);
+    //     return response.data.data.course.assignmentsConnection.edges;
+    // } catch (error) {
+    //     console.log(error)
+    // }
+
+    const assignments = await getAssignments(domain, courseID, token);
+
+    const noSubmissionAssignments = assignments.filter(assignment => {
+        if (graded) {
+            if (!assignment.has_submitted_submissions) {
+                return assignment;
+            }
+        } else {
+            if (!assignment.graded_submissions_exist) {
+                return assignment;
+            }
+        }
+    });
 
 
-    // return noSubmissionAssignments;
+    return noSubmissionAssignments;
 }
 
 async function deleteNoSubmissionAssignments(domain, course, token, assignments) {
