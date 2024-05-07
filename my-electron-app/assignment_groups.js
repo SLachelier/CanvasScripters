@@ -46,7 +46,7 @@ async function getAssignmentGroups(domain, course, token) {
     let assignmentGroups = [];
     let nextPage = url;
 
-    console.log(nextPage);
+    //console.log(nextPage);
     while (nextPage) {
         try {
             const response = await axios.get(nextPage, {
@@ -56,11 +56,11 @@ async function getAssignmentGroups(domain, course, token) {
             });
             if (response.headers.get('link')) {
                 nextPage = pagination.getNextPage(response.headers.get('link'));
+                console.log(nextPage);
             } else {
                 nextPage = false;
+                console.log('No more assignment groups');
             }
-
-            console.log(nextPage);
 
             for (let group of response.data) {
                 assignmentGroups.push(group);
