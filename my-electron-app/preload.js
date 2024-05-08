@@ -24,9 +24,13 @@ contextBridge.exposeInMainWorld('axios', {
         return await ipcRenderer.invoke('axios:deleteConvos', data);
         // const result = await ipcRenderer.invoke('axios:deleteConvos', data, url);
     },
+    checkCommChannel: async (data) => {
+        console.log('inside preload checkCommChannel');
+        return await ipcRenderer.invoke('axios:getEmptyAssignmentGroups', data);
+    },
     getEmptyAssignmentGroups: async (data) => {
         console.log('inside preload getEmptyAssignmentGroups');
-        return await ipcRenderer.invoke('axios:getEmptyAssignmentGroups', data);
+        return await ipcRenderer.invoke('axios:checkCommChannel', data);
     },
     deleteEmptyAssignmentGroups: async (data) => {
         console.log('Inside axios:deleteEmptyAssignmentGroups');

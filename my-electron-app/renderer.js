@@ -24,6 +24,9 @@ endpointSelect.addEventListener('click', (e) => {
         case 'conversation-endpoints':
             conversationTemplate(e);
             break;
+        case 'commchannel-endpoints':
+            commChannelTemplate(e);
+            break;
 
         default:
             break;
@@ -634,9 +637,6 @@ async function conversationTemplate(e) {
         default:
             break;
     }
-
-
-
 };
 
 async function deleteConvos(e) {
@@ -1003,4 +1003,84 @@ function filterMessages(messages, myFilter) {
     });
 
     return filteredConversations;
+}
+
+async function commChannelTemplate(e) {
+    switch (e.target.id) {
+        case 'check-commchannel':
+            checkComm(e);
+            break;
+        case 'download-conversations-csv':
+            downloadConvos(e);
+            break;
+        case 'gc-between-users':
+            getConvos(e);
+            break;
+        default:
+            break;
+    }
+}
+
+function checkComm(e) {
+    const domain = document.querySelector('#domain');
+    const apiToken = document.querySelector('#token');
+    // const eHeader = document.createElement('div');
+    // eHeader.innerHTML = `<h3>${e.target.id}</h3>`;
+    const eContent = document.querySelector('#endpoint-content');
+    // eContent.append(eHeader);
+    eContent.innerHTML = `
+        <div>
+            <h3>Check email</h3>
+        </div>
+    `;
+
+    const eForm = document.createElement('form');
+    eForm.innerHTML = `
+            <div class="row">
+                <div class="mb-3">
+                    <div class="col-auto">
+                        <label for="region" class="form-label">Region: </label>
+                    </div>
+                    <div class="col-2">
+                        <select id="region" class="form-select" aria-label="Region info">
+                            <option value="IAD-PDX" selected>IAD/PDX</option>
+                            <option value="DUB">DUB</option>
+                            <option value="SYD">SYD</option>
+                            <option value="YUL">YUL</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <label for="email" class="form-label">Email: </label>
+                </div>
+                <div class="w-100"></div>
+                <div class="col-5">
+                    <input type="text" id="email" class="form-control">
+                </div>
+            </div>
+        <button type="button" class="btn btn-primary mt-3" id="email-check">Check</button>`
+
+    eContent.append(eForm);
+
+    const checkBtn = eContent.querySelector('button');
+    checkBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const data = {
+            domain: domain,
+            token: apiToken,
+            region: eContent.querySelector('#region').value,
+            email: eContent.querySelector('#email').value
+        }
+
+
+        const response = await window.axios.checkCommChannel(data);
+    })
+
+    // adding response container
+    const eResponse = document.createElement('div');
+    eResponse.id = "response-container";
+    eResponse.classList.add('mt-5');
+    eContent.append(eResponse);
 }

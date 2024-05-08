@@ -14,6 +14,7 @@ const assignments = require('./assignments');
 const { getPageViews } = require('./users');
 const { send } = require('process');
 const { deleteRequester } = require('./utilities');
+const { emailCheck } = require('./comm_channels');
 
 
 const createWindow = () => {
@@ -140,6 +141,12 @@ app.whenReady().then(() => {
 
         return result;
 
+    });
+
+    ipcMain.handle('axios:checkCommChannel', async (event, data) => {
+        console.log('inside axios:checkCommChannel');
+
+        const mainResponse = await emailCheck(data.domain, data.token, data.region, data.email);
     });
 
     ipcMain.handle('axios:getEmptyAssignmentGroups', async (event, data) => {
