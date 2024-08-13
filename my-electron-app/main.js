@@ -15,6 +15,7 @@ const { getPageViews } = require('./users');
 const { send } = require('process');
 const { deleteRequester } = require('./utilities');
 const { emailCheck } = require('./comm_channels');
+const { resetCourse } = require('./courses');
 
 
 const createWindow = () => {
@@ -222,6 +223,28 @@ app.whenReady().then(() => {
             console.log('no page views');
             return 'empty';
         }
+    });
+
+    ipcMain.handle('axios:resetCourses', async (event, data) => {
+        console.log('main.js > axios:resetCourses');
+
+        let responses = [];
+        for (let course of data.courses) {
+            const response = { course_id: course, status: 'success' };
+            try {
+                response.status = await resetCourse(data.domain, course, data.token);
+            } catch (error) {
+                console.error('Error in resetCourses: ', error);
+            }
+            if (response.status === 'success') {
+                console.log(course, ' reset');
+            } else {
+                console.log(course, ' failed');
+            }
+            responses.push(response);
+        };
+        console.log('Finished resetting courses');
+        return responses;
     });
 
     ipcMain.handle('csv:sendToCSV', async (event, data) => {

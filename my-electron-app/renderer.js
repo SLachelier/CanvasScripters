@@ -12,9 +12,6 @@ endpointSelect.addEventListener('click', (e) => {
     console.log('Parent element ', parentEl);
     console.dir(e.target);
     switch (parentEl) {
-        case 'course-endpoints':
-            courseTemplate(e);
-            break;
         case 'assignment-endpoints':
             assignmentTemplate(e);
             break;
@@ -27,16 +24,13 @@ endpointSelect.addEventListener('click', (e) => {
         case 'commchannel-endpoints':
             commChannelTemplate(e);
             break;
-
+        case 'course-endpoints':
+            courseTemplate(e);
+            break;
         default:
             break;
     }
 });
-
-function courseTemplate(e) {
-    // const eContent = document.querySelector('#endpoint-content');
-    // eContent.innerHTML = `${e.target.id} was clicked`;
-}
 
 function assignmentTemplate(e) {
     // const eContent = document.querySelector('#endpoint-content');
@@ -1076,6 +1070,75 @@ function checkComm(e) {
 
 
         const response = await window.axios.checkCommChannel(data);
+    })
+
+    // adding response container
+    const eResponse = document.createElement('div');
+    eResponse.id = "response-container";
+    eResponse.classList.add('mt-5');
+    eContent.append(eResponse);
+}
+
+function courseTemplate(e) {
+    switch (e.target.id) {
+        case 'reset-courses':
+            resetCourses(e);
+            break;
+        default:
+            break;
+    }
+}
+
+async function resetCourses(e) {
+    const domain = `https://${document.querySelector('#domain').value}`;
+    const apiToken = document.querySelector('#token').value;
+    const eContent = document.querySelector('#endpoint-content');
+
+    eContent.innerHTML = `
+        <div>
+            <h3>Reset Courses</h3>
+        </div>
+    `;
+
+    const eForm = document.createElement('form');
+
+
+    eForm.innerHTML = `
+            <div class="row">
+                <div class="mb-3">
+                    <div class="col-auto">
+                        <label for="reset-courses-area" class="form-label">Courses to be reset - useful when an Admin is needing to re-apply a template</label>
+                        <textarea class="form-control" id="reset-courses-area" rows="3"></textarea>
+                    </div>
+                </div>
+            </div>
+        <button type="button" class="btn btn-primary mt-3" id="resetBtn">Reset</button>`
+
+    eContent.append(eForm);
+
+    const resetBtn = eContent.querySelector('button');
+    resetBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const courses = eContent.querySelector('#reset-courses-area').value.split('\n').map(course => course.trim());
+        console.log('The courses to reset are: ', courses);
+
+        const data = {
+            domain: domain,
+            token: apiToken,
+            courses: courses
+        }
+
+        try {
+            const responses = await window.axios.resetCourses(data);
+
+            for (let response of responses) {
+                eContent.querySelector('#response-container').innerHTML += '<p>Course ID: ' + response.course_id + ' ' + response.status + '</p>';
+            }
+        } catch (error) {
+            console.log('Error: ', error);
+        }
     })
 
     // adding response container

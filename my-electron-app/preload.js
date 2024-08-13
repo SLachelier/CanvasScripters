@@ -61,6 +61,11 @@ contextBridge.exposeInMainWorld('axios', {
         console.log('preload.js > getPageViews');
 
         return await ipcRenderer.invoke('axios:getPageViews', data);
+    },
+    resetCourses: async (data) => {
+        console.log('preload.js > resetCourses');
+
+        return await ipcRenderer.invoke('axios:resetCourses', data);
     }
 });
 
