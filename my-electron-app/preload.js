@@ -26,11 +26,11 @@ contextBridge.exposeInMainWorld('axios', {
     },
     checkCommChannel: async (data) => {
         console.log('inside preload checkCommChannel');
-        return await ipcRenderer.invoke('axios:getEmptyAssignmentGroups', data);
+        return await ipcRenderer.invoke('axios:checkCommChannel', data);
     },
     getEmptyAssignmentGroups: async (data) => {
         console.log('inside preload getEmptyAssignmentGroups');
-        return await ipcRenderer.invoke('axios:checkCommChannel', data);
+        return await ipcRenderer.invoke('axios:getEmptyAssignmentGroups', data);
     },
     deleteEmptyAssignmentGroups: async (data) => {
         console.log('Inside axios:deleteEmptyAssignmentGroups');
