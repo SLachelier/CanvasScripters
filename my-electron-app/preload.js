@@ -1,11 +1,11 @@
 const { contextBridge, ipcRenderer } = require('electron');
 // const axios = require('axios');
 
-contextBridge.exposeInMainWorld('eAPI', {
-    onUpdateCounter: (callback) => ipcRenderer.on('update-counter', callback),
-    helloTest: (channel, data) => ipcMain.send(channel, data),
+// contextBridge.exposeInMainWorld('eAPI', {
+//     onUpdateCounter: (callback) => ipcRenderer.on('update-counter', callback),
+//     helloTest: (channel, data) => ipcMain.send(channel, data),
 
-});
+// });
 
 contextBridge.exposeInMainWorld('axios', {
     getConvos: async (data) => {
@@ -27,6 +27,10 @@ contextBridge.exposeInMainWorld('axios', {
     checkCommChannel: async (data) => {
         console.log('inside preload checkCommChannel');
         return await ipcRenderer.invoke('axios:checkCommChannel', data);
+    },
+    createAssignments: async (data) => {
+        console.log('inside preload createAssignments');
+        return await ipcRenderer.invoke('axios:createAssignments', data);
     },
     getEmptyAssignmentGroups: async (data) => {
         console.log('inside preload getEmptyAssignmentGroups');
