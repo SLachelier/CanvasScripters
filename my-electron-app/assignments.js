@@ -18,9 +18,11 @@ const { deleteRequester } = require('./utilities.js');
 //const qAsker = questionAsker.questionDetails;
 // const axios = config.instance;
 
-async function createAssignments(course, number) {
+async function createAssignments(data) {
 
-    console.log(`Creating ${number} assignment(s)`);
+    console.log('The data', data);
+
+    // console.log(`Creating ${number} assignment(s)`);
     // let url = `courses/${course}/assignments`;
     // const data = {
     //     assignment: {
@@ -71,14 +73,18 @@ async function createAssignments(course, number) {
     //
     //********************************************
 
-    const createAssignmentMutation = `mutation createAssignments($courseId: ID!,$name: String!) {
+    const createAssignmentMutation = `mutation createAssignments($courseId: ID!,$name: String!, $submissionTypes: [SubmissionType!], $gradingType: GradingType, $pointsPossible: Float, $state: AssignmentState, $peerReviews: Boolean, $anonymous: Boolean) {
         createAssignment(input: {
             courseId: $courseId,
             name: $name,
-            description: "This is the description",
-            pointsPossible: 5,
-            gradingType: points,
-            submissionTypes: online_upload
+            description: "I'm a cool description",
+            pointsPossible: $pointsPossible,
+            gradingType: $gradingType,
+            submissionTypes: $submissionTypes
+            state: $state,
+            anonymousGrading: $anonymous,
+            peerReviews: {enabled: $peerReviews},
+            postToSis: false
         }) {
             assignment {
                 _id
@@ -91,18 +97,32 @@ async function createAssignments(course, number) {
     }`
 
     const mutationVariables = {
-        "courseId": course,
-        "name": `Assignment `
+        "courseId": data.course,
+        "name": `Assignment `,
+        "submissionTypes": data.submissionTypes,
+        "gradingType": data.grade_type,
+        "pointsPossible": data.points,
+        "state": data.publish,
+        "peerReviews": data.peer_reviews,
+        "anonymous": data.anonymous
     };
 
-    const response = await axios.post('https://ckruger.instructure.com/api/graphql', {
-        query: createAssignmentMutation,
-        variables: mutationVariables
-    });
+    try {
+        const response = await axios.post(`https://${data.domain}/api/graphql`, {
+            query: createAssignmentMutation,
+            variables: mutationVariables
+        }, {
+            headers: {
+                'Content-Type': 'application/json',
+                'authorization': `Bearer ${data.token}`
+            }
+        });
 
-    const data = await response.data;
-
-    console.log(data);
+        return true;
+    } catch (error) {
+        console.log(error);
+        return false;
+    }
 }
 
 async function getAssignments(domain, courseID, token) {
