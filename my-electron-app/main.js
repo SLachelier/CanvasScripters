@@ -150,6 +150,12 @@ app.whenReady().then(() => {
         const mainResponse = await emailCheck(data.domain, data.token, data.region, data.email);
     });
 
+    ipcMain.handle('axios:createAssignments', async (event, data) => {
+        console.log('inside axios:createAssignments');
+
+        const response = await assignments.createAssignments(data);
+        return response;
+    });
     ipcMain.handle('axios:getEmptyAssignmentGroups', async (event, data) => {
         console.log('Inside axios:getEmptyAssignmentGroups')
 
