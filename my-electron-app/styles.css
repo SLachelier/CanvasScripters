@@ -6,3 +6,20 @@
     border-bottom-width: 3px;
     border-bottom-style: solid;
 }
+
+.hidden {
+    visibility: hidden;
+    opacity: 0;
+    height: 0;
+}
+
+.visible {
+    visibility: visible;
+    opacity: 1;
+    transform: scale(1);
+    transition: opacity 0.5s linear;
+}
+
+.custom-select-width {
+    width: 25%;
+}
