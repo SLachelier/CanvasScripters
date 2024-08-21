@@ -15,6 +15,9 @@ endpointSelect.addEventListener('click', (e) => {
         case 'assignment-endpoints':
             assignmentTemplate(e);
             break;
+        case 'assignment-group-endpoints':
+            assignmentGroupTemplate(e);
+            break;
         case 'user-endpoints':
             userTemplate(e);
             break;
@@ -39,8 +42,10 @@ function assignmentTemplate(e) {
     switch (e.target.id) {
         case 'create-assignments':
             assignmentCreator();
+            break;
         case 'create-assignment-groups':
             assignmentGroupCreator();
+            break;
         case 'delete-empty-assignment-groups':
             emptyAssignmentGroups();
             break;
@@ -55,7 +60,9 @@ function assignmentTemplate(e) {
     }
 }
 
-// create html for empty Assignment group query
+// ****************************************************
+// Create Assignments -- NOT COMPLETE
+// ****************************************************
 function assignmentCreator() {
     let emptyGroups = [];
 
@@ -69,20 +76,82 @@ function assignmentCreator() {
     const eForm = document.createElement('form');
 
     eForm.innerHTML = `
-        <div class="row align-items-center">
-            <div class="col-auto">
-                <label class="form-label">Course</label>
+        <div class="row">
+            <div class="row align-items-center">
+                <div class="col-2">
+                    <label class="form-label">Course</label>
+                    <input id="course-id" type="text" class="form-control" aria-describedby="courseChecker" />
+                </div>
+                <div class="col-auto" >
+                    <span id="courseChecker" class="form-text" style="display: none;">Must only contain numbers</span>
+                </div>
+                <div class="col-2">
+                    <label class="form-label">How many</label>
+                    <input id="assignment-number" type="text" class="form-control" value="1">
+                </div>
+                <div class="col-2">
+                    <label class="form-label">Points</label>
+                    <input id="assignment-points" type="text" class="form-control" value="10">
+                </div>
+            </div>
+            <hr class="mt-2">
+            <div class="row">
+                <div>
+                    <h5>Assignment Settings</h5>
+                    <div class="col-auto form-check form-switch" >
+                        <input id="assignment-publish" class="form-check-input" type="checkbox" role="switch" checked>
+                        <label for="assignment-publish" class="form-check-label">Publish</label>
+                    </div>
+                    <div class="col-auto form-check form-switch" >
+                        <input id="assignment-peer" class="form-check-input" type="checkbox" role="switch">
+                        <label for="assignment-peer" class="form-check-label">Peer Reviews</label>
+                    </div>
+                    <div class="col-auto form-check form-switch" >
+                        <input id="assignment-anonymous" class="form-check-input" type="checkbox" role="switch">
+                        <label for="assignment-anonymous" class="form-check-label">Anonymous</label>
+                    </div>
+                    <div class="row justify-content-start align-items-baseline" >
+                        <label for="assignment-grade-type" class="form-label col-auto">Display Grade as</label>
+                        <select id="assignment-grade-type" class="form-select col-auto custom-select-width">
+                            <option value="points" selected>Points</option>
+                            <option value="percent">Percent</option>
+                            <option value="letter">Letter</option>
+                            <option value="gpa_scale">GPA Scale</option>
+                            <option value="pass_fail">Complete/Incomplete</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="submission-types">
+                    <h5>Submission Types</h5>
+                    <div class="col-auto form-check form-switch" >
+                        <label for="submission-none" class="form-label">No Submission</label>
+                        <input id="submission-none" class="form-check-input" type="checkbox" role="switch" />
+                    </div>
+                    <div class="col-auto form-check form-switch" >
+                        <label for="submission-on_paper" class="form-label">On Paper</label>
+                        <input id="submission-on_paper" class="form-check-input" type="checkbox" role="switch" />
+                    </div>
+                    <div class="col-auto form-check form-switch" >
+                        <label for="submission-online_upload" class="form-label">File Upload</label>
+                        <input id="submission-online_upload" class="form-check-input" type="checkbox" role="switch" checked/>
+                    </div>
+                    <div class="col-auto form-check form-switch" >
+                        <label for="submission-online_text_entry" class="form-label">Text Entry</label>
+                        <input id="submission-online_text_entry" class="form-check-input" type="checkbox" role="switch" />
+                    </div>
+                    <div class="col-auto form-check form-switch" >
+                        <label for="submission-online_url" class="form-label">Website URL</label>
+                        <input id="submission-online_url" class="form-check-input" type="checkbox" role="switch" />
+                    </div>
+                    <div class="col-auto form-check form-switch" >
+                        <label for="submission-media_recording" class="form-label">Media recording</label>
+                        <input id="submission-media_recording" class="form-check-input" type="checkbox" role="switch" />
+                    </div>
+                </div>
             </div>
             <div class="w-100"></div>
-            <div class="col-2">
-                <input id="course-id" type="text" class="form-control" aria-describedby="courseChecker" />
-            </div>
-            <div class="col-auto" >
-                <span id="courseChecker" class="form-text" style="display: none;">Must only contain numbers</span>
-            </div>
-            <div class="w-100"></div>
             <div class="col-auto">
-                <button id="check-btn" class="btn btn-primary mt-3">Check</button>
+                <button id="create-btn" class="btn btn-primary mt-3">Create</button>
             </div>
         </div>
         <div id="response-container" class="mt-5">
@@ -90,6 +159,91 @@ function assignmentCreator() {
     `;
 
     eContent.append(eForm);
+
+    const submissionTypes = eForm.querySelector('#submission-types');
+
+    function uncheckAllSubmissions() {
+        submissionTypes.querySelector('#submission-none').checked = false;
+        submissionTypes.querySelector('#submission-on_paper').checked = false;
+        submissionTypes.querySelector('#submission-online_upload').checked = false;
+        submissionTypes.querySelector('#submission-online_text_entry').checked = false;
+        submissionTypes.querySelector('#submission-online_url').checked = false;
+        submissionTypes.querySelector('#submission-media_recording').checked = false;
+    }
+
+    function handleSubmissionTypes(e) {
+        if (e.target.id === 'submission-none' || e.target.id === 'submission-on_paper') {
+            uncheckAllSubmissions();
+            e.target.checked = true;
+        } else {
+            submissionTypes.querySelector('#submission-none').checked = false;
+            submissionTypes.querySelector('#submission-on_paper').checked = false;
+        }
+    }
+    submissionTypes.addEventListener('change', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        handleSubmissionTypes(e);
+    });
+
+    const createBtn = eForm.querySelector('#create-btn');
+    createBtn.addEventListener('click', async function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+
+        createBtn.disabled = true;
+        console.log('Inside renderer check');
+
+        const responseContainer = eContent.querySelector('#response-container');
+        const domain = document.querySelector('#domain');
+        const apiToken = document.querySelector('#token');
+
+        const checkedSubTypes = submissionTypes.querySelectorAll('input[type="checkbox"]:checked');
+        const checkedSubmissionTypes = Array.from(checkedSubTypes).map((subType) => {
+            return subType.id.split('-')[1];
+        });
+        console.log('checkedSubmissionTypes', checkedSubmissionTypes);
+
+
+        const courseID = document.querySelector('#course-id');
+        const assignmentNumber = document.querySelector('#assignment-number');
+        const assignmentPoints = document.querySelector('#assignment-points');
+        const publish = document.querySelector('#assignment-publish').checked;
+        const peerReviews = document.querySelector('#assignment-peer').checked;
+        const anonymous = document.querySelector('#assignment-anonymous').checked;
+        const gradeType = document.querySelector('#assignment-grade-type').value;
+        // const noSubmission = document.querySelector('#submission-none').checked;
+        // const onPaper = document.querySelector('#submission-on_paper').checked;
+        // const fileUpload = document.querySelector('#submission-upload').checked;
+        // const textEntry = document.querySelector('#submission-text').checked;
+        // const websiteURL = document.querySelector('#submission-url').checked;
+        // const mediaRecording = document.querySelector('#submission-media').checked;
+
+        const requestData = {
+            domain: domain.value.trim(),
+            token: apiToken.value.trim(),
+            course: courseID.value.trim(),
+            number: assignmentNumber.value.trim(),
+            points: parseInt(assignmentPoints.value.trim()),
+            publish: publish ? 'published' : 'unpublished',
+            peer_reviews: peerReviews,
+            anonymous: anonymous,
+            grade_type: gradeType,
+            submissionTypes: checkedSubmissionTypes
+        }
+
+        const assignments = await window.axios.createAssignments(requestData);
+        console.log('assignments', assignments);
+        if (assignments) {
+            responseContainer.innerHTML = 'Assignments created.';
+
+        } else {
+            responseContainer.innerHTML = 'Failed to create assignments.';
+
+        }
+        createBtn.disabled = false;
+    });
 }
 
 
@@ -511,6 +665,59 @@ function nonModuleAssignments() {
         }
 
     })
+}
+
+function assignmentGroupTemplate(e) {
+    switch (e.target.id) {
+        case 'create-assignment-groups':
+            assignmentGroupCreator();
+            break;
+        case 'delete-empty-assignment-groups':
+            emptyAssignmentGroups();
+            break;
+        default:
+            break;
+    }
+}
+
+
+// ****************************************************
+// Create Assignment Groups -- NOT COMPLETE
+// ****************************************************
+function assignmentGroupCreator() {
+    let emptyGroups = [];
+
+    const eContent = document.querySelector('#endpoint-content');
+    eContent.innerHTML = `
+        <div>
+            <h3>Create Assignment Groups</h3>
+        </div>
+    `;
+
+    const eForm = document.createElement('form');
+
+    eForm.innerHTML = `
+        <div class="row align-items-center">
+            <div class="col-auto">
+                <label class="form-label">Course</label>
+            </div>
+            <div class="w-100"></div>
+            <div class="col-2">
+                <input id="course-id" type="text" class="form-control" aria-describedby="courseChecker" />
+            </div>
+            <div class="col-auto" >
+                <span id="courseChecker" class="form-text" style="display: none;">Must only contain numbers</span>
+            </div>
+            <div class="w-100"></div>
+            <div class="col-auto">
+                <button id="check-btn" class="btn btn-primary mt-3">Check</button>
+            </div>
+        </div>
+        <div id="response-container" class="mt-5">
+        </div>
+    `;
+
+    eContent.append(eForm);
 }
 
 function userTemplate(e) {
@@ -1084,6 +1291,9 @@ function courseTemplate(e) {
         case 'reset-courses':
             resetCourses(e);
             break;
+        case 'create-support-course':
+            createSupportCourse(e);
+            break;
         default:
             break;
     }
@@ -1146,4 +1356,174 @@ async function resetCourses(e) {
     eResponse.id = "response-container";
     eResponse.classList.add('mt-5');
     eContent.append(eResponse);
+}
+
+async function createSupportCourse(e) {
+    const domain = `https://${document.querySelector('#domain').value}`;
+    const apiToken = document.querySelector('#token').value;
+    const eContent = document.querySelector('#endpoint-content');
+
+    eContent.innerHTML = `
+        <div>
+            <h3>Create Support Course</h3>
+        </div>
+    `;
+
+    const eForm = document.createElement('form');
+
+    eForm.innerHTML = `
+            <div class="row">
+                <div class="mb-3">
+                    <div class="col-6">
+                        <label for="course-name" class="form-label">Course name</label>
+                        <input type="text" class="form-control" id="course-name">
+                    </div>
+                    <div class="col-auto form-check form-switch">
+                        <label for="course-publish" class="form-label">Publish</label>
+                        <input type="checkbox" class="form-check-input" role="switch" id="course-publish">
+                    </div>
+                    <div class="col-auto form-check form-switch">
+                        <label for="course-blueprint" class="form-label">Blueprint</label>
+                        <input type="checkbox" class="form-check-input" role="switch" id="course-blueprint">
+                    </div>
+                    <div class="col-auto form-check form-switch">
+                        <label for="course-add-users" class="form-label">Add Users</label>
+                        <input type="checkbox" class="form-check-input" role="switch" id="course-add-users">
+                    </div>
+                    <div id="add-users-div" class="row hidden">
+                        <div class="col-2">
+                            <label for="course-add-students" class="form-label">Students</label>
+                            <input type="text" class="form-control" role="switch" id="course-add-students">
+                        </div>
+                        <div class="col-2">
+                            <label for="course-add-teachers" class="form-label">Teachers</label>
+                            <input type="text" class="form-control" role="switch" id="course-add-teachers">
+                        </div>
+                    </div>
+                    <div class="col-auto form-check form-switch">
+                        <label for="course-assignments" class="form-label">Add Assignments</label>
+                        <input type="checkbox" class="form-check-input" role="switch" id="course-assignments">
+                    </div>
+                    <div id="add-assignments-div" class="row hidden">
+                        <div class="col-2">
+                            <label for="course-add-assignments" class="form-label">How many</label>
+                            <input type="text" class="form-control" role="switch" id="course-add-assignments">
+                        </div>
+                    </div>
+                    <div class="col-auto form-check form-switch">
+                        <label for="course-add-cq" class="form-label">Add Classic Quizzes</label>
+                        <input type="checkbox" class="form-check-input" role="switch" id="course-add-cq">
+                    </div>
+                    <div class="col-auto form-check form-switch">
+                        <label for="course-add-nq" class="form-label">Add New Quizzes</label>
+                        <input type="checkbox" class="form-check-input"  role="switch" id="course-add-nq">
+                    </div>
+                    <div class="col-auto form-check form-switch">
+                        <label for="course-add-discussions" class="form-label">Add Discussions</label>
+                        <input type="checkbox" class="form-check-input"  role="switch" id="course-add-discussions">
+                    </div>
+                    <div class="col-auto form-check form-switch">
+                        <label for="course-add-pages" class="form-label">Add Pages</label>
+                        <input type="checkbox" class="form-check-input"  role="switch" id="course-add-pages">
+                    </div>
+                    <div class="col-auto form-check form-switch">
+                        <label for="course-add-modules" class="form-label">Add Modules</label>
+                        <input type="checkbox" class="form-check-input"  role="switch" id="course-add-modules">
+                    </div>
+                    <div class="col-auto form-check form-switch">
+                        <label for="course-add-sections" class="form-label">Add Sections</label>
+                        <input type="checkbox" class="form-check-input"  role="switch" id="course-add-sections">
+                    </div>
+                    <div class="col-auto form-check form-switch">
+                        <label for="course-submissions" class="form-label">Create Submissions</label>
+                        <input type="checkbox" class="form-check-input"  role="switch" id="course-submissions">
+                    </div>
+                </div>
+            </div>
+        <button type="button" class="btn btn-primary mt-3" id="createBtn">Create</button>`
+
+    eContent.append(eForm);
+
+    // currently disabled features
+    eContent.querySelector('#course-blueprint').disabled = true;
+
+    const addUsersToggle = eContent.querySelector('#course-add-users');
+    addUsersToggle.addEventListener('change', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const addUsersDiv = eContent.querySelector('#add-users-div');
+        if (e.target.checked) {
+            addUsersDiv.classList.remove('hidden');
+            addUsersDiv.classList.add('visible');
+        } else {
+            addUsersDiv.classList.remove('visible');
+            addUsersDiv.classList.add('hidden');
+        }
+    });
+
+    function checkIfEnabled() {
+        const addUsersDiv = eContent.querySelector('#add-users-div');
+        if (addUsersToggle.checked) {
+            addUsersDiv.classList.remove('hidden');
+            addUsersDiv.classList.add('visible');
+        } else {
+            addUsersDiv.classList.remove('visible');
+            addUsersDiv.classList.add('hidden');
+        }
+    }
+
+    const createBtn = eContent.querySelector('button');
+    createBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const courseName = eContent.querySelector('#course-name').value;
+        const coursePublishChbx = eContent.querySelector('#course-publish').checked;
+        const courseBlueprintChbx = eContent.querySelector('#course-blueprint').checked;
+        const courseAddUsersChbx = eContent.querySelector('#course-add-users').checked;
+        const courseAddAssignmentsChbx = eContent.querySelector('#course-add-assignments').checked;
+        const courseAddCQChbx = eContent.querySelector('#course-add-cq').checked;
+        const courseAddNQChbx = eContent.querySelector('#course-add-nq').checked;
+        const courseAddDiscussionsChbx = eContent.querySelector('#course-add-discussions').checked;
+        const courseAddPagesChbx = eContent.querySelector('#course-add-pages').checked;
+        const courseAddModulesChbx = eContent.querySelector('#course-add-modules').checked;
+        const courseAddSectionsChbx = eContent.querySelector('#course-add-sections').checked;
+        const courseSubmissionsChbx = eContent.querySelector('#course-submissions').checked;
+
+
+
+
+        const data = {
+            domain: domain,
+            token: apiToken,
+            course: {
+                name: courseName,
+                publish: coursePublishChbx,
+                blueprint: courseBlueprintChbx,
+                addUsers: courseAddUsersChbx,
+                addAssignments: courseAddAssignmentsChbx,
+                addCQ: courseAddCQChbx,
+                addNQ: courseAddNQChbx,
+                addDiscussions: courseAddDiscussionsChbx,
+                addPages: courseAddPagesChbx,
+                addModules: courseAddModulesChbx,
+                addSections: courseAddSectionsChbx,
+                submissions: courseSubmissionsChbx
+            }
+        }
+
+        console.log('The data is: ', data);
+
+        try {
+            const response = await window.axios.createSupportCourse(data);
+            eContent.querySelector('#response-container').innerHTML = '<p>Course ID: ' + response.course_id + ' ' + response.status + '</p>';
+        } catch (error) {
+            console.log('Error: ', error);
+        }
+    })
+
+    // adding response container
+    const eResponse = document.createElement('div');
+    eResponse.id = "response";
 }
