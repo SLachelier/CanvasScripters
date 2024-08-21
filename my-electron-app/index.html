@@ -77,14 +77,6 @@
                                         class="list-group-item list-group-item-action border-start-0 border-end-0">
                                         Create Assignments
                                     </button>
-                                    <button id="create-assignment-groups"
-                                        class="list-group-item list-group-item-action border-start-0 border-end-0">
-                                        Create Assignment Groups
-                                    </button>
-                                    <button id="delete-empty-assignment-groups"
-                                        class="list-group-item list-group-item-action border-start-0 border-end-0">
-                                        Delete empty Assignment Groups
-                                    </button>
                                     <button id="delete-nosubmission-assignments"
                                         class="list-group-item list-group-item-action border-start-0 border-end-0">
                                         Delete assignments without
@@ -93,6 +85,33 @@
                                     <button id="delete-nonmodule-assignments"
                                         class="list-group-item list-group-item-action border-start-0 border-end-0">
                                         Delete Assignments not in Modules
+                                    </button>
+                                    <button disabled id="move-assignments"
+                                        class="list-group-item list-group-item-action border-start-0 border-end-0">
+                                        Move assignments to a single group
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#assignment_groups" aria-expanded="false"
+                                aria-controls="assignment_groups">
+                                Assignment Groups
+                            </button>
+                        </h2>
+                        <div id="assignment_groups" class="accordion-collapse collapse">
+                            <div class="accordion-body">
+                                <div id="assignment-group-endpoints" class="list-group">
+                                    <button id="create-assignment-groups"
+                                        class="list-group-item list-group-item-action border-start-0 border-end-0">
+                                        Create Assignment Groups
+                                    </button>
+                                    <button id="delete-empty-assignment-groups"
+                                        class="list-group-item list-group-item-action border-start-0 border-end-0">
+                                        Delete empty Assignment Groups
                                     </button>
                                 </div>
                             </div>
@@ -182,6 +201,10 @@
                                     <button id="reset-courses"
                                         class="list-group-item list-group-item-action border-start-0 border-end-0">
                                         Reset Courses
+                                    </button>
+                                    <button id="create-support-course"
+                                        class="list-group-item list-group-item-action border-start-0 border-end-0">
+                                        Create Support Courses
                                     </button>
                                 </div>
                             </div>
