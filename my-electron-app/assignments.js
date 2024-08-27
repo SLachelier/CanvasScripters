@@ -20,9 +20,9 @@ const { deleteRequester } = require('./utilities.js');
 
 async function createAssignments(data) {
 
-    console.log('The data', data);
+    // console.log('The data', data);
 
-    // console.log(`Creating ${number} assignment(s)`);
+    console.log(`Creating ${data.number} assignment(s)`);
     // let url = `courses/${course}/assignments`;
     // const data = {
     //     assignment: {
@@ -318,6 +318,95 @@ async function deleteNoSubmissionAssignments(domain, course, token, assignments)
     // console.log(`Deleted ${deleteCounter} assignment(s) in ${Math.floor(endTime - startTime) / 1000} seconds`);
 }
 
+async function getUnpublishedAssignments(domain, course, token) {
+    console.log('Getting unpublished assignments');
+
+    let query = `query getUnpublishedAssignments($courseId: ID, $nextPage: String) { 
+        course(id: $courseId) {
+            assignmentsConnection(first: 500, after: $nextPage) {
+                nodes {
+                    name
+                    _id
+                    published
+                },
+                pageInfo {
+                    endCursor,
+                    hasNextPage
+                }
+            }
+        }
+    }`;
+
+    let variables = {
+        "courseId": course,
+        "nextPage": ""
+    };
+
+    const axiosConfig = {
+        method: 'post',
+        url: `https://${domain}/api/graphql`,
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
+        data: {
+            query: query,
+            variables: variables
+        }
+    };
+
+    let next_page = true;
+    let assignments = [];
+    while (next_page) {
+        try {
+            const response = await axios(axiosConfig);
+            assignments.push(...response.data.data.course.assignmentsConnection.nodes);
+            if (response.data.data.course.assignmentsConnection.pageInfo.hasNextPage) {
+                variables.nextPage = response.data.data.course.assignmentsConnection.pageInfo.endCursor;
+            } else {
+                next_page = false;
+            }
+        } catch (error) {
+            console.log('There was an error', error.message);
+            return false;
+        }
+    }
+    let unPublishedAssignments = assignments.filter(assignment => {
+        if (!assignment.published) {
+            return assignment;
+        }
+    });
+
+    return unPublishedAssignments;
+
+    // const assignments = await getAssignments(domain, courseID, token);
+
+    // const unPublishedAssignments = assignments.filter(assignment => {
+    //     if (assignment.workflow_state !== 'published') {
+    //         return assignment;
+    //     }
+    // });
+
+    // return unPublishedAssignments;
+}
+
+// async function deleteUnPublishedAssignments(data) {
+//     console.log('Deleting unpublished assignments');
+//     const assignments = await getAssignments(data.domain, data.course, data.token);
+
+//     const unPublishedAssignments = assignments.filter(assignment => {
+//         if (assignment.workflow_state !== 'published') {
+//             return assignment;
+//         }
+//     });
+
+//     if (unPublishedAssignments.length === 0) {
+//         console.log('No unpublished assignments to delete');
+//         return { status: true, message: 'No unpublished assignments to delete' };
+//     } else {
+//         return await deleteRequester(unPublishedAssignments, `https://${data.domain}/api/v1/courses/${data.course}/assignments`, null, data.token);
+//     }
+// }
 // async function deleteAllAssignments(courseID, assignments) {
 //     //let assignments = await getAssignments(courseID);
 //     for (const assignment of assignments) {
@@ -473,5 +562,5 @@ async function getNonModuleAssignments(domain, courseID, token) {
 // }) ();
 
 module.exports = {
-    createAssignments, getAssignments, getNoSubmissionAssignments, deleteNoSubmissionAssignments, getNonModuleAssignments
+    createAssignments, getAssignments, getNoSubmissionAssignments, getUnpublishedAssignments, deleteNoSubmissionAssignments, getNonModuleAssignments
 }
