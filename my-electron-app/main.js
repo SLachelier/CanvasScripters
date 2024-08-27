@@ -21,7 +21,7 @@ const { resetCourse } = require('./courses');
 const createWindow = () => {
     const win = new BrowserWindow({
         width: 1080,
-        height: 720,
+        height: 900,
         minWidth: 900,
         webPreferences: {
             nodeIntegration: false,
@@ -153,9 +153,21 @@ app.whenReady().then(() => {
     ipcMain.handle('axios:createAssignments', async (event, data) => {
         console.log('inside axios:createAssignments');
 
-        const response = await assignments.createAssignments(data);
-        return response;
+        let success = 0;
+        let failed = 0;
+
+        for (let count = 0; count < data.number; count++) {
+            try {
+                const response = await assignments.createAssignments(data);
+                success++;
+            } catch (error) {
+                console.error('Error in createAssignments: ', error);
+                failed++;
+            }
+        }
+        return { success: success, failed: failed };
     });
+
     ipcMain.handle('axios:getEmptyAssignmentGroups', async (event, data) => {
         console.log('Inside axios:getEmptyAssignmentGroups')
 
@@ -187,6 +199,19 @@ app.whenReady().then(() => {
         const result = await assignments.deleteNoSubmissionAssignments(data.domain, data.course, data.token, data.assignments);
 
         return result;
+    });
+
+    ipcMain.handle('axios:getUnpublishedAssignments', async (event, data) => {
+        console.log('main.js > axios:getUnpublishedAssignments');
+
+        try {
+            const results = await assignments.getUnpublishedAssignments(data.domain, data.course, data.token);
+
+            return results;
+        } catch (error) {
+            console.error('Error in getUnpublishedAssignments: ', error);
+            return false;
+        }
     });
 
     ipcMain.handle('axios:getNonModuleAssignments', async (event, data) => {
