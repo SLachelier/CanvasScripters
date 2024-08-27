@@ -52,7 +52,7 @@ async function createRequester(method, url, params, num, endpoint) {
         console.log('Processed requests');
         // after processing the requests wait for 2 seconds to all the 
         // api rate limit to calm down before doing any more requests
-        holdPlease(waitTime);
+        await holdPlease(waitTime);
         // reset the requests array and lower loop value by 1
         requests = [];
         loops--;
@@ -98,16 +98,42 @@ async function createRequester(method, url, params, num, endpoint) {
 }
 
 async function deleteRequester(content, baseURL, afterID = null, token) {
+    console.log('Inside deleteRequester');
     // content = array of conversations
     // baseURL = /converations
-    let apiLimit = 35;
+    const results = await deleteItems(content, baseURL, afterID, token);
+    let counter = 0;
+    while (results.failed.length > 0 && counter < 3) {
+        console.log('Some requests failed, trying again...');
+        await holdPlease(2000);
+
+        const retryResults = await deleteItems(results.failed, baseURL, afterID, token);
+
+        // compare the retryResults and add any successful deletes to the original results and remove from timedOut
+        retryResults.successful.forEach((result) => {
+            results.successful.push(result);
+            results.failed = results.failed.filter((item) => {
+                return item.id != result.id;
+            });
+        });
+        counter++;
+    }
+    return results;
+}
+
+async function deleteItems(content, baseURL, afterID, token) {
+    console.log('Inside deleteItems');
+
+    let apiLimit = 200;
     let waitTime = 2000;
     let loops = Math.floor(content.length / apiLimit);
     let requests = [];
+    const results = [];
     let index = 0;
 
 
     while (loops > 0) {
+        console.log('Inside while');
         for (let i = 0; i < apiLimit; i++) {
             let myURL = `${baseURL}/${content[index].id}`;
             if (afterID !== null)
@@ -123,12 +149,12 @@ async function deleteRequester(content, baseURL, afterID = null, token) {
             index++;
         }
         try {
-            const results = await Promise.allSettled(requests);
-            for (let result of results) {
-                console.log(result);
-            }
+            results.push(...await Promise.allSettled(requests));
+            // for (let result of results) {
+            //     console.log(result);
+            // }
             console.log('Processed requests');
-            holdPlease(waitTime);
+            await holdPlease(waitTime);
             requests = [];
             loops--;
         } catch (error) {
@@ -152,23 +178,64 @@ async function deleteRequester(content, baseURL, afterID = null, token) {
         index++;
     }
     try {
-        const results = await Promise.allSettled(requests);
-        for (let result of results) {
-            if (result.status === 'rejected') {
-                throw new Error(`There was an error trying to delete ${result.reason.response.request.path}: ${result.reason.response.status} ${result.reason.response.statusText} ${JSON.stringify(result.reason.response.data.errors[0])}`);
-            }
-        }
+        results.push(...await Promise.allSettled(requests));
+        // for (let result of results) {
+        //     if (result.status === 'rejected') {
+        //         throw new Error(`There was an error trying to delete ${result.reason.response.request.path}: ${result.reason.response.status} ${result.reason.response.statusText} ${JSON.stringify(result.reason.response.data.errors[0])}`);
+        //     }
+        // }
         console.log('Done');
 
-        return { status: true, message: 'success' };
+        // return { status: true, message: 'success' };
     } catch (error) {
         // console.log('There was an error');
         console.log(error.message);
         return { status: false, message: error.message };
     }
-}
 
+    // checking for successful requests and mapping them to a new array
+    const successful = results.filter((result) => {
+        if (result.status === 'fulfilled') {
+            return result;
+        }
+    }).map((result) => {
+        return {
+            status: result.status,
+            id: result.value.data.id
+        }
+    });
+
+    // checking for failed requests and mapping them to a new array
+    const failed = results.filter((result) => {
+        if (result.status === 'rejected') {
+            return result
+        }
+    }).map((result) => {
+        return {
+            status: result.status,
+            reason: result.reason.message,
+            id: result.reason.config.url.split('/').pop()
+        }
+    });
+
+    // checking for requests that timed out and mapping them to a new array
+    // const timedOut = failed.filter((result) => {
+    //     if (result.reason.match(/403/)) {
+    //         console.log('Matched: ', result.id);
+    //         return result;
+    //     }
+    // });
+
+    reMappedResults = {
+        successful: successful,
+        failed: failed
+    }
+
+    return reMappedResults;
+
+}
 function holdPlease(ms) {
+    console.log('Holding...');
     return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
