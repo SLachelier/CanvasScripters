@@ -51,6 +51,11 @@ contextBridge.exposeInMainWorld('axios', {
 
         return await ipcRenderer.invoke('axios:deleteNoSubmissionAssignments', data);
     },
+    getUnpublishedAssignments: async (data) => {
+        console.log('preload > getUnpublishedAssignments');
+
+        return await ipcRenderer.invoke('axios:getUnpublishedAssignments', data);
+    },
     getNonModuleAssignments: async (data) => {
         console.log('preload > deleteNonModuleAssignments');
 
