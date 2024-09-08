@@ -234,9 +234,56 @@ async function deleteItems(content, baseURL, afterID, token) {
     return reMappedResults;
 
 }
-function holdPlease(ms) {
+function waitFunc(ms) {
     console.log('Holding...');
     return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function errorCheck(request) {
+    try {
+        let newError;
+        const response = await request();
+        if (response.data.errors?.length > 0) {
+            newError = {
+                status: "Unknown",
+                message: response.data.errors[0].message.replace(':', '')
+            }
+            throw newError;
+        } else if (typeof response.data === 'string') {
+            if (response.data.match(/doctype/)) {
+                newError = {
+                    status: "Unknown",
+                    message: "No valid response, check your inputs."
+                };
+                throw newError;
+            }
+        }
+        return response;
+    } catch (error) {
+        console.log('there was an error');
+        if (error.code && error.code === 'ERR_TLS_CERT_ALTNAME_INVALID') {
+            newError = {
+                status: '',
+                message: `${error.code} - Check the domain to make sure it's valid.`
+            }
+            throw newError;
+        } else if (error.response?.status) {
+            const eStatus = error.response.status.toString();
+            switch (eStatus) {
+                case '401':
+                case '404':
+                    newError = {
+                        status: `${error.response.status} - ${error.response.statusText}`,
+                        message: error.message
+                    }
+                    throw newError;
+                default:
+                    throw new Error(`${error.response.status} - ${error.message}`);
+            }
+        } else {
+            throw new Error(`${error.status} - ${error.message}`);
+        }
+    }
 }
 
 async function getRegion() {
@@ -256,5 +303,5 @@ async function getRegion() {
 }
 
 module.exports = {
-    createRequester, deleteRequester, holdPlease, getRegion
+    createRequester, deleteRequester, waitFunc, getRegion, errorCheck
 };

@@ -30,7 +30,13 @@ contextBridge.exposeInMainWorld('axios', {
     },
     createAssignments: async (data) => {
         console.log('inside preload createAssignments');
+
         return await ipcRenderer.invoke('axios:createAssignments', data);
+
+    },
+    deleteAssignments: async (data) => {
+        console.log('inside preload deleteAssignments');
+        return await ipcRenderer.invoke('axios:deleteAssignments', data);
     },
     getEmptyAssignmentGroups: async (data) => {
         console.log('inside preload getEmptyAssignmentGroups');
@@ -44,7 +50,13 @@ contextBridge.exposeInMainWorld('axios', {
     getNoSubmissionAssignments: async (data) => {
         console.log('preload > getNoSubmissionAssignments');
 
-        return await ipcRenderer.invoke('axios:getNoSubmissionAssignments', data);
+        try {
+            const response = await ipcRenderer.invoke('axios:getNoSubmissionAssignments', data);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+
     },
     deleteNoSubmissionAssignments: async (data) => {
         console.log('preload > deleteNoSubmissionAssignments');
@@ -60,6 +72,21 @@ contextBridge.exposeInMainWorld('axios', {
         console.log('preload > deleteNonModuleAssignments');
 
         return await ipcRenderer.invoke('axios:getNonModuleAssignments', data);
+    },
+    getAssignmentsToMove: async (data) => {
+        console.log('preload > getAssignmentsToMove');
+
+        return await ipcRenderer.invoke('axios:getAssignmentsToMove', data);
+    },
+    moveAssignmentsToSingleGroup: async (data) => {
+        console.log('preload > moveAssignmentsToSingleGroup');
+
+        return await ipcRenderer.invoke('axios:moveAssignmentsToSingleGroup', data);
+    },
+    createAssignmentGroups: async (data) => {
+        console.log('preload.js > createAssignmentGroups');
+
+        return await ipcRenderer.invoke('axios:createAssignmentGroups', data);
     },
     deleteTheThings: async (data) => {
         console.log('preload.js > deleteTheThings');
@@ -86,4 +113,8 @@ contextBridge.exposeInMainWorld('csv', {
 
         await ipcRenderer.invoke('csv:sendToCSV', data);
     }
+});
+
+contextBridge.exposeInMainWorld('progressAPI', {
+    onUpdateProgress: (callback) => ipcRenderer.on('update-progress', (_event, value) => callback(value))
 });

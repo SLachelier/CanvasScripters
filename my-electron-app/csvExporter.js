@@ -14,8 +14,12 @@ async function exportToCSV(data, filePath = 'MyCSV') {
     const headers = getHeaders(data[0]);
     //console.log(headers);
 
+    const reMappedHeaders = headers.map((header) => {
+        const lastIndex = header.lastIndexOf('>');
+        return header.slice(lastIndex + 1);
+    })
     //const writeStream = fs.createWriteStream('my_file.csv', { flag: 'a' });
-    wStream.write(headers.toString() + '\n');
+    wStream.write(reMappedHeaders.toString() + '\n');
 
     writeValues(data, headers);
     //console.log(values);

@@ -7,6 +7,7 @@ const pagination = require('./pagination.js');
 // const csvExporter = require('../csvExporter');
 
 const axios = require('axios');
+const { errorCheck } = require('./utilities.js');
 
 // let userData = {
 //     user: {
@@ -66,12 +67,18 @@ const axios = require('axios');
 //     return response.data;
 // }
 
-async function getPageViews(domain, token, user_id, startDate = null, endDate = null, pageNum = 1, dupPage = []) {
+async function getPageViews(data) {
+    const domain = data.domain;
+    const token = data.token;
+    const user_id = data.user;
+    const startDate = data.start;
+    const endDate = data.end;
+    const dupPage = [];
+    let pageNum = 1;
     let pageViews = [];
     // let myUrl = url;
     let nextPage = `https://${domain}/api/v1/users/${user_id}/page_views?start_time=${startDate}&end_time=${endDate}&per_page=100`;
     console.log(nextPage);
-
 
     while (nextPage) {
         console.log(`Getting page ${pageNum}`);
@@ -79,11 +86,16 @@ async function getPageViews(domain, token, user_id, startDate = null, endDate = 
         //     return await axios.get(nextPage);
         // });
         try {
-            const response = await axios.get(nextPage, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+            const request = async () => {
+                return await axios.get(nextPage, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+            }
+
+            const response = await errorCheck(request);
+
             pageViews.push(...response.data);
 
             if (response.headers.get('link')) {
@@ -100,9 +112,8 @@ async function getPageViews(domain, token, user_id, startDate = null, endDate = 
                     dupPage.push(nextPage);
                 }
             }
-
         } catch (error) {
-            return false;
+            throw error;
         }
     }
 

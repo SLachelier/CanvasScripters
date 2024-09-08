@@ -23,3 +23,7 @@
 .custom-select-width {
     width: 25%;
 }
+
+.error {
+    color: red;
+}

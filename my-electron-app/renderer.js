@@ -35,6 +35,12 @@ endpointSelect.addEventListener('click', (e) => {
     }
 });
 
+// ****************************************************
+//
+// Assignment Endpoints
+//
+// ****************************************************
+
 function assignmentTemplate(e) {
     // const eContent = document.querySelector('#endpoint-content');
     // eContent.innerHTML = `${e.target.id} was clicked`;
@@ -58,14 +64,14 @@ function assignmentTemplate(e) {
         case 'delete-nonmodule-assignments':
             nonModuleAssignments();
             break;
+        case 'move-assignments':
+            moveAssignmentsToSingleGroup();
+            break;
         default:
             break;
     }
 }
 
-// ****************************************************
-// Create Assignments -- NOT COMPLETE
-// ****************************************************
 function assignmentCreator() {
     let emptyGroups = [];
 
@@ -83,10 +89,10 @@ function assignmentCreator() {
             <div class="row align-items-center">
                 <div class="col-2">
                     <label class="form-label">Course</label>
-                    <input id="course-id" type="text" class="form-control" aria-describedby="courseChecker" />
+                    <input id="course-id" type="text" class="form-control" aria-describedby="input-checker" />
                 </div>
                 <div class="col-auto" >
-                    <span id="courseChecker" class="form-text" style="display: none;">Must only contain numbers</span>
+                    <span id="input-checker" class="form-text" style="display: none;">Must only contain numbers</span>
                 </div>
                 <div class="col-2">
                     <label class="form-label">How many</label>
@@ -154,10 +160,17 @@ function assignmentCreator() {
             </div>
             <div class="w-100"></div>
             <div class="col-auto">
-                <button id="create-btn" class="btn btn-primary mt-3">Create</button>
+                <button id="action-btn" class="btn btn-primary mt-3">Create</button>
             </div>
         </div>
-        <div id="response-container" class="mt-5">
+        <div hidden id="progress-div">
+            <p id="progress-info"></p>
+            <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                
+                <div class="progress-bar" style="width: 0%"></div>
+            </div>
+        </div>
+        <div id="response-container" class="mt-3">
         </div>
     `;
 
@@ -190,44 +203,46 @@ function assignmentCreator() {
         handleSubmissionTypes(e);
     });
 
-    const createBtn = eForm.querySelector('#create-btn');
+    const courseID = document.querySelector('#course-id');
+    checkCourseID(courseID, eContent);
+
+    const createBtn = eForm.querySelector('#action-btn');
     createBtn.addEventListener('click', async function (e) {
         e.stopPropagation();
         e.preventDefault();
 
         createBtn.disabled = true;
-        console.log('Inside renderer check');
 
+        // get values and inputs
         const responseContainer = eContent.querySelector('#response-container');
         const domain = document.querySelector('#domain');
         const apiToken = document.querySelector('#token');
-
         const checkedSubTypes = submissionTypes.querySelectorAll('input[type="checkbox"]:checked');
         const checkedSubmissionTypes = Array.from(checkedSubTypes).map((subType) => {
             return subType.id.split('-')[1];
         });
-        console.log('checkedSubmissionTypes', checkedSubmissionTypes);
-
-
-        const courseID = document.querySelector('#course-id');
-        const assignmentNumber = document.querySelector('#assignment-number');
+        const assignmentNumber = document.querySelector('#assignment-number').value.trim();
         const assignmentPoints = document.querySelector('#assignment-points');
         const publish = document.querySelector('#assignment-publish').checked;
         const peerReviews = document.querySelector('#assignment-peer').checked;
         const anonymous = document.querySelector('#assignment-anonymous').checked;
         const gradeType = document.querySelector('#assignment-grade-type').value;
-        // const noSubmission = document.querySelector('#submission-none').checked;
-        // const onPaper = document.querySelector('#submission-on_paper').checked;
-        // const fileUpload = document.querySelector('#submission-upload').checked;
-        // const textEntry = document.querySelector('#submission-text').checked;
-        // const websiteURL = document.querySelector('#submission-url').checked;
-        // const mediaRecording = document.querySelector('#submission-media').checked;
 
+        const progressDiv = eContent.querySelector('#progress-div');
+        const progressBar = progressDiv.querySelector('.progress-bar');
+        const progressInfo = eContent.querySelector('#progress-info');
+
+        // clean environment
+        progressDiv.hidden = false;
+        progressBar.style.width = '0%';
+        progressInfo.innerHTML = '';
+
+        // data to be used to create assignments
         const requestData = {
             domain: domain.value.trim(),
             token: apiToken.value.trim(),
             course: courseID.value.trim(),
-            number: assignmentNumber.value.trim(),
+            number: parseInt(assignmentNumber),
             points: parseInt(assignmentPoints.value.trim()),
             publish: publish ? 'published' : 'unpublished',
             peer_reviews: peerReviews,
@@ -236,153 +251,95 @@ function assignmentCreator() {
             submissionTypes: checkedSubmissionTypes
         }
 
-        const assignments = await window.axios.createAssignments(requestData);
-        console.log('assignments', assignments);
-        if (assignments.success > 0) {
-            responseContainer.innerHTML = `Successfully created ${assignments.success} assignments.`;
 
-        }
-        if (assignments.failed > 0) {
-            responseContainer.innerHTML += `Failed to create ${assignments.failed} assignments.`;
+        window.progressAPI.onUpdateProgress((progress) => {
+            progressBar.style.width = `${progress}%`;
+        });
 
+        try {
+            const createAssignmentResponse = await window.axios.createAssignments(requestData);
+            if (createAssignmentResponse.successful.length > 0) {
+                progressInfo.innerHTML = `Successfully created ${createAssignmentResponse.successful.length} assignments.`;
+            }
+            if (createAssignmentResponse.failed.length > 0) {
+                progressInfo.innerHTML += `Failed to create ${createAssignmentResponse.failed.length} assignments.`;
+                progressBar.parentElement.hidden = true;
+                errorHandler({ message: `${createAssignmentResponse.failed[0].reason}` }, progressInfo);
+                // for (let failure of createAssignmentResponse.failed) {
+                //     errorHandler({ message: `${failure.reason}` }, progressInfo);
+                // }
+                // <span class='error'>${createAssignmentResponse.failed[0].reason}.</span>;
+            }
+        } catch (error) {
+            progressBar.parentElement.hidden = true;
+            errorHandler(error, progressInfo);
+        } finally {
+            createBtn.disabled = false;
         }
-        createBtn.disabled = false;
+
+
+        // const assignments = { success: 0, failed: 0 };
+
+        // const createAssignment = async () => {
+        //     try {
+        //         // create assignments and returns true if successful and false if failed
+        //         const result = await window.axios.createAssignments(requestData);
+        //         if (result) {
+        //             assignments.success++;
+        //         } else {
+        //             assignments.failed++;
+        //         }
+        //     } catch (error) {
+        //         console.error('Error creating assignments', error);
+        //         assignments.failed++;
+        //     } finally {
+        //         updateProgress();
+        //     }
+        // }
+
+        // const totalRequests = parseInt(assignmentNumber);
+        // let completedRequests = 0;
+
+        // const updateProgress = () => {
+        //     completedRequests++;
+        //     progressBar.style.width = `${(completedRequests / totalRequests) * 100}%`;
+        // }
+
+        // const requests = [];
+        // for (let i = 0; i < totalRequests; i++) {
+        //     requests.push(createAssignment());
+        // }
+
+        // await Promise.allSettled(requests);
+        // console.log('All requests completed');
+        // progressBar.style.width = '100%'; // if for some reason the progress bar doesn't reach 100%
+
+        // // for (let i = 0; i < assignmentNumber; i++) {
+        // //     try {
+        // //         const result = await window.axios.createAssignments(requestData);
+        // //         if (result) {
+        // //             assignments.success++;
+        // //         } else {
+        // //             assignments.failed++;
+        // //         }
+        // //         progressBar.style.width = `${(i / assignmentNumber) * 100}%`;
+        // //     } catch (error) {
+        // //         console.error('Error creating assignments', error);
+        // //         assignments.failed++;
+        // //     }
+        // // }
+        // // progressBar.style.width = '100%';
+
+        // const progressInfo = eContent.querySelector('#progress-div p:first-of-type');
+        // if (assignments.success > 0) {
+        //     progressInfo.innerHTML = `Successfully created ${assignments.success} assignments.`;
+
+        // }
+        // if (assignments.failed > 0) {
+        //     responseContainer.innerHTML += `Failed to create ${assignments.failed} assignments.`;
+
+        // }
     });
-}
-
-
-function emptyAssignmentGroups() {
-    let emptyGroups = [];
-
-    const eContent = document.querySelector('#endpoint-content');
-    eContent.innerHTML = `
-        <div>
-            <h3>Delete Empty Assignment Groups</h3>
-        </div>
-    `;
-
-    const eForm = document.createElement('form');
-
-    eForm.innerHTML = `
-        <div class="row align-items-center">
-            <div class="col-auto">
-                <label class="form-label">Course</label>
-            </div>
-            <div class="w-100"></div>
-            <div class="col-2">
-                <input id="course-id" type="text" class="form-control" aria-describedby="courseChecker" />
-            </div>
-            <div class="col-auto" >
-                <span id="courseChecker" class="form-text" style="display: none;">Must only contain numbers</span>
-            </div>
-            <div class="w-100"></div>
-            <div class="col-auto">
-                <button id="check-btn" class="btn btn-primary mt-3">Check</button>
-            </div>
-        </div>
-        <div id="response-container" class="mt-5">
-        </div>
-    `;
-
-    eContent.append(eForm);
-
-    // const eResponse = document.createElement('div');
-    // eResponse.id = "response-container";
-    // eResponse.classList.add('mt-5');
-    // eContent.append(eResponse);
-
-    const checkBtn = eForm.querySelector('#check-btn');
-    checkBtn.addEventListener('click', async function (e) {
-        e.stopPropagation();
-        e.preventDefault();
-
-        checkBtn.disabled = true;
-        console.log('Inside renderer check');
-
-        const responseContainer = eContent.querySelector('#response-container');
-        const domain = document.querySelector('#domain');
-        const apiToken = document.querySelector('#token');
-        const courseID = document.querySelector('#course-id');
-
-        if (parseInt(courseID.value)) {
-            responseContainer.innerHTML = '<span>Checking...</span>'
-            document.querySelector('#courseChecker').style.display = 'none';
-            const requestData = {
-                domain: domain.value,
-                token: apiToken.value,
-                course: courseID.value
-            }
-            emptyGroups = await window.axios.getEmptyAssignmentGroups(requestData);
-            if (!emptyGroups) {
-                checkBtn.disabled = false;
-                responseContainer.innerHTML = 'Search Failed. Check domain, token or course id.';
-            } else {
-                checkBtn.disabled = false;
-                console.log('found emtpy groups', emptyGroups.length);
-
-                //const eContent = document.querySelector('#endpoint-content');
-                responseContainer.innerHTML = `
-                <div>
-                    <div class="row align-items-center">
-                        <div id="response-details" class="col-auto">
-                            <span>Found ${emptyGroups.length} empty assignment groups.</span>
-                        </div>
-
-                        <div class="w-100"></div>
-
-                        <div class="col-2">
-                            <button id="remove-btn" type="button" class="btn btn-danger">Remove</button>
-                        </div>
-                        <div class="col-2">
-                            <button id="cancel-btn" type="button" class="btn btn-secondary">Cancel</button>
-                        </div>
-                    </div>
-                </div>    
-            `;
-
-                const cancelBtn = document.querySelector('#cancel-btn');
-                cancelBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-
-                    courseID.value = '';
-                    responseContainer.innerHTML = '';
-                    checkBtn.disabled = false;
-                    //clearData(courseID, responseContent);
-                });
-
-                const removeBtn = document.querySelector('#remove-btn');
-                removeBtn.addEventListener('click', async (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-
-                    console.log('inside remove');
-                    const responseDetails = responseContainer.querySelector('#response-details');
-                    responseDetails.innerHTML = `Removing ${emptyGroups.length} assignment groups...`;
-
-                    const messageData = {
-                        url: `https://${domain.value}/api/v1/courses/${courseID.value}/assignment_groups`,
-                        token: apiToken.value,
-                        content: emptyGroups
-                    }
-
-                    //const result = await window.axios.deleteTheThings(messageData);
-                    const result = await window.axios.deleteEmptyAssignmentGroups(messageData);
-
-                    if (result) {
-                        responseDetails.innerHTML = `Successfully removed ${emptyGroups.length} assignment groups.`
-                    } else {
-                        responseDetails.innerHTML = 'Failed to remove assignment groups';
-                    }
-
-                });
-            }
-
-        } else {
-            document.querySelector('#courseChecker').style.display = 'inline';
-        }
-
-    })
 }
 
 function noSubmissionAssignments() {
@@ -406,17 +363,17 @@ function noSubmissionAssignments() {
             </div>
             <div class="w-100"></div>
             <div class="col-2">
-                <input id="course-id" type="text" class="form-control" aria-describedby="courseChecker" />
+                <input id="course-id" type="text" class="form-control" aria-describedby="input-checker" />
             </div>
             <div class="col-auto" >
-                <span id="courseChecker" class="form-text" style="display: none;">Must only contain numbers</span>
+                <span id="input-checker" class="form-text" style="display: none;">Must only contain numbers</span>
             </div>
             <div class="w-100"></div> 
             <div class="col-auto form-check form-switch mt-3 ms-3">
                 <input id="graded-submissions" class="form-check-input" type="checkbox" role="switch" />
                 <label for="graded-submissions" class="form-check-label">Delete assignments with grades</label>
                     <div id="graded-help" class="form-text">
-                        (otherwise this will only delete assignments with no submissions <em>AND</em> no grades)
+                        (otherwise this will check for assignments with no submissions <em>AND</em> no grades)
                     </div>
             </div>
             <div class="col-auto">
@@ -424,15 +381,28 @@ function noSubmissionAssignments() {
             </div>
             <div class="w-100"></div> 
             <div class="col-auto">
-                <button id="check-btn" class="btn btn-primary mt-3">Check</button>
+                <button id="action-btn" class="btn btn-primary mt-3">Check</button>
+            </div>
+        </div>
+        <div hidden id="progress-div">
+            <p id="progress-info"></p>
+            <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+
+                <div class="progress-bar" style="width: 0%"></div>
             </div>
         </div>
         <div id="response-container" class="mt-5">
         </div>
     `;
 
+
+
     eContent.append(eForm);
-    const checkBtn = eForm.querySelector('#check-btn');
+
+    const courseID = document.querySelector('#course-id');
+    checkCourseID(courseID, eContent);
+
+    const checkBtn = eForm.querySelector('#action-btn');
     checkBtn.addEventListener('click', async function (e) {
         e.stopPropagation();
         e.preventDefault();
@@ -444,98 +414,145 @@ function noSubmissionAssignments() {
         console.log('renderer > noSubmissionAssignments > check');
 
         const responseContainer = eContent.querySelector('#response-container');
-
         const domain = document.querySelector('#domain');
         const apiToken = document.querySelector('#token');
-        const courseID = document.querySelector('#course-id');
+        const progressDiv = eContent.querySelector('#progress-div');
+        const progressBar = progressDiv.querySelector('.progress-bar');
+        const progressInfo = eContent.querySelector('#progress-info');
 
-        if (parseInt(courseID.value)) {
-            responseContainer.innerHTML = '<span>Checking...</span>'
-            document.querySelector('#courseChecker').style.display = 'none';
-            const requestData = {
-                domain: domain.value.trim(),
-                token: apiToken.value.trim(),
-                course: courseID.value.trim(),
-                graded: gradedSubmissions
-            }
 
-            assignments = await window.axios.getNoSubmissionAssignments(requestData);
-            if (!assignments) {
-                checkBtn.disabled = false;
-                responseContainer.innerHTML = 'Search failed. Check domain, token or course id.';
+        // clean environment
+        responseContainer.innerHTML = '';
+        progressDiv.hidden = false;
+        progressBar.parentElement.hidden = true;
+        progressBar.style.width = '0%';
+        progressInfo.innerHTML = 'Checking...';
 
-            } else {
-                checkBtn.disabled = false;
-                console.log(`found ${assignments.length} assignments with no submissions`);
 
-                //const eContent = document.querySelector('#endpoint-content');
-                responseContainer.innerHTML = `
-                <div>
-                    <div class="row align-items-center">
-                        <div id="response-details" class="col-auto">
-                            <span>Found ${assignments.length} assignments with no submissions.</span>
-                        </div>
-
-                        <div class="w-100"></div>
-
-                        <div class="col-2">
-                            <button id="remove-btn" type="button" class="btn btn-danger">Remove</button>
-                        </div>
-                        <div class="col-2">
-                            <button id="cancel-btn" type="button" class="btn btn-secondary">Cancel</button>
-                        </div>
-                    </div>
-                </div>    
-            `;
-
-                const cancelBtn = document.querySelector('#cancel-btn');
-                cancelBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-
-                    courseID.value = '';
-                    responseContainer.innerHTML = '';
-                    checkBtn.disabled = false;
-                    //clearData(courseID, responseContent);
-                });
-
-                const removeBtn = document.querySelector('#remove-btn');
-                removeBtn.addEventListener('click', async (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-
-                    console.log('renderer > getNoSubmissionAssignments > removeBtn');
-                    const responseDetails = responseContainer.querySelector('#response-details');
-                    responseDetails.innerHTML = `Removing ${assignments.length} assignments...`;
-
-                    const assignmentIDs = assignments.map((assignment) => {
-                        return {
-                            name: assignment.name,
-                            id: assignment.id
-                        };
-                    });
-
-                    const messageData = {
-                        domain: domain.value,
-                        token: apiToken.value,
-                        course: courseID.value,
-                        assignments: assignmentIDs
-                    }
-
-                    const result = await window.axios.deleteNoSubmissionAssignments(messageData);
-                    if (result.status) {
-                        responseDetails.innerHTML = `<p>Successfully removed ${assignments.length} assignments without submissions.</p>`
-                    } else {
-                        responseDetails.innerHTML = `<p>Failed to remove assignments<p><p>${result.message}`;
-                    }
-
-                });
-            }
-
-        } else {
-            checkBtn.disabled = false;
-            document.querySelector('#courseChecker').style.display = 'inline';
+        const requestData = {
+            domain: domain.value.trim(),
+            token: apiToken.value.trim(),
+            course: courseID.value.trim(),
+            graded: gradedSubmissions
         }
+
+        let hasError = false;
+        try {
+            assignments = await window.axios.getNoSubmissionAssignments(requestData);
+            progressInfo.innerHTML = 'Done';
+        }
+        catch (error) {
+            errorHandler(error, progressInfo)
+            hasError = true;
+        } finally {
+            checkBtn.disabled = false;
+        }
+
+        if (!hasError) {
+            console.log(`found ${assignments.length} assignments with no submissions`);
+
+
+            //const eContent = document.querySelector('#endpoint-content');
+            let gradedText = gradedSubmissions ? 'no submissions.' : 'no submissions or grades.';
+            responseContainer.innerHTML = `
+                        <div>
+                            <div class="row align-items-center">
+                                <div id="response-details" class="col-auto">
+                                    <span>Found ${assignments.length} assignments with ${gradedText}</span>
+                                </div>
+
+                                <div class="w-100"></div>
+
+                                <div class="col-2">
+                                    <button id="remove-btn" type="button" class="btn btn-danger">Remove</button>
+                                </div>
+                                <div class="col-2">
+                                    <button id="cancel-btn" type="button" class="btn btn-secondary">Cancel</button>
+                                </div>
+                            </div>
+                        </div>    
+                    `;
+
+            const responseDetails = responseContainer.querySelector('#response-details');
+
+            const cancelBtn = document.querySelector('#cancel-btn');
+            cancelBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                courseID.value = '';
+                responseContainer.innerHTML = '';
+                checkBtn.disabled = false;
+                //clearData(courseID, responseContent);
+            });
+
+            const removeBtn = document.querySelector('#remove-btn');
+            removeBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                console.log('renderer > getNoSubmissionAssignments > removeBtn');
+
+                responseDetails.innerHTML = ``;
+                progressBar.parentElement.hidden = false;
+                progressInfo.innerHTML = `Removing ${assignments.length} assignments...`;
+
+                const assignmentIDs = assignments.map((assignment) => {
+                    return {
+                        name: assignment.name,
+                        id: assignment.id
+                    };
+                });
+
+                const messageData = {
+                    url: `https://${domain.value}/api/v1/courses/${courseID.value.trim()}/assignments`,
+                    token: apiToken.value,
+                    number: assignmentIDs.length,
+                    assignments: assignmentIDs
+                }
+
+                window.progressAPI.onUpdateProgress((progress) => {
+                    progressBar.style.width = `${progress}%`;
+                });
+
+                try {
+                    const deleteNoSubmissionASsignments = await window.axios.deleteAssignments(messageData);
+
+                    if (deleteNoSubmissionASsignments.successful.length > 0) {
+                        progressInfo.innerHTML = `Successfully removed ${deleteNoSubmissionASsignments.successful.length} assignments.`;
+                    }
+                    if (deleteNoSubmissionASsignments.failed.length > 0) {
+                        progressInfo.innerHTML = `Failed to remove ${deleteNoSubmissionASsignments.failed.length} assignments.`;
+                    }
+                } catch (error) {
+                    errorHandler(error, progressInfo)
+                } finally {
+                    checkBtn.disabled = false;
+                }
+            });
+        }
+
+        // console.error(error)
+        // const lastIndex = error.message.lastIndexOf(':');
+        // let errorInfo = '';
+        // const statusCode = error.message.match(/(?<=status code )[0-9]+/);
+        // if (statusCode) {
+        //     switch (statusCode[0]) {
+        //         case '404':
+        //             errorInfo = 'Check your inputs to make sure they\'re valid.';
+        //             break;
+        //         case '403':
+        //             errorInfo = 'Check to make sure you have permissions for the request and try again.';
+        //             break;
+        //         default:
+        //             errorInfo = 'Message Caleb and tell him to fix it.'
+        //             break;
+        //     }
+        // }
+        // responseContainer.innerHTML = `<p>There was an error: <span class="error">${error.message.slice(lastIndex + 1)}</span></p><p>${errorInfo}</p>`;
+        // checkBtn.disabled = false;
+
+
     });
 }
 
@@ -558,56 +575,74 @@ function unpublishedAssignments() {
             </div>
             <div class="w-100"></div>
             <div class="col-2">
-                <input id="course-id" type="text" class="form-control" aria-describedby="courseChecker" />
+                <input id="course-id" type="text" class="form-control" aria-describedby="input-checker" />
             </div>
             <div class="col-auto" >
-                <span id="courseChecker" class="form-text" style="display: none;">Must only contain numbers</span>
+                <span id="input-checker" class="form-text" style="display: none;">Must only contain numbers</span>
             </div>
             <div class="w-100"></div> 
             <div class="col-auto">
-                <button id="check-btn" class="btn btn-primary mt-3">Check</button>
+                <button id="action-btn" class="btn btn-primary mt-3">Check</button>
             </div>
         </div>
-        <div id="response-container" class="mt-5">
+        <div hidden id="progress-div">
+            <p id="progress-info"></p>
+            <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-bar" style="width: 0%"></div>
+            </div>
+        </div>
+        <div id="response-container" class="mt-3">
         </div>
     `;
 
     eContent.append(eForm);
 
-    const checkBtn = eForm.querySelector('#check-btn');
+
+    const courseID = document.querySelector('#course-id');
+    checkCourseID(courseID, eContent);
+
+    const checkBtn = eForm.querySelector('#action-btn');
     checkBtn.addEventListener('click', async function (e) {
         e.stopPropagation();
         e.preventDefault();
 
         checkBtn.disabled = true;
-        console.log('Inside renderer check');
-
-        const responseContainer = eContent.querySelector('#response-container');
-
         const domain = document.querySelector('#domain').value.trim();
         const apiToken = document.querySelector('#token').value.trim();
-        const courseID = document.querySelector('#course-id').value.trim();
+        const responseContainer = eContent.querySelector('#response-container');
+        const progressDiv = eContent.querySelector('#progress-div');
+        const progressBar = progressDiv.querySelector('.progress-bar');
+        const progressInfo = eContent.querySelector('#progress-info');
 
-        if (parseInt(courseID)) {
-            responseContainer.innerHTML = '<span>Checking...</span>'
-            document.querySelector('#courseChecker').style.display = 'none';
+        // clean environment
+        progressDiv.hidden = false;
+        progressBar.style.width = '0%';
+        progressBar.parentElement.hidden = true;
+        progressInfo.innerHTML = "Checking...";
 
-            const requestData = {
-                domain: domain,
-                token: apiToken,
-                course: courseID
-            }
+        const requestData = {
+            domain: domain,
+            token: apiToken,
+            course: courseID.value.trim()
+        }
 
+        let hasError = false;
+        try {
             assignments = await window.axios.getUnpublishedAssignments(requestData);
-            if (!assignments) {
-                checkBtn.disabled = false;
-                responseContainer.innerHTML = 'Search Failed. Check domain, token or course id.';
-            } else {
-                console.log('found assignments', assignments.length);
-                checkBtn.disabled = false;
+            progressInfo.innerHTML = 'Done';
+        } catch (error) {
+            errorHandler(error, progressInfo);
+            hasError = true;
+        } finally {
+            checkBtn.disabled = false;
+        }
 
-                //const eContent = document.querySelector('#endpoint-content');
-                responseContainer.innerHTML = `
+
+        if (!hasError) {
+            console.log('found assignments', assignments.length);
+
+            //const eContent = document.querySelector('#endpoint-content');
+            responseContainer.innerHTML = `
                 <div>
                     <div class="row align-items-center">
                         <div id="response-details" class="col-auto">
@@ -626,57 +661,176 @@ function unpublishedAssignments() {
                 </div>    
             `;
 
-                const cancelBtn = document.querySelector('#cancel-btn');
-                cancelBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
+            const responseDetails = responseContainer.querySelector('#response-details');
 
-                    courseID.value = '';
-                    responseContainer.innerHTML = '';
+            const cancelBtn = document.querySelector('#cancel-btn');
+            cancelBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                courseID.value = '';
+                responseContainer.innerHTML = '';
+                checkBtn.disabled = false;
+                //clearData(courseID, responseContent);
+            });
+
+            const removeBtn = document.querySelector('#remove-btn');
+            removeBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                console.log('inside remove');
+
+                // responseDetails.innerHTML = `Removing ${assignments.length} assignments...`;
+                responseDetails.innerHTML = ``;
+                progressInfo.innerHTML = `Deleting ${assignments.length} assignments...`;
+                progressBar.style.width = '0%';
+                progressBar.parentElement.hidden = false;
+
+
+                // remapping to only include the id from the graphql response
+                const assignmentIDs = assignments.map((assignment) => {
+                    return {
+                        id: assignment._id
+                    };
+                });
+
+                const messageData = {
+                    url: `https://${domain}/api/v1/courses/${courseID.value.trim()}/assignments`,
+                    token: apiToken,
+                    number: assignmentIDs.length,
+                    assignments: assignmentIDs
+                }
+
+                // const successful = [];
+                // const failed = [];
+
+
+                window.progressAPI.onUpdateProgress((progress) => {
+                    progressBar.style.width = `${progress}%`;
+                });
+
+                try {
+                    const deleteUnpublishedAssignments = await window.axios.deleteAssignments(messageData);
+                    if (deleteUnpublishedAssignments.successful.length > 0) {
+                        progressInfo.innerHTML = `Successfully removed ${deleteUnpublishedAssignments.successful.length} assignments.`;
+                    }
+                    if (deleteUnpublishedAssignments.failed.length > 0) {
+                        progressInfo.innerHTML = `Failed to remove ${deleteUnpublishedAssignments.failed.length} assignments.`;
+                    }
+                } catch (error) {
+                    errorHandler(error, progressInfo);
+                } finally {
                     checkBtn.disabled = false;
-                    //clearData(courseID, responseContent);
-                });
+                }
 
-                const removeBtn = document.querySelector('#remove-btn');
-                removeBtn.addEventListener('click', async (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
+                // const deleteUnpublishedAssignments = async (data) => {
+                //     try {
+                //         // const response = await window.axios.deleteTheThings(messageData);
+                //         const response = await window.axios.deleteAssignment(data);
+                //         return response;
+                //     } catch (error) {
+                //         console.error('Error deleting unpublished assignments', error);
+                //         throw error;
+                //     } finally {
+                //         updateProgress();
+                //     }
+                // }
 
-                    console.log('inside remove');
-                    const responseDetails = responseContainer.querySelector('#response-details');
-                    responseDetails.innerHTML = `Removing ${assignments.length} assignments...`;
+                //     const totalRequests = assignmentIDs.length;
+                //     let completedRequests = 0;
 
-                    const assignmentIDs = assignments.map((assignment) => {
-                        return {
-                            id: assignment._id
-                        };
-                    });
+                //     const updateProgress = () => {
+                //         completedRequests++;
+                //         progressBar.style.width = `${(completedRequests / totalRequests) * 50}%`;
+                //     }
 
-                    const messageData = {
-                        url: `https://${domain}/api/v1/courses/${courseID}/assignments`,
-                        token: apiToken,
-                        content: assignmentIDs
-                    }
-                    const response = await window.axios.deleteTheThings(messageData);
-                    const success = response.successful;
+                //     let requests = assignmentIDs.map(assignment => {
+                //         const messageDataCopy = { ...messageData, assignment: assignment.id };
+                //         return () => deleteUnpublishedAssignments(messageDataCopy);
+                //     });
 
-                    const failed = response.failed;
+                //     const processBatchRequests = async (requests, batchSize, timeDelay) => {
+                //         const results = [];
+                //         for (let i = 0; i < requests.length; i += batchSize) {
+                //             const batch = requests.slice(i, i + batchSize);
+                //             const batchResults = await Promise.allSettled(batch.map((request) => request()));
+                //             results.push(...batchResults);
+                //             if (i + batchSize < requests.length) {
+                //                 await waitFunc(timeDelay);
+                //             }
+                //         }
+                //         return results;
+                //     }
 
-                    if (success.length > 0) {
-                        responseDetails.innerHTML = `Successfully removed ${success.length} assignments.`
+                //     let counter = 0;
+                //     const finalResults = {
+                //         successful: [],
+                //         failed: []
+                //     }
 
-                    }
-                    if (failed.length > 0) {
-                        for (let fail of failed) {
-                            responseDetails.innerHTML += `<p>Failed to remove assignment: ${fail.id} "${fail.reason}"</p>`;
-                        }
-                    }
-                });
-            }
-        } else {
-            document.querySelector('#courseChecker').style.display = 'inline';
-            checkBtn.disabled = false;
+                //     // looping through the requests until all are successful or until 3 attempts
+                //     do {
+                //         const response = await processBatchRequests(requests, batchSize, timeDelay);
+
+                //         // checking for successful requests and mapping them to a new array
+                //         successful = response.filter((result) => {
+                //             if (result.status === 'fulfilled') {
+                //                 return result;
+                //             }
+                //         }).map((result) => {
+                //             return {
+                //                 status: result.status,
+                //                 id: result.value
+                //             }
+                //         });
+                //         finalResults.successful.push(...successful);
+
+                //         // checking for failed requests and mapping them to a new array
+                //         failed = response.filter((result) => {
+                //             if (result.status === 'rejected') {
+                //                 return result
+                //             }
+                //         }).map((result) => {
+                //             return {
+                //                 status: result.status,
+                //                 reason: result.reason.message,
+                //                 id: result.reason.config.url.split('/').pop()
+                //             }
+                //         });
+
+                //         // removing successful requests from the failed requests
+                //         finalResults.successful.forEach((success) => {
+                //             finalResults.failed = finalResults.failed.filter((fail) => {
+                //                 return fail.id != success.id;
+                //             });
+                //         });
+
+                //         requests = failed;
+                //         counter++;
+                //     } while (requests.length > 0 && counter < 3);
+
+
+                //     // await Promise.allSettled(requests);
+                //     progressBar.style.width = '100%';
+
+                //     if (finalResults.successful.length > 0) {
+                //         responseContainer.innerHTML = `Successfully removed ${finalResults.successful.length} assignments.`
+
+                //     }
+                //     if (finalResults.failed.length > 0) {
+                //         for (let fail of finalResults.failed) {
+                //             responseContainer.innerHTML += `<p>Failed to remove assignment: ${fail.id} "${fail.reason}"</p>`;
+                //         }
+                // }
+            });
         }
+
+
+        // } else {
+        //     document.querySelector('#courseChecker').style.display = 'inline';
+        //     checkBtn.disabled = false;
+        // }
     });
 }
 
@@ -684,6 +838,9 @@ function nonModuleAssignments() {
     let assignments = [];
 
     const eContent = document.querySelector('#endpoint-content');
+    // setHeader('Delete All Assignments Not in a Module', eContent);
+    // createForm('deleteNonModuleAssignments', eContent);
+
     eContent.innerHTML = `
         <div>
             <h3>Delete All Assignments Not in a Module</h3>
@@ -699,14 +856,21 @@ function nonModuleAssignments() {
             </div>
             <div class="w-100"></div>
             <div class="col-2">
-                <input id="course-id" type="text" class="form-control" aria-describedby="courseChecker" />
+                <input id="course" type="text" class="form-control" aria-describedby="input-checker" />
             </div>
             <div class="col-auto" >
-                <span id="courseChecker" class="form-text" style="display: none;">Must only contain numbers</span>
+                <span id="input-checker" class="form-text" style="display: none;">Must only contain numbers</span>
             </div>
             <div class="w-100"></div>
             <div class="col-auto">
-                <button id="check-btn" class="btn btn-primary mt-3">Check</button>
+                <button id="action-btn" class="btn btn-primary mt-3">Check</button>
+            </div>
+        </div>
+        <div hidden id="progress-div">
+            <p id="progress-info"></p>
+            <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+
+                <div class="progress-bar" style="width: 0%"></div>
             </div>
         </div>
         <div id="response-container" class="mt-5">
@@ -715,7 +879,12 @@ function nonModuleAssignments() {
 
     eContent.append(eForm);
 
-    const checkBtn = eForm.querySelector('#check-btn');
+    //checks for valid input in the course id field
+
+    const courseID = eContent.querySelector('#course');
+    checkCourseID(courseID, eContent);
+
+    const checkBtn = eForm.querySelector('#action-btn');
     checkBtn.addEventListener('click', async function (e) {
         e.stopPropagation();
         e.preventDefault();
@@ -726,28 +895,38 @@ function nonModuleAssignments() {
         const responseContainer = eContent.querySelector('#response-container');
         const domain = document.querySelector('#domain').value.trim();
         const apiToken = document.querySelector('#token').value.trim();
-        const courseID = document.querySelector('#course-id').value.trim();
+        const progressDiv = eContent.querySelector('#progress-div');
+        const progressBar = progressDiv.querySelector('.progress-bar');
+        const progressInfo = eContent.querySelector('#progress-info');
 
-        if (parseInt(courseID)) {
-            responseContainer.innerHTML = '<span>Checking...</span>'
-            document.querySelector('#courseChecker').style.display = 'none';
+        // clean environment
+        progressDiv.hidden = false;
+        progressBar.parentElement.hidden = true;
+        progressBar.style.width = '0%';
+        progressInfo.innerHTML = "Checking...";
 
-            const requestData = {
-                domain: domain,
-                token: apiToken,
-                course: courseID
-            }
+        const requestData = {
+            domain: domain,
+            token: apiToken,
+            course: courseID.value.trim()
+        }
 
+        let hasError = false;
+        try {
             assignments = await window.axios.getNonModuleAssignments(requestData);
-            if (!assignments) {
-                checkBtn.disabled = false;
-                responseContainer.innerHTML = 'Search Failed. Check domain, token or course id.';
-            } else {
-                console.log('found assignments', assignments.length);
-                checkBtn.disabled = false;
+            progressInfo.innerHTML = 'Done';
+        } catch (error) {
+            errorHandler(error, progressInfo);
+            hasError = true;
+        } finally {
+            checkBtn.disabled = false;
+        }
 
-                //const eContent = document.querySelector('#endpoint-content');
-                responseContainer.innerHTML = `
+        if (!hasError) {
+            console.log('found assignments', assignments.length);
+
+            //const eContent = document.querySelector('#endpoint-content');
+            responseContainer.innerHTML = `
                 <div>
                     <div class="row align-items-center">
                         <div id="response-details" class="col-auto">
@@ -766,51 +945,252 @@ function nonModuleAssignments() {
                 </div>    
             `;
 
-                const cancelBtn = document.querySelector('#cancel-btn');
-                cancelBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
+            const cancelBtn = document.querySelector('#cancel-btn');
+            cancelBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
 
-                    courseID.value = '';
-                    responseContainer.innerHTML = '';
-                    checkBtn.disabled = false;
-                    //clearData(courseID, responseContent);
+                courseID.value = '';
+                responseContainer.innerHTML = '';
+                checkBtn.disabled = false;
+                //clearData(courseID, responseContent);
+            });
+
+            const removeBtn = document.querySelector('#remove-btn');
+            removeBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                console.log('inside remove');
+
+                const responseDetails = responseContainer.querySelector('#response-details');
+                responseDetails.innerHTML = ``;
+
+                progressBar.parentElement.hidden = false;
+                progressInfo.innerHTML = `Removing ${assignments.length} assignments...`;
+
+                // const messageData = {
+                //     url: `https://${domain}/api/v1/courses/${courseID}/assignments`,
+                //     token: apiToken,
+                //     content: assignments
+                // }
+
+                const messageData = {
+                    url: `https://${domain}/api/v1/courses/${courseID.value.trim()}/assignments`,
+                    token: apiToken,
+                    number: assignments.length,
+                    assignments: assignments
+                }
+
+                window.progressAPI.onUpdateProgress((progress) => {
+                    progressBar.style.width = `${progress}%`;
                 });
 
-                const removeBtn = document.querySelector('#remove-btn');
-                removeBtn.addEventListener('click', async (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-
-                    console.log('inside remove');
-                    const responseDetails = responseContainer.querySelector('#response-details');
-                    responseDetails.innerHTML = `Removing ${assignments.length} assignments...`;
-
-                    const messageData = {
-                        url: `https://${domain}/api/v1/courses/${courseID}/assignments`,
-                        token: apiToken,
-                        content: assignments
+                try {
+                    const deleteNonModuleAssignments = await window.axios.deleteAssignments(messageData);
+                    if (deleteNonModuleAssignments.successful.length > 0) {
+                        progressInfo.innerHTML = `Successfully removed ${deleteNonModuleAssignments.successful.length} assignments.`;
                     }
-
-                    const result = await window.axios.deleteTheThings(messageData);
-                    if (result) {
-                        responseDetails.innerHTML = `Successfully removed ${assignments.length} assignments.`
-
-                    } else {
-                        responseDetails.innerHTML = 'Failed to remove assignments';
-
+                    if (deleteNonModuleAssignments.failed.length > 0) {
+                        progressInfo.innerHTML = `Failed to remove ${deleteNonModuleAssignments.failed.length} assignments.`;
                     }
+                } catch (error) {
+                    errorHandler(error, progressInfo);
+                } finally {
                     checkBtn.disabled = false;
-                });
-            }
-
-        } else {
-            document.querySelector('#courseChecker').style.display = 'inline';
-            checkBtn.disabled = false;
+                }
+            });
         }
-
     })
 }
+
+function moveAssignmentsToSingleGroup() {
+    console.log('renderer > moveAssignmentsToSingleGroup');
+
+    // create form
+    const eContent = document.querySelector('#endpoint-content');
+    eContent.innerHTML = `
+        <div>
+            <h3>Move Assignments to a Single Group</h3>
+        </div>
+    `;
+    // setHeader('Move Assignments to Single Group', eContent);
+    // createForm('moveAssignmentsToSingleGroup', eContent);
+
+    // find someway to generate the form
+
+    const eForm = document.createElement('form');
+    eForm.innerHTML = `
+        <div class="row align-items-center">
+            <div class="col-auto">
+                <label class="form-label">Course</label>
+            </div>
+            <div class="w-100"></div>
+            <div class="col-2">
+                <input id="course" type="text" class="form-control" aria-describedby="input-checker" />
+            </div>
+            <div class="col-auto" >
+                <span id="input-checker" class="form-text" style="display: none;">Must only contain numbers</span>
+            </div>
+            <div class="w-100"></div>
+            <div class="col-auto">
+                <button id="action-btn" class="btn btn-primary mt-3">Check</button>
+            </div>
+        </div>
+        <div hidden id="progress-div">
+            <p id="progress-info"></p>
+            <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+
+                <div class="progress-bar" style="width: 0%"></div>
+            </div>
+        </div>
+        <div id="response-container" class="mt-5">
+        </div>
+    `;
+
+    eContent.append(eForm);
+
+    // Objectives:
+    // 1. Get inputs
+    // 2. Get all assignments from a course
+    // 3. Get the first assignment group from the first assignment
+    // 4. Loop through all assignments and move them to the first assignment group
+
+    const courseID = document.querySelector('#course');
+    checkCourseID(courseID, eContent);
+
+    const checkBtn = eForm.querySelector('#action-btn');
+    checkBtn.addEventListener('click', async function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+
+        checkBtn.disabled = true;
+        console.log('Inside renderer check');
+
+        const responseContainer = eContent.querySelector('#response-container');
+        const domain = document.querySelector('#domain').value.trim();
+        const apiToken = document.querySelector('#token').value.trim();
+        const progressDiv = eContent.querySelector('#progress-div');
+        const progressBar = progressDiv.querySelector('.progress-bar');
+        const progressInfo = eContent.querySelector('#progress-info');
+
+        // clean environment
+        progressDiv.hidden = false;
+        progressBar.parentElement.hidden = true;
+        progressBar.style.width = '0%';
+        progressInfo.innerHTML = "Checking...";
+
+        const data = {
+            domain: domain,
+            token: apiToken,
+            course: courseID.value.trim()
+        }
+
+        let assignments = [];
+        let hasError = false;
+        try {
+            assignments = await window.axios.getAssignmentsToMove(data);
+            progressInfo.innerHTML = 'Done';
+        } catch (error) {
+            errorHandler(error, progressInfo);
+            hasError = true;
+        } finally {
+            checkBtn.disabled = false;
+
+        }
+
+        if (!hasError) {
+            let assignmentGroup = assignments[0].assignmentGroupId;
+
+            console.log('found assignments', assignments.length);
+
+            //const eContent = document.querySelector('#endpoint-content');
+            responseContainer.innerHTML = `
+                <div>
+                    <div class="row align-items-center">
+                        <div id="response-details" class="col-auto">
+                            <span>Found ${assignments.length} assignments in the course. Do you want to move them all to a since assignment group?</span>
+                        </div>
+
+                        <div class="w-100"></div>
+
+                        <div class="col-2">
+                            <button id="move-btn" type="button" class="btn btn-danger">Move</button>
+                        </div>
+                        <div class="col-2">
+                            <button id="cancel-btn" type="button" class="btn btn-secondary">Cancel</button>
+                        </div>
+                    </div>
+                </div>    
+            `;
+
+            const responseDetails = responseContainer.querySelector('#response-details');
+
+            const cancelBtn = document.querySelector('#cancel-btn');
+            cancelBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                courseID.value = '';
+                responseContainer.innerHTML = '';
+                checkBtn.disabled = false;
+                //clearData(courseID, responseContent);
+            });
+
+            const moveBtn = document.querySelector('#move-btn');
+            moveBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                console.log('inside move');
+
+                responseDetails.innerHTML = '';
+                progressBar.parentElement.hidden = false;
+                progressInfo.innerHTML = `Moving ${assignments.length} assignments...`;
+
+                // const messageData = {
+                //     url: `https://${domain}/api/v1/courses/${courseID}/assignments`,
+                //     token: apiToken,
+                //     content: assignments
+                // }
+
+                const messageData = {
+                    url: `https://${domain}/api/v1/courses/${courseID.value.trim()}/assignments`,
+                    token: apiToken,
+                    number: assignments.length,
+                    assignments: assignments,
+                    groupID: assignmentGroup
+                }
+
+                window.progressAPI.onUpdateProgress((progress) => {
+                    progressBar.style.width = `${progress}%`;
+                });
+
+                try {
+                    const moveAssignmentsToSingleGroup = await window.axios.moveAssignmentsToSingleGroup(messageData);
+
+                    if (moveAssignmentsToSingleGroup.successful.length > 0) {
+                        progressInfo.innerHTML = `Successfully removed ${moveAssignmentsToSingleGroup.successful.length} assignments.`;
+                    }
+                    if (moveAssignmentsToSingleGroup.failed.length > 0) {
+                        progressInfo.innerHTML = `Failed to remove ${moveAssignmentsToSingleGroup.failed.length} assignments.`;
+                    }
+                    checkBtn.disabled = false;
+                } catch (error) {
+                    errorHandler(error, progressInfo)
+                } finally {
+                    checkBtn.disabled = false;
+                }
+            });
+        }
+    });
+}
+
+// ****************************************************
+//
+// AssignmentGroup Endpoints
+//
+// ****************************************************
 
 function assignmentGroupTemplate(e) {
     switch (e.target.id) {
@@ -825,10 +1205,182 @@ function assignmentGroupTemplate(e) {
     }
 }
 
+function emptyAssignmentGroups() {
+    console.log('emptyAssignmentGroups');
 
-// ****************************************************
-// Create Assignment Groups -- NOT COMPLETE
-// ****************************************************
+    const eContent = document.querySelector('#endpoint-content');
+    eContent.innerHTML = `
+        <div>
+            <h3>Delete Empty Assignment Groups</h3>
+        </div>
+    `;
+
+    const eForm = document.createElement('form');
+
+    eForm.innerHTML = `
+        <div class="row align-items-center">
+            <div class="col-auto">
+                <label class="form-label">Course</label>
+            </div>
+            <div class="w-100"></div>
+            <div class="col-2">
+                <input id="course-id" type="text" class="form-control" aria-describedby="input-checker" />
+            </div>
+            <div class="col-auto" >
+                <span id="input-checker" class="form-text" style="display: none;">Must only contain numbers</span>
+            </div>
+            <div class="w-100"></div>
+            <div class="col-auto">
+                <button id="action-btn" class="btn btn-primary mt-3">Check</button>
+            </div>
+        </div>
+        <div hidden id="progress-div">
+            <p id="progress-info"></p>
+            <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-bar" style="width: 0%"></div>
+            </div>
+        </div>
+        <div id="response-container" class="mt-5">
+        </div>
+    `;
+
+    eContent.append(eForm);
+
+    const cID = document.querySelector('#course-id');
+    checkCourseID(cID, eContent);
+
+    // const eResponse = document.createElement('div');
+    // eResponse.id = "response-container";
+    // eResponse.classList.add('mt-5');
+    // eContent.append(eResponse);
+
+    const checkBtn = eForm.querySelector('#action-btn');
+    checkBtn.addEventListener('click', async function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+
+        checkBtn.disabled = true;
+        console.log('Inside renderer check');
+
+        const responseContainer = eContent.querySelector('#response-container');
+        const domain = document.querySelector('#domain').value.trim();
+        const apiToken = document.querySelector('#token').value.trim();
+        const course = cID.value.trim();
+        const progressDiv = eContent.querySelector('#progress-div');
+        const progressBar = progressDiv.querySelector('.progress-bar');
+        const progressInfo = eContent.querySelector('#progress-info');
+
+        // clean environment
+        progressDiv.hidden = false;
+        progressBar.parentElement.hidden = true;
+        progressBar.style.width = '0%';
+        progressInfo.innerHTML = "Checking...";
+        responseContainer.innerHTML = '';
+
+        const requestData = {
+            domain: domain,
+            token: apiToken,
+            course: course
+        }
+
+        let hasError = false;
+        let emptyAssignmentGroups = [];
+        try {
+            emptyAssignmentGroups = await window.axios.getEmptyAssignmentGroups(requestData);
+            progressInfo.innerHTML = 'Done'
+        } catch (error) {
+            hasError = true;
+            errorHandler(error, progressInfo);
+        } finally {
+            checkBtn.disabled = false;
+        }
+
+
+        if (!hasError) {
+            console.log('found emtpy groups', emptyAssignmentGroups.length);
+
+            //const eContent = document.querySelector('#endpoint-content');
+            responseContainer.innerHTML = `
+                <div>
+                    <div class="row align-items-center">
+                        <div id="response-details" class="col-auto">
+                            <span>Found ${emptyAssignmentGroups.length} empty assignment groups.</span>
+                        </div>
+
+                        <div class="w-100"></div>
+
+                        <div class="col-2">
+                            <button id="remove-btn" type="button" class="btn btn-danger">Remove</button>
+                        </div>
+                        <div class="col-2">
+                            <button id="cancel-btn" type="button" class="btn btn-secondary">Cancel</button>
+                        </div>
+                    </div>
+                </div>    
+            `;
+
+            const cancelBtn = document.querySelector('#cancel-btn');
+            cancelBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                cID.value = '';
+                responseContainer.innerHTML = '';
+                checkBtn.disabled = false;
+                progressDiv.hidden = true;
+                //clearData(courseID, responseContent);
+            });
+
+            const removeBtn = document.querySelector('#remove-btn');
+            removeBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                console.log('inside remove');
+                removeBtn.disabled = true;
+                cancelBtn.disabled = true;
+
+                const responseDetails = responseContainer.querySelector('#response-details');
+                responseDetails.innerHTML = ``;
+
+                progressBar.parentElement.hidden = false;
+                progressInfo.innerHTML = `Removing empty assignment groups....`;
+
+                const messageData = {
+                    url: `https://${domain}/api/v1/courses/${course}/assignment_groups`,
+                    token: apiToken,
+                    content: emptyAssignmentGroups
+                }
+
+                window.progressAPI.onUpdateProgress((progress) => {
+                    progressBar.style.width = `${progress}%`;
+                });
+
+                try {
+                    const result = await window.axios.deleteEmptyAssignmentGroups(messageData);
+
+                    if (result.successful.length > 0) {
+                        progressInfo.innerHTML = `Successfully removed ${result.successful.length} assignment group(s).`
+                    }
+                    if (result.failed.length > 0) {
+                        progressBar.parentElement.hidden = true;
+                        progressInfo.innerHTML += `Failed to remove ${result.failed.length} empty assignment group(s)`;
+                        errorHandler({ message: `${result.failed[0].reason}` }, progressInfo);
+                    }
+                } catch (error) {
+                    errorHandler(error, progressInfo);
+                } finally {
+                    removeBtn.disabled = false;
+                    cancelBtn.disabled = false;
+                    checkBtn.disabled = false;
+                    progressBar.parentElement.hidden = true;
+                }
+                //const result = await window.axios.deleteTheThings(messageData);
+            });
+        }
+    })
+}
+
 function assignmentGroupCreator() {
     let emptyGroups = [];
 
@@ -843,19 +1395,26 @@ function assignmentGroupCreator() {
 
     eForm.innerHTML = `
         <div class="row align-items-center">
-            <div class="col-auto">
-                <label class="form-label">Course</label>
-            </div>
-            <div class="w-100"></div>
             <div class="col-2">
-                <input id="course-id" type="text" class="form-control" aria-describedby="courseChecker" />
+                <label class="form-label">Course</label>
+                <input id="course-id" type="text" class="form-control" aria-describedby="input-checker" />
             </div>
             <div class="col-auto" >
-                <span id="courseChecker" class="form-text" style="display: none;">Must only contain numbers</span>
+                <span id="input-checker" class="form-text" style="display: none;">Must only contain numbers</span>
+            </div>
+            <div class="col-2">
+                <label class="form-label">How many</label>
+                <input id="assignment-group-number" type="text" class="form-control" value="1">
             </div>
             <div class="w-100"></div>
             <div class="col-auto">
-                <button id="check-btn" class="btn btn-primary mt-3">Check</button>
+                <button id="action-btn" class="btn btn-primary mt-3">create</button>
+            </div>
+        </div>
+        <div hidden id="progress-div">
+            <p id="progress-info"></p>
+            <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-bar" style="width: 0%"></div>
             </div>
         </div>
         <div id="response-container" class="mt-5">
@@ -863,6 +1422,61 @@ function assignmentGroupCreator() {
     `;
 
     eContent.append(eForm);
+
+    // validate course id
+    const cID = eContent.querySelector('#course-id');
+    checkCourseID(cID, eContent);
+
+    const createBtn = eContent.querySelector('#action-btn');
+    createBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        createBtn.disabled = true;
+
+        const domain = document.querySelector('#domain').value.trim();
+        const token = document.querySelector('#token').value.trim();
+        const courseID = cID.value.trim();
+        const number = eContent.querySelector('#assignment-group-number').value;
+        const responseContainer = eContent.querySelector('#response-container');
+        const progressDiv = eContent.querySelector('#progress-div');
+        const progressInfo = eContent.querySelector('#progress-info');
+        const progressBar = eContent.querySelector('.progress-bar');
+
+
+        progressDiv.hidden = false;
+        progressInfo.innerHTML = '';
+
+        const data = {
+            domain: domain,
+            token: token,
+            course: courseID,
+            number: number
+        };
+
+        window.progressAPI.onUpdateProgress((progress) => {
+            progressBar.style.width = `${progress}%`;
+        });
+
+        try {
+            const response = await window.axios.createAssignmentGroups(data);
+            if (response.successful.length > 0) {
+                progressInfo.innerHTML = `Successfully created ${response.successful.length} assignment groups.`;
+            }
+            if (response.failed.length > 0) {
+                progressInfo.innerHTML += `Failed to create ${response.failed.length} assignments.`;
+                progressBar.parentElement.hidden = true;
+                for (let failure of response.failed) {
+                    errorHandler({ message: `${failure.reason}` }, progressInfo);
+                }
+            }
+        } catch (error) {
+            progressBar.parentElement.hidden = true;
+            errorHandler(error, progressInfo);
+        } finally {
+            createBtn.disabled = false;
+        }
+    });
 }
 
 function userTemplate(e) {
@@ -891,10 +1505,10 @@ async function getPageViews(e) {
                 <label for="user-id" class="form-label">Canvas user ID</label>
             </div>
             <div class="col-2">
-                <input type="text" id="user-id" class="form-control" aria-describedby="userChecker">
+                <input type="text" id="user-id" class="form-control" aria-describedby="input-checker">
             </div>
             <div class="col-auto" >
-                <span id="userChecker" class="form-text" style="display: none;">Must only contain numbers</span>
+                <span id="input-checker" class="form-text" style="display: none;">Must only contain numbers</span>
             </div>
         </div >
         <div class="row mt-3 align-items-center">
@@ -911,14 +1525,17 @@ async function getPageViews(e) {
                 <input id="end-date" type="date" class="form-control">
             </div>
         </div>
-        <button type="button" class="btn btn-primary mt-3" id="search">Search</button>
+        <button type="button" class="btn btn-primary mt-3" id="action-btn">Search</button>
         <div id="response-container" class="mt-5">
         </div>
         `;
 
     eContent.append(eForm);
 
-    const searchBtn = eContent.querySelector('#search');
+    const uID = document.querySelector('#user-id');
+    checkCourseID(uID, eContent);
+
+    const searchBtn = eContent.querySelector('#action-btn');
     searchBtn.addEventListener('click', async function (e) {
         e.stopPropagation();
         e.preventDefault();
@@ -933,36 +1550,50 @@ async function getPageViews(e) {
         const userID = parseInt(eContent.querySelector('#user-id').value.trim());
         const startDate = eContent.querySelector('#start-date').value;
         const endDate = eContent.querySelector('#end-date').value;
+        const responseContainer = document.querySelector('#response-container');
 
-        if (userID) {
-            const searchData = {
-                domain: domain,
-                token: apiToken,
-                user: userID,
-                start: startDate,
-                end: endDate
-            };
+        const searchData = {
+            domain: domain,
+            token: apiToken,
+            user: userID,
+            start: startDate,
+            end: endDate
+        };
 
-            searchBtn.disabled = true;
-            const responseContainer = document.querySelector('#response-container');
-            responseContainer.innerHTML = 'Loading...';
-            // const pageViews = await window.axios.getPageViews(searchData);
-            const result = await window.axios.getPageViews(searchData);
-            if (!result) {
-                searchBtn.disabled = false;
-                responseContainer.innerHTML = 'Search failed. Check domain, token or user id.';
-            } else if (result === 'empty') {
-                searchBtn.disabled = false;
-                responseContainer.innerHTML = 'No page views found for user.';
-            } else if (result === 'cancelled') {
-                searchBtn.disabled = false;
-                responseContainer.innerHTML = 'Save cancelled.';
+        searchBtn.disabled = true;
+
+        // const pageViews = await window.axios.getPageViews(searchData);
+        try {
+            responseContainer.innerHTML = 'Searching...';
+            const response = await window.axios.getPageViews(searchData);
+            if (response === 'cancelled') {
+                responseContainer.innerHTML = 'Page views found, saving was cancelled.';
+            } else if (response) {
+                responseContainer.innerHTML = 'Page Views saved.';
             } else {
-                responseContainer.innerHTML = 'Page views saved to file.';
+                responseContainer.innerHTML = 'No page views found.';
             }
-        } else {
-            eContent.querySelector('#userChecker').style.display = 'inline';
+        } catch (error) {
+            responseContainer.innerHTML = '';
+            errorHandler(error, responseContainer);
+        } finally {
+            searchBtn.disabled = false;
         }
+
+
+        // if (!result) {
+        //     searchBtn.disabled = false;
+        //     responseContainer.innerHTML = 'Search failed. Check domain, token or user id.';
+        // } else if (result === 'empty') {
+        //     searchBtn.disabled = false;
+        //     responseContainer.innerHTML = 'No page views found for user.';
+        // } else if (result === 'cancelled') {
+        //     searchBtn.disabled = false;
+        //     responseContainer.innerHTML = 'Save cancelled.';
+        // } else {
+        //     responseContainer.innerHTML = 'Page views saved to file.';
+        // }
+
     });
 }
 
@@ -974,10 +1605,10 @@ async function conversationTemplate(e) {
         case 'delete-conversations-subject':
             deleteConvos(e);
             break;
-        case 'download-conversations-csv':
+        case 'download-conversations-csv': // Not Complete
             downloadConvos(e);
             break;
-        case 'gc-between-users':
+        case 'gc-between-users': // Not complete
             getConvos(e);
             break;
         default:
@@ -986,12 +1617,8 @@ async function conversationTemplate(e) {
 };
 
 async function deleteConvos(e) {
-    const domain = document.querySelector('#domain');
-    const apiToken = document.querySelector('#token');
-    // const eHeader = document.createElement('div');
-    // eHeader.innerHTML = `<h3>${e.target.id}</h3>`;
     const eContent = document.querySelector('#endpoint-content');
-    // eContent.append(eHeader);
+
     eContent.innerHTML = `
         <div>
             <h3>Delete Specific Conversations</h3>
@@ -1002,118 +1629,144 @@ async function deleteConvos(e) {
     eForm.innerHTML = `
             <div class="row">
                 <div class="col-auto">
-                    <label for="user-id" class="form-label">Canvas user ID who sent the message </label>
+                    <label for="input-checker" class="form-label">User ID who sent the message</label>
                 </div>
                 <div class="w-100"></div>
                 <div class="col-2">
                     <input type="text" id="user-id" class="form-control">
                 </div>
                 <div class="col-auto">
-                    <span id="userChecker" class="form-text" style="display: none;">Must only contain numbers</span>
+                    <span id="input-checker" class="form-text" style="display: none;">Must only contain numbers</span>
                 </div>
             </div>
             </div>
         <div class="row mt-3">
             <div class="col-auto">
-                <label for="conversation-subject" class="form-label">Subject</label>
+                <label for="conversation-subject" class="form-label">Message Subject</label>
             </div>
             <div class="w-100"></div>
             <div class="col-6">
-                <input id="conversation-subject" type="text" class="form-control">
+                <input id="conversation-subject" type="text" class="form-control" aria-describedby="messageHelper">
+                <div id="messageHelper" class="form-text">
+                    <span>NOTE: This is case sensative and must match exactly</span>
+                </div>
             </div>
         </div>
-        <button type="button" class="btn btn-primary mt-3" id="convo-search">Search</button>`
+        <button type="button" class="btn btn-primary mt-3" id="action-btn" disabled>Search</button>
+         <div hidden id="progress-div">
+            <p id="progress-info"></p>
+            <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-bar" style="width: 0%"></div>
+            </div>
+        </div>
+        <div id="response-container" class="mt-5"></div>`
 
     eContent.append(eForm);
 
-    // adding response container
-    const eResponse = document.createElement('div');
-    eResponse.id = "response-container";
-    eResponse.classList.add('mt-5');
-    eContent.append(eResponse);
+    const uID = eContent.querySelector('#user-id');
+    checkCourseID(uID, eContent);
 
     // 1. Get messages
     // 2. Filter messages
     // 3. Delete messaages ( or cancel )
     // 4. If filter more go back to 2
 
-    const searchBtn = document.querySelector('#convo-search');
 
     // ************************************
     // starting step 1. Getting messages
     //
     // ************************************
 
+    const searchBtn = document.querySelector('#action-btn');
     searchBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
         e.preventDefault();
         searchBtn.disabled = true;
 
 
-
+        const domain = document.querySelector('#domain').value.trim();
+        const apiToken = document.querySelector('#token').value.trim();
         const convoSubject = document.querySelector('#conversation-subject');
-        const userID = parseInt(document.querySelector('#user-id').value.trim());
+        const userID = uID.value.trim();
+        const responseContainer = document.querySelector('#response-container');
+        const progressDiv = eContent.querySelector('#progress-div');
+        const progressBar = eContent.querySelector('.progress-bar');
+        const progressInfo = eContent.querySelector('#progress-info');
 
-        console.log(`Subject: ${convoSubject.value}, User_ID: ${userID.value}`);
+        progressBar.parentElement.hidden = true;
+        progressBar.style.width = '0%';
+        progressDiv.hidden = false;
 
-        if (userID) {
-            const responseContainer = document.querySelector('#response-container');
-            responseContainer.innerHTML = 'Loading...';
+        // console.log(`Subject: ${convoSubject.value}, User_ID: ${userID.value}`);
 
-            const searchData = {
-                domain: domain.value,
-                token: apiToken.value,
-                subject: convoSubject.value,
-                user_id: userID
-            };
+        // const responseContainer = document.querySelector('#response-container');
+        // responseContainer.innerHTML = 'Searching....';
 
-            console.log(searchData);
+        const searchData = {
+            domain: domain,
+            token: apiToken,
+            subject: convoSubject.value,
+            user_id: userID
+        };
 
-            const messages = await getMessages(searchData);
-            if (!messages) {
-                //alert('Query failed, check domain, token or user id.');
+        console.log(searchData);
 
-                searchBtn.disabled = false;
-                responseContainer.innerHTML = 'Search Failed. Check domain, token or user id.';
-            } else {
-                searchBtn.disabled = false;
+        let messages
+        let hasError = false;
+        try {
+            progressInfo.innerHTML = 'Searching....';
+            messages = await window.axios.getConvos(searchData);
+        } catch (error) {
+            hasError = true;
+            errorHandler(error, progressInfo);
+        } finally {
+            searchBtn.disabled = false;
+            progressInfo.innerHTML = `Done. Found ${messages.length} conversations.`
+        }
 
-                console.log('renderer.js ', messages.length);
+        // if (!messages) {
+        //     //alert('Query failed, check domain, token or user id.');
 
-                // ********************************
-                // Step 2. Filtering messages
-                //
-                // ********************************
+        //     searchBtn.disabled = false;
+        //     responseContainer.innerHTML = 'Search Failed. Check domain, token or user id.';
+        // } else {
+        if (!hasError) {
 
-                // const filteredMessages = filterMessages(messages, convoSubject.value);
-                // const flattenedMessages = flattenMessages(filteredMessages);
+            // ********************************
+            // Step 2. Filtering messages
+            //
+            // ********************************
 
-                //     responseContainer.innerHTML = `
-                // <div id="response-info" class="container">Total messages searched: ${messages.length}. Found ${filteredMessages.length}.
-                //     <div class="row justify-content-start my-2">
-                //         <div id="response-details" class="col-auto">
-                //         </div>
-                //     </div>
-                //     <div class="row justify-content-start my-2">
-                //         <div class="col-2">
-                //             <button id="remove-btn" type="button" class="btn btn-danger">Remove</button>
-                //         </div>
-                //         <div class="col-2">
-                //             <button id="cancel-btn" type="button" class="btn btn-secondary">Cancel</button>
-                //         </div>
-                //         <div class="col-3">
-                //             <button id="csv-btn" type="button" class="btn btn-secondary">Send to CSV</button>
-                //         </div>
-                //     </div>
-                // </div>`
+            // const filteredMessages = filterMessages(messages, convoSubject.value);
+            // const flattenedMessages = flattenMessages(filteredMessages);
 
-                responseContainer.innerHTML = `
-                    <div id="response-info" class="container">Found ${messages.length} messages.
-                        <div class="row justify-content-start my-2">
-                            <div id="response-details" class="col-auto">
+            //     responseContainer.innerHTML = `
+            // <div id="response-info" class="container">Total messages searched: ${messages.length}. Found ${filteredMessages.length}.
+            //     <div class="row justify-content-start my-2">
+            //         <div id="response-details" class="col-auto">
+            //         </div>
+            //     </div>
+            //     <div class="row justify-content-start my-2">
+            //         <div class="col-2">
+            //             <button id="remove-btn" type="button" class="btn btn-danger">Remove</button>
+            //         </div>
+            //         <div class="col-2">
+            //             <button id="cancel-btn" type="button" class="btn btn-secondary">Cancel</button>
+            //         </div>
+            //         <div class="col-3">
+            //             <button id="csv-btn" type="button" class="btn btn-secondary">Send to CSV</button>
+            //         </div>
+            //     </div>
+            // </div>`
+
+            responseContainer.innerHTML = `
+                <div>
+                    <div class="row align-items-start">
+                        <div id="response-details" class="col-auto">
                         </div>
-                    </div>
-                    <div class="row justify-content-start my-2">
+
+                        <div class="w-100"></div>
+
                         <div class="col-2">
                             <button id="remove-btn" type="button" class="btn btn-danger">Remove</button>
                         </div>
@@ -1121,67 +1774,81 @@ async function deleteConvos(e) {
                             <button id="cancel-btn" type="button" class="btn btn-secondary">Cancel</button>
                         </div>
                         <div class="col-3">
-                            <button id="csv-btn" type="button" class="btn btn-secondary">Send to CSV</button>
+                            <button id="csv-btn" type="button" class="btn btn-secondary" aria-describedby="sendcsv-check">Send to CSV</button>
+                            <div id="sendcsv-check" class="form-text">
+                                NOTE: This only sends the message subject and conversation ID to the csv
+                            </div>
                         </div>
                     </div>
-                    </div>
+                </div>
             `;
 
 
-                const removeBtn = document.querySelector('#remove-btn');
-                const cancelBtn = document.querySelector('#cancel-btn');
-                const sendToCSV = document.querySelector('#csv-btn');
+            const removeBtn = document.querySelector('#remove-btn');
+            const cancelBtn = document.querySelector('#cancel-btn');
+            const sendToCSV = document.querySelector('#csv-btn');
 
-                removeBtn.addEventListener('click', async (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
+            removeBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
 
-                    console.log('inside remove');
-                    const responseDetails = responseContainer.querySelector('#response-details');
-                    responseDetails.innerHTML = `Removing ${messages.length} conversations...`;
+                console.log('inside remove');
+                // const responseDetails = responseContainer.querySelector('#response-details');
+                // responseDetails.innerHTML = `Removing ${messages.length} conversations...`;
 
-                    // const messageIDs = messages.map((message) => {
-                    //     return message.node.conversation;
-                    // });
+                // const messageIDs = messages.map((message) => {
+                //     return message.node.conversation;
+                // });
 
-                    const messageData = {
-                        domain: domain.value,
-                        token: apiToken.value,
-                        user_id: userID.value,
-                        messages: messages
-                    }
+                progressInfo.innerHTML += `<p>Removing ${messages.length} conversations.</p>`;
+                progressBar.parentElement.hidden = false;
+                const messageData = {
+                    domain: domain,
+                    token: apiToken,
+                    messages: messages
+                }
+
+                window.progressAPI.onUpdateProgress((progress) => {
+                    progressBar.style.width = `${progress}%`;
+                });
+
+                try {
                     const result = await window.axios.deleteConvos(messageData);
-                    if (result) {
-                        responseDetails.innerHTML = `Successfully removed ${messages.length}`;
-                        searchBtn.disabled = false;
-                    } else {
-                        responseDetails.innerHTML = 'Failed to remove conversations';
+                    if (result.successful.length > 0) {
+                        progressInfo.innerHTML += `<p>Successfully removed ${result.successful.length} messages</p>`
                     }
+                    if (result.failed.length > 0) {
+                        progressBar.parentElement.hidden = true;
+                        progressInfo.innerHTML += `Failed to remove ${result.failed.length} messages`;
+                        errorHandler({ message: `${result.failed[0].reason}` }, progressInfo);
+                    }
+                } catch (error) {
+                    errorHandler(error, progressInfo);
+                }
+            });
 
-                });
+            cancelBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
 
-                cancelBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
+                // clearData(userID, convoSubject, responseContainer, searchBtn);
+                uID.value = '';
+                convoSubject.value = '';
+                progressInfo.innerHTML = '';
+                responseContainer.innerHTML = '';
+                searchBtn.disabled = true;
+                progressDiv.hidden = true;
+            });
 
-                    clearData(userID, convoSubject, responseContainer, searchBtn);
+            sendToCSV.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
 
-                });
+                console.log('inside sendTocCSV');
+                //console.log(filteredMessages);
 
-                sendToCSV.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-
-                    console.log('inside sendTocCSV');
-                    //console.log(filteredMessages);
-
-                    window.csv.sendToCSV(messages);
-                })
-
-            }
-        } else {
-            eContent.querySelector('#userChecker').style.display = 'inline';
-            searchBtn.disabled = false;
+                window.csv.sendToCSV(messages);
+            })
         }
     });
 }
@@ -1368,15 +2035,14 @@ async function commChannelTemplate(e) {
 }
 
 function checkComm(e) {
-    const domain = document.querySelector('#domain');
-    const apiToken = document.querySelector('#token');
+
     // const eHeader = document.createElement('div');
     // eHeader.innerHTML = `<h3>${e.target.id}</h3>`;
     const eContent = document.querySelector('#endpoint-content');
     // eContent.append(eHeader);
     eContent.innerHTML = `
         <div>
-            <h3>Check email</h3>
+            <h3>Check suppression and bounce list</h3>
         </div>
     `;
 
@@ -1389,46 +2055,118 @@ function checkComm(e) {
                     </div>
                     <div class="col-2">
                         <select id="region" class="form-select" aria-label="Region info">
-                            <option value="IAD-PDX" selected>IAD/PDX</option>
-                            <option value="DUB">DUB</option>
-                            <option value="SYD">SYD</option>
-                            <option value="YUL">YUL</option>
+                            <option value="iad_pdx" selected>IAD/PDX</option>
+                            <option value="dub_fra">DUB/FRA</option>
+                            <option value="syd_sin">SYD/SIN</option>
+                            <option value="yul">YUL</option>
                         </select>
                     </div>
                 </div>
-                <div class="col-auto">
-                    <label for="email" class="form-label">Email: </label>
+                <div id="email-options">
+                    <div class="form-check form-switch">
+                        <label class="form-label" for="single-email-chkbx">Single Email</label>
+                        <input id="single-email-chkbx" type="checkbox" class="form-check-input" role="switch">
+                    </div>
+                    <div class="form-check form-switch">
+                        <label class="form-label" for="domain-email-chkbx">Domain</label>
+                        <input id="domain-email-chkbx" type="checkbox" class="form-check-input" role="switch">
+                    </div>
                 </div>
-                <div class="w-100"></div>
-                <div class="col-5">
-                    <input type="text" id="email" class="form-control">
+                <div class="">
+                    <div class="col-auto">
+                        <label id="email-label" for="email" class="form-label">Email</label>
+                    </div>
+                    <div class="w-100"></div>
+                    <div class="col-5">
+                        <input disabled type="text" id="email" class="form-control" aria-describedby="email-form-text">
+                    </div>
+                    <div class="form-text" id="email-form-text">
+                        Enter the full email address you want to check
+                    </div>
                 </div>
             </div>
-        <button type="button" class="btn btn-primary mt-3" id="email-check">Check</button>`
+        <button type="button" class="btn btn-primary mt-3" id="email-check">Check</button>
+        <div id="response-container" class="mt-5">
+        </div>
+        `
 
     eContent.append(eForm);
+
+    function handleQueryType(e) {
+        const emailInput = eContent.querySelector('#email');
+        const formMessgae = eContent.querySelector('#email-form-text')
+        const emailLabel = eContent.querySelector('#email-label')
+
+        emailInput.disabled = false;
+        if (e.target.id === 'single-email-chkbx') {
+            eContent.querySelector('#domain-email-chkbx').checked = false;
+            formMessgae.innerHTML = "Enter the full email address you want to check";
+            emailLabel.innerHTML = "Email";
+        } else {
+            eContent.querySelector('#single-email-chkbx').checked = false;
+            formMessgae.innerHTML = "Enter the domain you want to check. You can include the wildcard \'*\' character, for example \"ins*e*u\" will match \"myemail@instru.edu.com.au\" as well as \"something@instructure.ecu\". <p><p>NOTE: This queries the entire aws region and will take some time, we're talking hours in some cases.</p></p>";
+            emailLabel.innerHTML = "Domain";
+        }
+    }
+
+    const emailOptions = eContent.querySelector('#email-options');
+    emailOptions.addEventListener('change', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        handleQueryType(e);
+    })
+
 
     const checkBtn = eContent.querySelector('button');
     checkBtn.addEventListener('click', async (e) => {
         e.preventDefault();
         e.stopPropagation();
 
+        checkBtn.disabled = true;
+
+        const domain = document.querySelector('#domain').value.trim();
+        const apiToken = document.querySelector('#token').value.trim();
+        const region = eContent.querySelector('#region').value;
+        const email = eContent.querySelector('#email').value.trim();
+        const responseContainer = eContent.querySelector('#response-container');
+        responseContainer.innerHTML = '';
+
+        const options = eContent.querySelectorAll('input[type="checkbox"]');
+        const checkedOption = Array.from(options).find(checkbox => checkbox.checked);
+        const option = checkedOption ? checkedOption.id : undefined;
+
         const data = {
             domain: domain,
             token: apiToken,
-            region: eContent.querySelector('#region').value,
-            email: eContent.querySelector('#email').value
+            region: region,
+            pattern: email
         }
 
+        let response;
+        let hasError = false;
+        try {
+            responseContainer.inner = 'Checking....';
+            response = await window.axios.checkCommChannel(data);
+        } catch (error) {
+            hasError = true;
+            errorHandler(error, responseContainer);
+        } finally {
+            checkBtn.disabled = false;
+            responseContainer.innerHTML += '<p>Done.</p>';
+        }
 
-        const response = await window.axios.checkCommChannel(data);
+        if (!hasError) {
+            responseContainer.innerHTML += `<p>Suppressed: <span style="color: ${response.suppressed ? 'red' : 'green'}">${response.suppressed ? 'Yes' : 'No'}</span></p>`;
+            responseContainer.innerHTML += `<p>Bounced: <span style="color: ${response.bounced ? 'red' : 'green'}">${response.bounced ? 'Yes' : 'No'}</span></p>`;
+        }
     })
 
     // adding response container
-    const eResponse = document.createElement('div');
-    eResponse.id = "response-container";
-    eResponse.classList.add('mt-5');
-    eContent.append(eResponse);
+    // const eResponse = document.createElement('div');
+    // eResponse.id = "response-container";
+    // eResponse.classList.add('mt-5');
+    // eContent.append(eResponse);
 }
 
 function courseTemplate(e) {
@@ -1493,6 +2231,8 @@ async function resetCourses(e) {
             }
         } catch (error) {
             console.log('Error: ', error);
+        } finally {
+            checkBtn.disabled = false;
         }
     })
 
@@ -1665,10 +2405,148 @@ async function createSupportCourse(e) {
             eContent.querySelector('#response-container').innerHTML = '<p>Course ID: ' + response.course_id + ' ' + response.status + '</p>';
         } catch (error) {
             console.log('Error: ', error);
+        } finally {
+            checkBtn.disabled = false;
         }
     })
 
     // adding response container
     const eResponse = document.createElement('div');
     eResponse.id = "response";
+}
+
+function setHeader(header, eContent) {
+    let eHeader = eContent.querySelector(`h3`);
+
+    if (!eHeader) {
+        const headerDiv = document.createElement('div');
+        eHeader = document.createElement('h3');
+        headerDiv.append(eHeader);
+        eContent.append(headerDiv);
+    }
+
+    eHeader.innerHTML = header;
+}
+// create a boilerplate form based on what the endpoint needs
+// the parameter is the div for the 'endpoint-content' and the endpoint name
+// current valid endpoints are:
+// -- createAssignments, deleteNoSubmissionAssignments, deleteUnpublishedAssignments,
+// -- deleteNonModuleAssignments, moveAssignmentsToSingleGroup
+function createForm(endpoint, eContent) {
+    switch (endpoint) {
+        case 'createAssignments':
+            createAssignments(eContent);
+            break;
+        case 'deleteNoSubmissionAssignments':
+            deleteNoSubmissionAssignments(eContent);
+            break;
+        case 'deleteUnpublishedAssignments':
+        case 'deleteNonModuleAssignments':
+        case 'moveAssignmentsToSingleGroup':
+            assignmentCourse(eContent);
+            break;
+        default:
+            break;
+    }
+}
+
+function assignmentCourse(eContent) {
+    let eForm = eContent.querySelector('form');
+    if (!eForm) {
+        eForm = document.createElement('form');
+
+        eForm.innerHTML = `
+        <div class="row align-items-center">
+            <div class="col-auto">
+                <label class="form-label">Course</label>
+            </div>
+            <div class="w-100"></div>
+            <div class="col-2">
+                <input id="course" type="text" class="form-control" aria-describedby="input-checker" />
+            </div>
+            <div class="col-auto" >
+                <span id="input-checker" class="form-text" style="display: none;">Must only contain numbers</span>
+            </div>
+            <div class="w-100"></div>
+            <div class="col-auto">
+                <button id="action-btn" class="btn btn-primary mt-3">Check</button>
+            </div>
+        </div>
+        <div hidden id="progress-div">
+            <p id="progress-info"></p>
+            <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+
+                <div class="progress-bar" style="width: 0%"></div>
+            </div>
+        </div>
+        <div id="response-container" class="mt-5">
+        </div>
+    `;
+
+        eContent.append(eForm);
+    }
+
+
+}
+
+// check if the course ID is a number
+function checkCourseID(courseID, eContent) {
+    if (courseID != null) {
+        courseID.addEventListener('input', (e) => {
+            const courseChecker = eContent.querySelector(`#input-checker`);
+            if (!isNaN(Number(courseID.value)) || courseID.value === '') {
+                courseChecker.style.display = 'none';
+                eContent.querySelector('#action-btn').disabled = false;
+            } else {
+                courseChecker.style.display = 'inline';
+                eContent.querySelector('#action-btn').disabled = true;
+            }
+        });
+    }
+}
+
+function getInputs(eContent) {
+    const data = {};
+    data.domain = document.querySelector('#domain').value.trim();
+    data.token = document.querySelector('#token').value.trim();
+
+    // data.courseID = eContent.querySelector('#course-id').value.trim();
+
+    for (let input of eContent.querySelectorAll('input')) {
+        if (input.type === 'checkbox') {
+            data[input.id] = input.checked;
+        } else {
+            data[input.id] = input.value.trim();
+        }
+    }
+
+    return data;
+}
+
+function errorHandler(error, progressInfo) {
+    console.error(error)
+    const lastIndex = error.message.lastIndexOf(':');
+    let errorInfo = 'If you need assistance message Caleb and tell him to fix it.';
+    const statusCode = error.message.match(/(?<=status code )[0-9]+/);
+    if (statusCode) {
+        switch (statusCode[0]) {
+            case '401':
+                errorInfo = 'Check your token';
+                if (document.querySelector('#user-id')) {
+                    errorInfo += ' and the User ID.';
+                }
+                break;
+            case '403':
+                errorInfo = 'Check to make sure you have permissions for the request and try again.';
+                break;
+            case '404':
+                errorInfo = 'Check your inputs to make sure they\'re valid.';
+                break;
+            default:
+                errorInfo = 'If you need assistance message Caleb and tell him to fix it.'
+                break;
+        }
+
+    }
+    progressInfo.innerHTML += `<p>There was an error: <span class="error">${error.message.slice(lastIndex + 1)}</span></p><p>${errorInfo}</p>`;
 }

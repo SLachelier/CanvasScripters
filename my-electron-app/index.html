@@ -22,14 +22,16 @@
                     <div class="input-group flex-nowrap mt-2 mb-3">
                         <span class="input-group-text">https://</span>
                         <div class="form-floating ">
-                            <input type="text" class="form-control" placeholder="doman" id="domain" />
+                            <input type="text" class="form-control" placeholder="doman" id="domain"
+                                value="ckruger.beta.instructure.com" />
                             <label for="domain">Canvas Domain</label>
                         </div>
                     </div>
                 </div>
                 <div class="col">
                     <div class="form-floating mt-2 mb-3">
-                        <input type=" text" class="form-control" placeholder="Token" id="token">
+                        <input type=" text" class="form-control" placeholder="Token" id="token" value="
+17~CwJWkYHaNo4mbisdR7o2fbTukp2tg0w2swEKGmqZlV6NEFnBSlIhvCaAmoyQ7eBU">
                         <label for="token">Token</label>
                     </div>
 
@@ -90,7 +92,7 @@
                                         class="list-group-item list-group-item-action border-start-0 border-end-0">
                                         Delete Assignments not in Modules
                                     </button>
-                                    <button disabled id="move-assignments"
+                                    <button id="move-assignments"
                                         class="list-group-item list-group-item-action border-start-0 border-end-0">
                                         Move assignments to a single group
                                     </button>
@@ -155,8 +157,8 @@
                                         subject
                                     </button>
                                     <button id="download-conversations-csv"
-                                        class="list-group-item list-group-item-action border-start-0 border-end-0">
-                                        Download Conversations
+                                        class="list-group-item list-group-item-action border-start-0 border-end-0 disabled">
+                                        Download Conversations - <em>disabled</em>
                                     </button>
                                     <!-- <button id="gc-between-users"
                                         class="list-group-item list-group-item-action border-start-0 border-end-0">
@@ -179,10 +181,6 @@
                                     <button id="check-commchannel"
                                         class="list-group-item list-group-item-action border-start-0 border-end-0">
                                         Check Bounce and Suppression list
-                                    </button>
-                                    <button id="download-conversations-csv"
-                                        class="list-group-item list-group-item-action border-start-0 border-end-0">
-                                        Download Conversations
                                     </button>
                                     <!-- <button id="gc-between-users"
                                         class="list-group-item list-group-item-action border-start-0 border-end-0">

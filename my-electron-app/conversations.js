@@ -2,7 +2,7 @@
 const pagination = require('./pagination');
 const csvExporter = require('./csvExporter');
 //const questionAsker = require('./questionAsker');
-const { deleteRequester } = require('./utilities');
+const { deleteRequester, errorCheck } = require('./utilities');
 
 const axios = require('axios');
 
@@ -61,17 +61,104 @@ async function getConversations(user, url, scope, token) {
     return myConversations;
 }
 
-async function getConversationsGraphQL(url, query, variables, token) {
-    // const url = url;
-    // const query = query;
-    let response = '';
-    const responseData = [];
-    const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+// gets all messages with the specific scope (inbox, sent, etc.) for a single user
+async function getConversationsGraphQL(data) {
+
+    const domain = data.domain;
+    const token = data.token;
+    const subject = data.subject;
+    const user = data.user_id;
+
+    const query = `
+            query getMessages($userID: ID!, $nextPage: String) {
+                legacyNode(_id: $userID, type: User) {
+                    ... on User {
+                        id
+                        email
+                        conversationsConnection(scope: "sent", first: 200, after: $nextPage) {
+                            pageInfo {
+                                hasNextPage
+                                endCursor
+                                startCursor
+                            }
+                            nodes {
+                                conversation {
+                                    subject
+                                    _id
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        `;
+
+    const variables = {
+        "userID": user,
+        "nextPage": ""
     };
 
-    console.log('The Query: ', query);
+    const axiosConfig = {
+        method: 'post',
+        url: `https://${domain}/api/graphql?as_user_id=${user}`,
+        headers: {
+            'Authorization': `Bearer ${token}`
+        },
+        data: {
+            query: query,
+            variables: variables
+        }
+    };
+
+    let sentMessages = [];
+    let nextPage = true;
+    while (nextPage) {
+        try {
+            const request = async () => {
+                return await axios(axiosConfig);
+            };
+
+            const response = await errorCheck(request);
+            const data = response.data.data.legacyNode.conversationsConnection;
+
+            sentMessages.push(...data.nodes.map((conversation) => {
+                return { subject: conversation.conversation.subject, id: conversation.conversation._id };
+            }).filter((message) => {
+                return message.subject === subject;
+            }));
+
+            if (!data.pageInfo.hasNextPage) {
+                nextPage = false;
+            } else {
+                variables.nextPage = data.pageInfo.endCursor;
+            }
+        } catch (error) {
+            throw error
+        }
+    }
+
+    // const filteredMessages = sentMessages.filter((message) => {
+    //     return (message.subject === subject);
+    // });
+
+    // const formattedMesages = filteredMessages.map((message) => {
+    //     return { subject: message.node.conversation.subject, id: message.node.conversation._id };
+    // });
+
+    return sentMessages;
+
+    // const url = url;
+    // const query = query;
+    // let response = '';
+    // const responseData = [];
+    // const headers = {
+    //     'Authorization': `Bearer ${token}`,
+    //     'Content-Type': 'application/json'
+    // };
+
+
+
+    // console.log('The Query: ', query);
 
     // const config = {
     //     method: 'post',
@@ -92,47 +179,77 @@ async function getConversationsGraphQL(url, query, variables, token) {
 
     // console.log('The Next Page: ', response.data.data.legacyNode.conversationsConnection.pageInfo.endCursor);
     // const variables = variables;
-    let nextPage = true;
+    // let nextPage = true;
 
 
-    while (nextPage) {
-        const config = {
-            method: 'post',
-            url: url,
-            headers: headers,
-            data: JSON.stringify({
-                query: query,
-                variables: variables
-            })
-        };
+    // while (nextPage) {
+    //     const config = {
+    //         method: 'post',
+    //         url: url,
+    //         headers: headers,
+    //         data: JSON.stringify({
+    //             query: query,
+    //             variables: variables
+    //         })
+    //     };
 
-        response = await axios(config);
+    //     response = await axios(config);
 
-        // console.log('The graphql data response: ', response.data);
-        // const data = await response.json();
-        // console.log('The data is : ', data);
-        responseData.push(...response.data.data.legacyNode.conversationsConnection.edges);
-        //console.log('The response data is ', responseData);
+    //     // console.log('The graphql data response: ', response.data);
+    //     // const data = await response.json();
+    //     // console.log('The data is : ', data);
+    //     responseData.push(...response.data.data.legacyNode.conversationsConnection.edges);
+    //     //console.log('The response data is ', responseData);
 
-        if (response.data.data.legacyNode.conversationsConnection.pageInfo.hasNextPage === true) {
-            variables.nextPage = response.data.data.legacyNode.conversationsConnection.pageInfo.endCursor;
-            console.log('The variables are: ', variables);
-            //console.log('The next page is ', variables.nextPage);
-        } else {
-            nextPage = false;
-        }
-    }
+    //     if (response.data.data.legacyNode.conversationsConnection.pageInfo.hasNextPage === true) {
+    //         variables.nextPage = response.data.data.legacyNode.conversationsConnection.pageInfo.endCursor;
+    //         console.log('The variables are: ', variables);
+    //         //console.log('The next page is ', variables.nextPage);
+    //     } else {
+    //         nextPage = false;
+    //     }
+    // }
+
+
+
+    // console.log('Total filtered messages ', formattedMesages.length);
 
     //console.log('The completed response data is: ', response);
 
-    return responseData;
+    // return responseData;
+
+
 
 }
 
-async function deleteForAll(conversationID) {
-    console.log('Deleting conversation: ', conversationID);
-    let myURL = `conversations/${conversationID}/delete_for_all`;
-    await axios.delete(myURL);
+async function deleteForAll(data) {
+    const domain = data.domain;
+    const token = data.token;
+    const messageID = data.message;
+
+    const axiosConfig = {
+        method: 'delete',
+        url: `https://${domain}/api/v1/conversations/${messageID}/delete_for_all`,
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    };
+
+    try {
+        const request = async () => {
+            return await axios(axiosConfig);
+        }
+
+        const response = await errorCheck(request);
+        return `${response.status} - ${response.statusText}`;
+    } catch (error) {
+        throw error
+    }
+    // console.log('Deleting Conversation....');
+
+
+    // let myURL = `conversations/${conversationID}/delete_for_all`;
+    // await axios.delete(myURL);
 }
 
 async function bulkDelete(userID, messageFilter) {

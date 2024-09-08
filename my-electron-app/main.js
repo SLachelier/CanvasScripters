@@ -13,14 +13,15 @@ const assignmentGroups = require('./assignment_groups');
 const assignments = require('./assignments');
 const { getPageViews } = require('./users');
 const { send } = require('process');
-const { deleteRequester } = require('./utilities');
+const { deleteRequester, waitFunc } = require('./utilities');
 const { emailCheck } = require('./comm_channels');
 const { resetCourse } = require('./courses');
 
+let mainWindow;
 
 const createWindow = () => {
-    const win = new BrowserWindow({
-        width: 1080,
+    mainWindow = new BrowserWindow({
+        width: 1200,
         height: 900,
         minWidth: 900,
         webPreferences: {
@@ -29,29 +30,29 @@ const createWindow = () => {
         }
     })
 
-    //win.webContents.openDevTools();
-    win.loadFile('index.html');
+    mainWindow.webContents.openDevTools();
+    mainWindow.loadFile('index.html');
 }
 
 app.whenReady().then(() => {
 
-    ipcMain.handle('axios:getConvos', async (event, searchData) => {
+    ipcMain.handle('axios:getConvos', async (event, data) => {
         console.log('Inside main:getConvos');
-        console.log(searchData);
+        // console.log(searchData);
 
         //const searchQuery = JSON.parse(searchData);
-        const domain = searchData.domain;
-        const userID = searchData.user_id;
-        const apiToken = searchData.token;
-        const subject = searchData.subject;
+        // const domain = searchData.domain;
+        // const userID = searchData.user_id;
+        // const apiToken = searchData.token;
+        // const subject = searchData.subject;
 
         // const inboxMessages = [];
         // const sentMessages = [];
         // const totalMessages = [];
 
-        console.log('The domain ', domain);
-        console.log('The userID ', userID);
-        console.log('The apiToken ', apiToken);
+        // console.log('The domain ', domain);
+        // console.log('The userID ', userID);
+        // console.log('The apiToken ', apiToken);
 
         // getting messages in 'inbox'
 
@@ -59,36 +60,7 @@ app.whenReady().then(() => {
         // console.log(url);
 
         //setting up graphql Query for messages
-        let query = `
-            query getMessages($userID: ID!, $nextPage: String) {
-                legacyNode(_id: $userID, type: User) {
-                    ... on User {
-                        id
-                        email
-                        conversationsConnection(scope: "sent", first: 200, after: $nextPage) {
-                            pageInfo {
-                                hasNextPage
-                                endCursor
-                                startCursor
-                            }
-                            edges {
-                                node {
-                                    conversation {
-                                        subject
-                                        _id
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        `;
 
-        let variables = {
-            "userID": userID,
-            "nextPage": ""
-        };
 
         // let query = `query MyQuery {
         //     legacyNode(type: User, _id: "26") {
@@ -98,6 +70,13 @@ app.whenReady().then(() => {
         //     }
         // }`
 
+        let sentMessages;
+        try {
+            sentMessages = await convos.getConversationsGraphQL(data);
+            return sentMessages;
+        } catch (error) {
+            throw error.message;
+        }
 
         // const inboxMessages = await convos.getConversations(userID, url, 'inbox', apiToken);
         // if (!inboxMessages) {
@@ -108,8 +87,8 @@ app.whenReady().then(() => {
         // getting messages in 'sent'
         // const sentMessages = await convos.getConversations(userID, url, 'sent', apiToken);
 
-        let url = `https://${domain}/api/graphql?as_user_id=${userID}`;
-        const sentMessages = await convos.getConversationsGraphQL(url, query, variables, apiToken);
+        // let url = `https://${domain}/api/graphql?as_user_id=${userID}`;
+        // const sentMessages = await convos.getConversationsGraphQL(url, query, variables, apiToken);
         //console.log('Returned messages: ', sentMessages);
 
         // console.log('Total sent messages', sentMessages.length);
@@ -117,89 +96,198 @@ app.whenReady().then(() => {
         // const totalMessages = [...sentMessages];
         // console.log('Total messages ', totalMessages.length);
 
-        const filteredMessages = sentMessages.filter((message) => {
-            if (message.node.conversation.subject === subject) {
-                return message;
-            }
-        });
 
-        const formattedMesages = filteredMessages.map((message) => {
-            return { subject: message.node.conversation.subject, id: message.node.conversation._id };
-        });
-
-        console.log('Total filtered messages ', formattedMesages.length);
-
-        return formattedMesages;
     });
 
     ipcMain.handle('axios:deleteConvos', async (event, data) => {
         console.log('inside axios:deleteConvos');
 
-        console.log(data.token);
+        let completedRequests = 0;
+        const totalRequests = data.messages.length;
 
-        const result = await convos.bulkDeleteNew(data.messages, `https://${data.domain}/api/v1/conversations`, data.token);
-        console.log('finished');
+        const updateProgress = () => {
+            completedRequests++;
+            mainWindow.webContents.send('update-progress', (completedRequests / totalRequests) * 100);
+        }
 
-        return result;
+        const request = async (requestData) => {
+            try {
+                const response = await convos.deleteForAll(requestData);
+                return response;
+            } catch (error) {
+                throw error;
+            } finally {
+                updateProgress();
+            }
+        };
 
+        let requests = [];
+        data.messages.forEach((message) => {
+            const requestData = {
+                domain: data.domain,
+                token: data.token,
+                message: message.id
+            }
+            requests.push(() => request(requestData));
+        })
+
+        const batchResponse = await batchHandler(requests);
+
+        return batchResponse;
     });
 
     ipcMain.handle('axios:checkCommChannel', async (event, data) => {
         console.log('inside axios:checkCommChannel');
 
-        const mainResponse = await emailCheck(data.domain, data.token, data.region, data.email);
+        try {
+            const response = await emailCheck(data);
+            return response;
+        } catch (error) {
+            throw error.message;
+        } 
+
     });
 
     ipcMain.handle('axios:createAssignments', async (event, data) => {
         console.log('inside axios:createAssignments');
 
-        let success = 0;
-        let failed = 0;
+        let completedRequests = 0;
+        let totalRequests = data.number;
 
-        for (let count = 0; count < data.number; count++) {
+        const updateProgress = () => {
+            completedRequests++;
+            mainWindow.webContents.send('update-progress', (completedRequests / totalRequests) * 100);
+        }
+
+        const request = async (data) => {
             try {
+                // const response = await window.axios.deleteTheThings(messageData);
                 const response = await assignments.createAssignments(data);
-                success++;
+                return response;
             } catch (error) {
-                console.error('Error in createAssignments: ', error);
-                failed++;
+                //console.error('Error: ', error);
+                throw error;
+            } finally {
+                updateProgress();
             }
         }
-        return { success: success, failed: failed };
+
+        let requests = [];
+        for (let i = 0; i < data.number; i++) {
+            requests.push(() => request(data));
+        }
+
+        const batchResponse = await batchHandler(requests);
+
+
+        return batchResponse;
+    });
+
+    ipcMain.handle('axios:deleteAssignments', async (event, data) => {
+        console.log('inside axios:deleteAssignments');
+
+        let completedRequests = 0;
+        let totalRequests = data.number;
+
+        const updateProgress = () => {
+            completedRequests++;
+            mainWindow.webContents.send('update-progress', (completedRequests / totalRequests) * 100);
+        }
+
+        const request = async (data) => {
+            try {
+                // const response = await window.axios.deleteTheThings(messageData);
+                const response = await assignments.deleteAssignments(data);
+                return response;
+            } catch (error) {
+                console.error('Error: ', error);
+                throw error;
+            } finally {
+                updateProgress();
+            }
+        }
+
+        let requests = [];
+        for (let assignment of data.assignments) {
+            requests.push(() => request({ endpoint: data.url, token: data.token, id: assignment.id }));
+        }
+
+        const batchResponse = await batchHandler(requests);
+        console.log('Finished deleting assignments.');
+        return batchResponse;
     });
 
     ipcMain.handle('axios:getEmptyAssignmentGroups', async (event, data) => {
         console.log('Inside axios:getEmptyAssignmentGroups')
 
-        const aGroups = await assignmentGroups.getEmptyAssignmentGroups(data.domain, data.course, data.token);
+        try {
+            const aGroups = await assignmentGroups.getEmptyAssignmentGroups(data);
 
-        return aGroups;
+            return aGroups;
+        } catch (error) {
+            throw error.message;
+        }
+
     });
 
     ipcMain.handle('axios:deleteEmptyAssignmentGroups', async (event, data) => {
         console.log('Inside axios:deleteEmptyAssignmentGroups')
-        console.log('They data: ', data);
 
-        const result = await assignmentGroups.deleteEmptyAssignmentGroups(data.url, data.token, data.content);
+        let completedRequests = 0;
+        const totalRequests = data.content.length;
 
-        return result;
+        const updateProgress = () => {
+            completedRequests++;
+            mainWindow.webContents.send('update-progress', (completedRequests / totalRequests) * 100);
+        }
+
+        const request = async (data) => {
+            try {
+                const response = await assignmentGroups.deleteEmptyAssignmentGroup(data);
+                return response;
+            } catch (error) {
+                throw error;
+            } finally {
+                updateProgress();
+            }
+        }
+
+        let requests = [];
+        data.content.forEach((group) => {
+            const requestData = {
+                domain: data.url,
+                token: data.token,
+                groupID: group._id
+            }
+            requests.push(() => request(requestData));
+        });
+
+        const batchResponse = await batchHandler(requests);
+        console.log('Finished Deleting Empty Assignment groups.');
+        return batchResponse;
     });
 
     ipcMain.handle('axios:getNoSubmissionAssignments', async (event, data) => {
         console.log('main.js > axios:getNoSubmissionAssignments');
 
-        const result = await assignments.getNoSubmissionAssignments(data.domain, data.course, data.token, data.graded);
+        try {
+            const result = await assignments.getNoSubmissionAssignments(data.domain, data.course, data.token, data.graded);
 
-        return result;
+            return result;
+        } catch (error) {
+            console.log(error);
+            throw error.message;
+        }
+
     });
 
-    ipcMain.handle('axios:deleteNoSubmissionAssignments', async (event, data) => {
-        console.log('main.js > axios:deleteNoSubmissionAssignments');
+    // ipcMain.handle('axios:deleteNoSubmissionAssignments', async (event, data) => {
+    //     console.log('main.js > axios:deleteNoSubmissionAssignments');
 
-        const result = await assignments.deleteNoSubmissionAssignments(data.domain, data.course, data.token, data.assignments);
+    //     const result = await assignments.deleteNoSubmissionAssignments(data.domain, data.course, data.token, data.assignments);
 
-        return result;
-    });
+    //     return result;
+    // });
 
     ipcMain.handle('axios:getUnpublishedAssignments', async (event, data) => {
         console.log('main.js > axios:getUnpublishedAssignments');
@@ -209,50 +297,136 @@ app.whenReady().then(() => {
 
             return results;
         } catch (error) {
-            console.error('Error in getUnpublishedAssignments: ', error);
-            return false;
+            throw error.message;
         }
     });
 
     ipcMain.handle('axios:getNonModuleAssignments', async (event, data) => {
         console.log('main.js > axios:getNonModuleAssignments');
 
-        const results = await assignments.getNonModuleAssignments(data.domain, data.course, data.token);
-
-        return results;
+        try {
+            const results = await assignments.getNonModuleAssignments(data.domain, data.course, data.token);
+            return results;
+        } catch (error) {
+            throw error.message;
+        }
     });
 
-    ipcMain.handle('axios:deleteTheThings', async (event, data) => {
-        console.log('Inside axios:deleteTheThings')
+    ipcMain.handle('axios:getAssignmentsToMove', async (event, data) => {
+        console.log('main.js > axios:getAssignmentsToMove');
 
-        const result = deleteRequester(data.content, data.url, null, data.token);
-        // const result = await assignmentGroups.deleteEmptyAssignmentGroups(data.domain, data.course, data.token, data.groups);
+        // 1. Get all assignments
+        // 2. Get assignment group id of first assignment
+        // 3. Move all assignments to that group
 
-        return result;
+        try {
+            const results = await assignments.getAssignmentsToMove(data.domain, data.course, data.token);
+            return results;
+        } catch (error) {
+            throw error.message;
+        }
     });
+
+    ipcMain.handle('axios:moveAssignmentsToSingleGroup', async (event, data) => {
+        console.log('main.js > axios:moveAssignmentsToSingleGroup');
+
+        let completedRequests = 0;
+        let totalRequests = data.number;
+
+        const updateProgress = () => {
+            completedRequests++;
+            mainWindow.webContents.send('update-progress', (completedRequests / totalRequests) * 100);
+        }
+
+        const request = async (data) => {
+            try {
+                const response = await assignments.moveAssignmentToGroup(data)
+                return response;
+            } catch (error) {
+                console.error('Error in getNonModuleAssignments: ', error);
+                throw `status code ${error.status} - ${error.message}`;
+            } finally {
+                updateProgress();
+            }
+        }
+
+        const requests = [];
+        for (let assignment of data.assignments) {
+            requests.push(() => request({ url: data.url, token: data.token, id: assignment._id, groupID: data.groupID }))
+        }
+
+        const batchResponse = await batchHandler(requests);
+        return batchResponse;
+    });
+
+    ipcMain.handle('axios:createAssignmentGroups', async (event, data) => {
+
+        let completedRequests = 0;
+        let totalRequests = data.number;
+
+        const updateProgress = () => {
+            completedRequests++;
+            mainWindow.webContents.send('update-progress', (completedRequests / totalRequests) * 100);
+        }
+
+        const request = async (data) => {
+            try {
+                const response = await assignmentGroups.createAssignmentGroups(data);
+                return response;
+            } catch (error) {
+                throw error
+            } finally {
+                updateProgress();
+            }
+        };
+
+        const requests = [];
+        for (let i = 0; i < totalRequests; i++) {
+            requests.push(() => request(data));
+        }
+
+        const batchResponse = await batchHandler(requests);
+
+        return batchResponse;
+    });
+    // ipcMain.handle('axios:deleteTheThings', async (event, data) => {
+    //     console.log('Inside axios:deleteTheThings')
+
+    //     // const result = deleteRequester(data.content, data.url, null, data.token);
+    //     // const result = await assignmentGroups.deleteEmptyAssignmentGroups(data.domain, data.course, data.token, data.groups);
+    //     const batchResponse = await batchHandler(data, data.action);
+
+    //     return result;
+    // });
 
     ipcMain.handle('axios:getPageViews', async (event, data) => {
         console.log('main.js > axios:getPageViews');
 
-        const results = await getPageViews(data.domain, data.token, data.user, data.start, data.end);
-        if (!results) {
-            return results;
+        let response;
+        try {
+            response = await getPageViews(data);
+        } catch (error) {
+            throw error.message
         }
-        console.log(results.length);
-        if (results.length > 0) {
+
+        // if (!response) {
+        //     return response;
+        // }
+        // console.log(response.length);
+        if (response.length > 0) {
             //const filteredResults = convertToPageViewsCsv(result);
 
             const filename = `${data.user}_page_views.csv`;
             const fileDetails = getFileLocation(filename);
             if (fileDetails) {
-                await csvExporter.exportToCSV(results, fileDetails);
+                await csvExporter.exportToCSV(response, fileDetails);
             } else {
                 return 'cancelled';
             }
             return true;
         } else {
             console.log('no page views');
-            return 'empty';
+            return false;
         }
     });
 
@@ -368,3 +542,84 @@ function convertToPageViewsCsv(data) {
     }
     return csvRows;
 }
+
+async function batchHandler(requests) {
+    const batchSize = 35;
+    const timeDelay = 2000;
+
+    let myRequests = requests
+
+    const processBatchRequests = async (myRequests) => {
+        console.log('Inside processBatchRequests');
+
+        const results = [];
+        for (let i = 0; i < myRequests.length; i += batchSize) {
+            const batch = myRequests.slice(i, i + batchSize);
+            const batchResults = await Promise.allSettled(batch.map(request => request()));
+            results.push(...batchResults);
+            if (i + batchSize < myRequests.length) {
+                await waitFunc(timeDelay);
+            }
+        }
+        return results;
+    }
+
+    let counter = 0;
+    const finalResults = {
+        successful: [],
+        failed: []
+    }
+
+    do {
+        const response = await processBatchRequests(myRequests);
+
+        // checking for successful requests and mapping them to a new array
+        successful = response.filter((result) => {
+            if (result.status === 'fulfilled') {
+                return result;
+            }
+        }).map((result) => {
+            return {
+                status: result.status,
+                id: result.value
+            }
+        });
+        finalResults.successful.push(...successful);
+
+        // checking for failed requests and mapping them to a new array
+        failed = response.filter((result) => {
+            if (result.status === 'rejected') {
+                return result
+            }
+        }).map((result) => {
+            const failedResult = {
+                status: result.status,
+                reason: result.reason.message
+            }
+            if (result.reason?.config?.url) {
+                failedResult.id = result.reason.config.url.split('/').pop();
+            }
+            return failedResult;
+        });
+        finalResults.failed.push(...failed);
+
+        // removing successful requests from the failed requests
+        finalResults.successful.forEach((success) => {
+            finalResults.failed = finalResults.failed.filter((fail) => {
+                return fail.id != success.id;
+            });
+        });
+
+        // filters results to attempt a retry for any which may have been throttled
+        const toRetry = failed.filter((fail) => {
+            if (fail.reason.match(/403/)) {
+                return fail;
+            }
+        });
+        myRequests = toRetry;
+        counter++;
+    } while (myRequests.length > 0 && counter < 3);
+
+    return finalResults;
+}
+

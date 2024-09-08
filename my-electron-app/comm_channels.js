@@ -4,59 +4,96 @@ const pagination = require('./pagination.js');
 //const questionAsker = require('./questionAsker');
 // const { deleteRequester } = require('./utilities');
 const axios = require('axios');
+const { errorCheck } = require('./utilities.js');
 
 const REGION = {
-    "dub": "https://e5d4doray3ypvpqy7unlaoqzdi0mcwrb.lambda-url.eu-west-1.on.aws/",
-    "iad_pdx": "https://r4kxi5xpiejmj2eb6ru3z2dbrq0warfd.lambda-url.us-east-1.on.aws/",
-    "syd": "https://b2wfgtizt4ilrqkdqsxiphbije0rnaxl.lambda-url.ap-southeast-2.on.aws/",
-    "yul": "https://4ib3vmp6bpq74pmitasw3v6wiy0etggh.lambda-url.ca-central-1.on.aws/"
+    "dub_fra": "https://e5d4doray3ypvpqy7unlaoqzdi0mcwrb.lambda-url.eu-west-1.on.aws/emails/",
+    "iad_pdx": "https://r4kxi5xpiejmj2eb6ru3z2dbrq0warfd.lambda-url.us-east-1.on.aws/emails/",
+    "syd_sin": "https://b2wfgtizt4ilrqkdqsxiphbije0rnaxl.lambda-url.ap-southeast-2.on.aws/emails/",
+    "yul": "https://4ib3vmp6bpq74pmitasw3v6wiy0etggh.lambda-url.ca-central-1.on.aws/emails/"
 }
 
-async function emailCheck(domain, token, region, email) {
+async function emailCheck(data) {
+    const domain = data.domain;
+    const token = data.token;
+    const region = REGION[data.region];
+    const email = data.pattern;
+
     const emailStatus = {
         suppressed: false,
         bounced: false
     };
 
-    emailStatus.suppressed = await awsCheck(domain, token, region, email);
+    emailStatus.suppressed = await awsCheck(region, token, email);
     emailStatus.bounced = await bounceCheck(domain, token, email);
 
     return emailStatus;
 }
 
-async function awsCheck(domain, token, region, email) {
-    const headers = {
-        "Authorization": `Bearer ${token}`
-    }
+async function awsCheck(domain, token, email) {
+    console.log('awsCheck');
 
-    const config = {
-        headers: headers
-    }
-
-}
-async function bounceCheck(domain, token, email) {
-    const headers = {
-        "Authorization": `Bearer ${token}`
-    }
-
-    const config = {
-        headers: headers
-    }
-
-    let bounceURL = `${domain}/api/v1/bounced_communication_channels?pattern=${email}`;
-
-    // create a try block to catch errors and return false
-    try {
-        const result = await axios.get(bounceURL, config);
-
-        if (result.length > 1) {
-            return true;
+    const axiosConfig = {
+        method: 'get',
+        url: `${domain}${encodeURIComponent(email)}`,
+        headers: {
+            'Authorization': `Bearer ${token}`
         }
-        return false;
+    };
+
+    try {
+        const request = async () => {
+            return await axios(axiosConfig);
+        }
+
+        const response = await errorCheck(request);
+        return response;
     } catch (error) {
-        console.error(error);
-        return false;
+        if (error.status.match(/404/)) {
+            return false;
+        }
+        throw error;
     }
+}
+
+async function bounceCheck(domain, token, email) {
+    console.log('bounceCheck');
+
+    const url = `https://${domain}/api/v1/accounts/self/bounced_communication_channels?pattern=${email}`;
+
+    const axiosConfig = {
+        method: 'get',
+        url: url,
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    };
+
+    try {
+        const request = async () => {
+            return await axios(axiosConfig);
+        }
+
+        const response = await errorCheck(request);
+        return response.data.length > 1;
+    } catch (error) {
+        throw error;
+    }
+
+    // let bounceURL = `${domain}/api/v1/bounced_communication_channels?pattern=${email}`;
+
+    // // create a try block to catch errors and return false
+    // try {
+    //     const result = await axios.get(bounceURL, config);
+
+    //     if (result.length > 1) {
+    //         return true;
+    //     }
+    //     return false;
+    // } catch (error) {
+    //     console.error(error);
+    //     return false;
+    // }
 }
 
 

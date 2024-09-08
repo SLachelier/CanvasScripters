@@ -11,7 +11,7 @@
 const pagination = require('./pagination.js');
 const csvExporter = require('./csvExporter');
 const axios = require('axios');
-const { deleteRequester } = require('./utilities.js');
+const { deleteRequester, errorCheck } = require('./utilities.js');
 // const questionAsker = require('../questionAsker');
 // const readline = require('readline');
 
@@ -19,10 +19,11 @@ const { deleteRequester } = require('./utilities.js');
 // const axios = config.instance;
 
 async function createAssignments(data) {
-
+    console.log('assignments.js > createAssignments');
     // console.log('The data', data);
 
-    console.log(`Creating ${data.number} assignment(s)`);
+    // console.log(`Creating ${data.number} assignment(s)`);
+
     // let url = `courses/${course}/assignments`;
     // const data = {
     //     assignment: {
@@ -108,20 +109,65 @@ async function createAssignments(data) {
     };
 
     try {
-        const response = await axios.post(`https://${data.domain}/api/graphql`, {
-            query: createAssignmentMutation,
-            variables: mutationVariables
-        }, {
-            headers: {
-                'Content-Type': 'application/json',
-                'authorization': `Bearer ${data.token}`
-            }
-        });
+        const request = async () => {
+            return await axios.post(`https://${data.domain}/api/graphql`, {
+                query: createAssignmentMutation,
+                variables: mutationVariables
+            }, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'authorization': `Bearer ${data.token}`
+                }
+            })
+        };
 
-        return true;
+        const response = await errorCheck(request);
+
+        return response.data.data.createAssignment.assignment._id;
+
+        // if (response.data.errors?.length > 0) {
+        //     newError = {
+        //         status: "Unknown",
+        //         message: response.data.errors[0].message
+        //     }
+        //     throw newError;
+        // }
+    } catch (error) {
+        throw error;
+        // console.log('there was an error');
+        // if (error.code && error.code === 'ERR_TLS_CERT_ALTNAME_INVALID') {
+        //     newError = {
+        //         status: '',
+        //         message: `${error.code} - Check the domain to make sure it's valid.`
+        //     }
+        //     throw newError;
+
+        // } else {
+        //     throw new Error(`${error.status} - ${error.message}`);
+        // }
+
+    }
+}
+
+async function deleteAssignments(data) {
+    console.log('Deleting assignment ', data.id);
+    const url = `${data.endpoint}/${data.id}`;
+
+    try {
+        const request = async () => {
+            return await axios.delete(url, {
+                headers: {
+                    'Authorization': `Bearer ${data.token}`
+                }
+            });
+        };
+
+        const response = await errorCheck(request);
+
+        return response.data.id;
     } catch (error) {
         console.log(error);
-        return false;
+        throw error;
     }
 }
 
@@ -134,11 +180,15 @@ async function getAssignments(domain, courseID, token) {
     while (myURL) {
         console.log('inside while', myURL);
         try {
-            const response = await axios.get(myURL, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+            const request = async () => {
+                return await axios.get(myURL, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+            };
+
+            const response = await errorCheck(request);
 
             if (response.headers.get('link')) {
                 myURL = pagination.getNextPage(response.headers.get('link'));
@@ -146,23 +196,34 @@ async function getAssignments(domain, courseID, token) {
                 myURL = false;
             }
 
-            for (let assignment of response.data) {
-                assignmentList.push(assignment);
-            }
+            assignmentList.push(...response.data);
+            // for (let assignment of response.data) {
+            //     assignmentList.push(assignment);
+            // }
         } catch (error) {
-            console.log('there was an error');
-            if (error.response) {
-                console.log('error with response');
-                console.log(error.response.status);
-                console.log(error.response.headers);
-            } else if (error.request) {
-                console.log('error with request');
-                console.log(error.request);
-            } else {
-                console.log('A different error', error.message);
-            }
-            return false;
+            throw error;
+            // console.log('there was an error');
+            // let newError;
+            // if (error.response) {
+            //     console.log('error with response');
+            //     console.log(error.response.status);
+            //     console.log(error.response.headers);
+            //     newError = {
+            //         status: error.response.status,
+            //         message: `${error.message} - ${error.response.data.errors[0].message}`
+            //     }
+            // } else if (error.request) {
+            //     console.log('error with request');
+            //     console.log(error.request);
+            //     newError = { status: "No Response", message: error.message }
+            // } else {
+            //     console.log('A different error', error.message);
+            //     newError = { status: "Unknown error", message: error.message }
+            // }
+            // throw new Error(`${error.message} - ${error.response.data.errors[0].message}`);
         }
+
+
     }
 
     return assignmentList;
@@ -238,22 +299,28 @@ async function getNoSubmissionAssignments(domain, courseID, token, graded) {
     //     console.log(error)
     // }
 
-    const assignments = await getAssignments(domain, courseID, token);
+    try {
+        const assignments = await getAssignments(domain, courseID, token);
 
-    const noSubmissionAssignments = assignments.filter(assignment => {
-        if (graded) {
-            if (!assignment.has_submitted_submissions) {
-                return assignment;
+        const noSubmissionAssignments = assignments.filter(assignment => {
+            if (graded) {
+                if (!assignment.has_submitted_submissions) {
+                    return assignment;
+                }
+            } else {
+                if (!assignment.has_submitted_submissions &&
+                    !assignment.graded_submissions_exist) {
+                    return assignment;
+                }
             }
-        } else {
-            if (!assignment.graded_submissions_exist) {
-                return assignment;
-            }
-        }
-    });
+        });
 
 
-    return noSubmissionAssignments;
+        return noSubmissionAssignments;
+    } catch (error) {
+        throw error;
+    }
+
 }
 
 async function deleteNoSubmissionAssignments(domain, course, token, assignments) {
@@ -359,16 +426,29 @@ async function getUnpublishedAssignments(domain, course, token) {
     let assignments = [];
     while (next_page) {
         try {
-            const response = await axios(axiosConfig);
-            assignments.push(...response.data.data.course.assignmentsConnection.nodes);
-            if (response.data.data.course.assignmentsConnection.pageInfo.hasNextPage) {
-                variables.nextPage = response.data.data.course.assignmentsConnection.pageInfo.endCursor;
-            } else {
-                next_page = false;
+            const request = async () => {
+                return await axios(axiosConfig);
             }
+
+            const response = await errorCheck(request);
+
+            if (response.data.data.course?.assignmentsConnection.nodes) {
+                assignments.push(...response.data.data.course.assignmentsConnection.nodes);
+                if (response.data.data.course.assignmentsConnection.pageInfo.hasNextPage) {
+                    variables.nextPage = response.data.data.course.assignmentsConnection.pageInfo.endCursor;
+                } else {
+                    next_page = false;
+                }
+            } else {
+                let newError = {
+                    status: "Unknown",
+                    message: "Error course ID couldn't be found."
+                }
+                throw newError;
+            }
+
         } catch (error) {
-            console.log('There was an error', error.message);
-            return false;
+            throw error;
         }
     }
     let unPublishedAssignments = assignments.filter(assignment => {
@@ -388,6 +468,98 @@ async function getUnpublishedAssignments(domain, course, token) {
     // });
 
     // return unPublishedAssignments;
+}
+
+async function getAssignmentsToMove(domain, courseID, token) {
+    console.log('Getting assignments to move to single group');
+    let query = `query GetAssignmentsToMove($courseId: ID!, $nextPage: String) {
+                    course(id: $courseId) {
+                        assignmentsConnection(after: $nextPage, first: 500) {
+                            nodes {
+                                _id
+                                assignmentGroupId
+                            }
+                            pageInfo {
+                                endCursor
+                                hasNextPage
+                            }
+                        }
+                    }
+                }`;
+
+    let variables = {
+        "courseId": courseID,
+        "nextPage": ""
+    };
+
+    const axiosConfig = {
+        method: 'post',
+        url: `https://${domain}/api/graphql`,
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
+        data: {
+            query: query,
+            variables: variables
+        }
+    };
+
+    let next_page = true;
+    let assignments = [];
+    while (next_page) {
+        try {
+            const request = async () => {
+                return await axios(axiosConfig);
+            };
+
+            const response = await errorCheck(request);
+
+            if (response.data.data.course?.assignmentsConnection.nodes) {
+                assignments.push(...response.data.data.course.assignmentsConnection.nodes);
+                if (response.data.data.course.assignmentsConnection.pageInfo.hasNextPage) {
+                    variables.nextPage = response.data.data.course.assignmentsConnection.pageInfo.endCursor;
+                } else {
+                    next_page = false;
+                }
+            } else {
+                let newError = {
+                    status: "Unknown",
+                    message: "Error course ID couldn't be found."
+                }
+                throw newError;
+            }
+        } catch (error) {
+            throw error;
+        }
+    }
+    return assignments;
+}
+
+async function moveAssignmentToGroup(data) {
+
+    const url = `${data.url}/${data.id}`;
+    const groupID = data.groupID;
+
+    const axiosConfig = {
+        method: 'put',
+        url: url,
+        headers: {
+            'Authorization': `Bearer ${data.token}`
+        },
+        data: {
+            "assignment": {
+                "assignment_group_id": groupID
+            }
+        }
+    }
+    try {
+        const response = await axios(axiosConfig);
+        return response.data;
+    } catch (error) {
+        console.log('There was an error: ', error);
+        throw error;
+    }
 }
 
 // async function deleteUnPublishedAssignments(data) {
@@ -434,25 +606,23 @@ async function getNonModuleAssignments(domain, courseID, token) {
         query myQuery($courseId: ID,$nextPage: String)  {
             course(id: $courseId) {
                 assignmentsConnection(first:500, after: $nextPage) {
-                    edges {
-                        node {
+                    nodes {
+                        name
+                        _id
+                        modules {
                             name
-                            _id
+                        }
+                        quiz {
                             modules {
                                 name
                             }
-                            quiz {
-                                modules {
-                                    name
-                                }
-                            }
-                            discussion {
-                                modules {
-                                    name
-                                }
+                        }
+                        discussion {
+                            modules {
+                                name
                             }
                         }
-                    },
+                    }
                     pageInfo {
                         endCursor,
                         hasNextPage
@@ -480,23 +650,28 @@ async function getNonModuleAssignments(domain, courseID, token) {
     //let startTime = performance.now();
     while (next_page) {
         try {
-            const response = await axios(axiosConfig);
-
-            const data = response.data;
-            // console.log(data);
-
-            for (let assignment of data.data.course.assignmentsConnection.edges) {
-                assignments.push(assignment.node);
+            const request = async () => {
+                return await axios(axiosConfig);
             }
-            if (data.data.course.assignmentsConnection.pageInfo.hasNextPage) {
-                variables.nextPage = data.data.course.assignmentsConnection.pageInfo.endCursor
+
+            const response = await errorCheck(request);
+
+            if (response.data.data.course?.assignmentsConnection.nodes) {
+                assignments.push(...response.data.data.course.assignmentsConnection.nodes);
+                if (response.data.data.course.assignmentsConnection.pageInfo.hasNextPage) {
+                    variables.nextPage = response.data.data.course.assignmentsConnection.pageInfo.endCursor;
+                } else {
+                    next_page = false;
+                }
             } else {
-                next_page = false;
+                let newError = {
+                    status: "Unknown",
+                    message: "Error course ID couldn't be found."
+                }
+                throw newError;
             }
-        } catch (err) {
-            console.log(err);
-            // next_page = false;
-            return false;
+        } catch (error) {
+            throw error;
         }
 
         // const data = await response.json();
@@ -562,5 +737,5 @@ async function getNonModuleAssignments(domain, courseID, token) {
 // }) ();
 
 module.exports = {
-    createAssignments, getAssignments, getNoSubmissionAssignments, getUnpublishedAssignments, deleteNoSubmissionAssignments, getNonModuleAssignments
+    createAssignments, deleteAssignments, getAssignments, getNoSubmissionAssignments, getUnpublishedAssignments, deleteNoSubmissionAssignments, getNonModuleAssignments, getAssignmentsToMove, moveAssignmentToGroup
 }
