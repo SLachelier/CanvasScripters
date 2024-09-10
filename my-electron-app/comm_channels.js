@@ -123,7 +123,6 @@ async function checkCommDomain(data) {
             };
 
             const response = await errorCheck(request);
-            console.log(response.status, response.statusText);
             if (response.status === 502) {
                 if (retryCounter > 3) {
                     console.log('Retry has failed more than 4 times. Returning found emails and exiting.');
@@ -156,6 +155,7 @@ async function checkCommDomain(data) {
             throw error;
         }
     }
+    return suppList;
 }
 
 module.exports = {

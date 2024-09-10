@@ -153,7 +153,6 @@ app.whenReady().then(() => {
 
         try {
             const response = await checkCommDomain(data);
-            clearInterval(intID);
             return response;
         } catch (error) {
             throw error;

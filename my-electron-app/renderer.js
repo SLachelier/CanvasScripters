@@ -2058,7 +2058,7 @@ function checkComm(e) {
                             <option value="iad_pdx" selected>IAD/PDX</option>
                             <option value="dub_fra">DUB/FRA</option>
                             <option value="syd_sin">SYD/SIN</option>
-                            <option value="yul">YUL</option>
+                            <option value="yul" selected>YUL</option>
                         </select>
                     </div>
                 </div>
@@ -2086,10 +2086,9 @@ function checkComm(e) {
                 </div>
             </div>
         <button type="button" class="btn btn-primary mt-3" id="email-check">Check</button>
-        <div hidden id="progress-div">
-            <p id="progress-info"></p>
-            <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-                <div class="progress-bar" style="width: 0%"></div>
+        <div id="loading-wheel">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
             </div>
         </div>
         <div id="response-container" class="mt-5">
@@ -2177,12 +2176,12 @@ function checkComm(e) {
             let progress = 0;
             try {
                 // just some status to show it's still doing something
-                progressBar.innerHTML = `<div class="spinner-border" role="status">
+                progressBar.innerHTML = `
+                <div class="spinner-border" role="status">
                     <span class="visually-hidden">Loading...</span>
                 </div>`
                 responseContainer.innerHTML = 'Checking domain pattern....';
                 response = await window.axios.checkCommDomain(data);
-                clearInterval(intID);
             } catch (error) {
                 checkBtn.disabled = false;
                 errorHandler(error, responseContainer);
