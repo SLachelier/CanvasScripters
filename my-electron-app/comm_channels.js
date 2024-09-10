@@ -4,7 +4,7 @@ const pagination = require('./pagination.js');
 //const questionAsker = require('./questionAsker');
 // const { deleteRequester } = require('./utilities');
 const axios = require('axios');
-const { errorCheck } = require('./utilities.js');
+const { waitFunc, errorCheck } = require('./utilities.js');
 
 const REGION = {
     "dub_fra": "https://e5d4doray3ypvpqy7unlaoqzdi0mcwrb.lambda-url.eu-west-1.on.aws/emails/",
@@ -96,7 +96,68 @@ async function bounceCheck(domain, token, email) {
     // }
 }
 
+async function checkCommDomain(data) {
+    console.log('checking domains...');
+
+    let suppList = [];
+    let url = `${REGION[data.region]}domain/${encodeURIComponent(data.pattern)}`;
+    let next = url;
+    let retryCounter = 1;
+
+    const axiosConfig = {
+        method: 'get',
+        url: url,
+        headers: {
+            'Authorization': `Bearer ${data.token}`,
+            'Content-Type': 'application/x-www.form-urlencoded'
+        }
+    };
+
+    // looping through the list while there is a next_token
+    while (next) {
+        console.log('searching...');
+        console.log(next);
+        try {
+            const request = async () => {
+                return await axios(axiosConfig);
+            };
+
+            const response = await errorCheck(request);
+            console.log(response.status, response.statusText);
+            if (response.status === 502) {
+                if (retryCounter > 3) {
+                    console.log('Retry has failed more than 4 times. Returning found emails and exiting.');
+                    break;
+                } else {
+                    console.log(retryCounter);
+                    retryCounter++;
+                    console.log('Retrying in 1 minute.');
+                    await waitFunc(60000);
+                }
+            } else if (response.status !== 200) {
+
+            } else {
+                retryCounter = 1;
+                data = response.data;
+
+                for (let item of data.suppressed) {
+                    suppList.push(item.email);
+                }
+                if (!data.next_token) {
+                    next = false;
+                    console.log('end of list');
+                } else {
+                    next = `${url}?next_token=${encodeURIComponent(data.next_token)}`;
+                    axiosConfig.url = next;
+                }
+            }
+        } catch (error) {
+            console.log('There was an error: ', error.response.status)
+            throw error;
+        }
+    }
+}
 
 module.exports = {
-    emailCheck
+    emailCheck, checkCommDomain
 }
