@@ -1653,7 +1653,7 @@ async function deleteConvos(e) {
             </div>
         </div>
         <button type="button" class="btn btn-primary mt-3" id="action-btn" disabled>Search</button>
-         <div hidden id="progress-div">
+        <div hidden id="progress-div">
             <p id="progress-info"></p>
             <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
                 <div class="progress-bar" style="width: 0%"></div>
@@ -2086,6 +2086,12 @@ function checkComm(e) {
                 </div>
             </div>
         <button type="button" class="btn btn-primary mt-3" id="email-check">Check</button>
+        <div hidden id="progress-div">
+            <p id="progress-info"></p>
+            <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-bar" style="width: 0%"></div>
+            </div>
+        </div>
         <div id="response-container" class="mt-5">
         </div>
         `
@@ -2130,11 +2136,15 @@ function checkComm(e) {
         const region = eContent.querySelector('#region').value;
         const email = eContent.querySelector('#email').value.trim();
         const responseContainer = eContent.querySelector('#response-container');
+        const progresDiv = eContent.querySelector('#progress-div');
+        const progressBar = eContent.querySelector('.progress-bar');
+        const progressInfo = eContent.querySelector('#progress-info');
+
         responseContainer.innerHTML = '';
 
         const options = eContent.querySelectorAll('input[type="checkbox"]');
         const checkedOption = Array.from(options).find(checkbox => checkbox.checked);
-        const option = checkedOption ? checkedOption.id : undefined;
+        const option = checkedOption ? checkedOption.id.split('-')[0] : undefined;
 
         const data = {
             domain: domain,
@@ -2145,20 +2155,38 @@ function checkComm(e) {
 
         let response;
         let hasError = false;
-        try {
-            responseContainer.inner = 'Checking....';
-            response = await window.axios.checkCommChannel(data);
-        } catch (error) {
-            hasError = true;
-            errorHandler(error, responseContainer);
-        } finally {
-            checkBtn.disabled = false;
-            responseContainer.innerHTML += '<p>Done.</p>';
-        }
+        if (option === 'single') {
+            try {
+                responseContainer.innerHTML = 'Checking email....';
+                response = await window.axios.checkCommChannel(data);
+            } catch (error) {
+                hasError = true;
+                errorHandler(error, responseContainer);
+            } finally {
+                checkBtn.disabled = false;
+                responseContainer.innerHTML += '<p>Done.</p>';
+            }
 
-        if (!hasError) {
-            responseContainer.innerHTML += `<p>Suppressed: <span style="color: ${response.suppressed ? 'red' : 'green'}">${response.suppressed ? 'Yes' : 'No'}</span></p>`;
-            responseContainer.innerHTML += `<p>Bounced: <span style="color: ${response.bounced ? 'red' : 'green'}">${response.bounced ? 'Yes' : 'No'}</span></p>`;
+            if (!hasError) {
+                responseContainer.innerHTML += `<p>Suppressed: <span style="color: ${response.suppressed ? 'red' : 'green'}">${response.suppressed ? 'Yes' : 'No'}</span></p>`;
+                responseContainer.innerHTML += `<p>Bounced: <span style="color: ${response.bounced ? 'red' : 'green'}">${response.bounced ? 'Yes' : 'No'}</span></p>`;
+            }
+        } else {
+            progresDiv.hidden = false;
+            progressBar.style.width = '0%';
+            let progress = 0;
+            try {
+                // just some status to show it's still doing something
+                progressBar.innerHTML = `<div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>`
+                responseContainer.innerHTML = 'Checking domain pattern....';
+                response = await window.axios.checkCommDomain(data);
+                clearInterval(intID);
+            } catch (error) {
+                checkBtn.disabled = false;
+                errorHandler(error, responseContainer);
+            }
         }
     })
 

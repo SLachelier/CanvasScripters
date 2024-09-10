@@ -14,7 +14,7 @@ const assignments = require('./assignments');
 const { getPageViews } = require('./users');
 const { send } = require('process');
 const { deleteRequester, waitFunc } = require('./utilities');
-const { emailCheck } = require('./comm_channels');
+const { emailCheck, checkCommDomain } = require('./comm_channels');
 const { resetCourse } = require('./courses');
 
 let mainWindow;
@@ -144,8 +144,20 @@ app.whenReady().then(() => {
             return response;
         } catch (error) {
             throw error.message;
-        } 
+        }
 
+    });
+
+    ipcMain.handle('axios:checkCommDomain', async (event, data) => {
+        console.log('inside axios:checkCommDomain');
+
+        try {
+            const response = await checkCommDomain(data);
+            clearInterval(intID);
+            return response;
+        } catch (error) {
+            throw error;
+        }
     });
 
     ipcMain.handle('axios:createAssignments', async (event, data) => {

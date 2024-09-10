@@ -28,6 +28,10 @@ contextBridge.exposeInMainWorld('axios', {
         console.log('inside preload checkCommChannel');
         return await ipcRenderer.invoke('axios:checkCommChannel', data);
     },
+    checkCommDomain: async (data) => {
+        console.log('Inside preload axios:checkCommDomain');
+        return await ipcRenderer.invoke('axios:checkCommDomain', data);
+    },
     createAssignments: async (data) => {
         console.log('inside preload createAssignments');
 
