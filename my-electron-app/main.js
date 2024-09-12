@@ -18,6 +18,7 @@ const { emailCheck, checkCommDomain } = require('./comm_channels');
 const { resetCourse } = require('./courses');
 
 let mainWindow;
+let suppressedEmails = [];
 
 const createWindow = () => {
     mainWindow = new BrowserWindow({
@@ -150,10 +151,17 @@ app.whenReady().then(() => {
 
     ipcMain.handle('axios:checkCommDomain', async (event, data) => {
         console.log('inside axios:checkCommDomain');
+        suppressedEmails = [];
 
         try {
             const response = await checkCommDomain(data);
-            return response;
+            suppressedEmails.push(...response);
+            suppressedEmails.push('example@example.com');
+            if (suppressedEmails.length > 0) {
+                return true;
+            } else {
+                return false;
+            }
         } catch (error) {
             throw error;
         }
@@ -463,17 +471,19 @@ app.whenReady().then(() => {
         return responses;
     });
 
-    ipcMain.handle('csv:sendToCSV', async (event, data) => {
-        console.log('inside cvs:sendtoCSV');
-        //console.log(data);
-
-        const fileDetails = getFileLocation('exported_convos.csv')
-        if (fileDetails) {
-            csvExporter.exportToCSV(data, fileDetails);
-        } else {
-            return false;
-        }
+    ipcMain.handle('csv:sendToCSV', () => {
+        sendToCSV(data);
     });
+
+    ipcMain.on('csv:sendToText', () => {
+        console.log('csv:sendToText');
+
+        try {
+            sendToTxt(suppressedEmails);
+        } catch (error) {
+            console.log('There was an error in the sendToText');
+        }
+    })
 
     //ipcMain.handle('')
     createWindow();
@@ -490,6 +500,29 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
 })
+
+function sendToCSV(data) {
+    console.log('inside sendToCSV()');
+    //console.log(data);
+
+    const fileDetails = getFileLocation(data.fileName)
+    if (fileDetails) {
+        csvExporter.exportToCSV(data.data, fileDetails);
+    } else {
+        return false;
+    }
+}
+
+function sendToTxt(data) {
+    console.log('inside sendToTxt');
+
+    const fileDetails = getFileLocation('suppressed_emails.txt');
+    if (fileDetails) {
+        csvExporter.exportToTxt(data, fileDetails)
+    } else {
+        throw new Error('Failed to write file.');
+    }
+}
 
 function getFileLocation(fileName) {
     const fileDetails = dialog.showSaveDialogSync({

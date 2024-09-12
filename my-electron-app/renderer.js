@@ -1847,7 +1847,12 @@ async function deleteConvos(e) {
                 console.log('inside sendTocCSV');
                 //console.log(filteredMessages);
 
-                window.csv.sendToCSV(messages);
+                const csvData = {
+                    fileName: 'exported_convos.csv',
+                    data: messages
+                };
+
+                window.csv.sendToCSV(csvData);
             })
         }
     });
@@ -2085,10 +2090,12 @@ function checkComm(e) {
                     </div>
                 </div>
             </div>
-        <button type="button" class="btn btn-primary mt-3" id="email-check">Check</button>
-        <div id="loading-wheel">
-            <div class="spinner-border" role="status">
-                <span class="visually-hidden">Loading...</span>
+        <button type="button" class="btn btn-primary mt-3" id="email-check" disabled>Check</button>
+        <div id="progress-div" hidden>
+            <div id="loading-wheel">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
             </div>
         </div>
         <div id="response-container" class="mt-5">
@@ -2097,20 +2104,43 @@ function checkComm(e) {
 
     eContent.append(eForm);
 
+    const emailInput = eContent.querySelector('#email');
+    emailInput.addEventListener('input', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (e.target.value === '') {
+            checkBtn.disabled = true;
+        } else {
+            checkBtn.disabled = false;
+        }
+    })
+
     function handleQueryType(e) {
-        const emailInput = eContent.querySelector('#email');
+
         const formMessgae = eContent.querySelector('#email-form-text')
         const emailLabel = eContent.querySelector('#email-label')
+        const emailChbx = eContent.querySelector('#single-email-chkbx');
+        const domainChbx = eContent.querySelector('#domain-email-chkbx');
 
-        emailInput.disabled = false;
-        if (e.target.id === 'single-email-chkbx') {
-            eContent.querySelector('#domain-email-chkbx').checked = false;
-            formMessgae.innerHTML = "Enter the full email address you want to check";
-            emailLabel.innerHTML = "Email";
+        if (emailChbx.checked === false && domainChbx.checked === false) {
+            emailInput.value = '';
+            emailInput.disabled = true;
+            checkBtn.disabled = true;
         } else {
-            eContent.querySelector('#single-email-chkbx').checked = false;
-            formMessgae.innerHTML = "Enter the domain you want to check. You can include the wildcard \'*\' character, for example \"ins*e*u\" will match \"myemail@instru.edu.com.au\" as well as \"something@instructure.ecu\". <p><p>NOTE: This queries the entire aws region and will take some time, we're talking hours in some cases.</p></p>";
-            emailLabel.innerHTML = "Domain";
+            if (e.target.id === 'single-email-chkbx') {
+                eContent.querySelector('#domain-email-chkbx').checked = false;
+                formMessgae.innerHTML = "Enter the full email address you want to check";
+                emailLabel.innerHTML = "Email";
+            } else {
+                eContent.querySelector('#single-email-chkbx').checked = false;
+                formMessgae.innerHTML = "Enter the domain pattern you want to check. You can use a wildcard at the beginning and end, for example *student* will match anything that has student in the email. <p><p>NOTE: This queries the entire aws region and will take some time, we're talking hours in some cases.</p></p>";
+                emailLabel.innerHTML = "Domain";
+            }
+            emailInput.disabled = false;
+            if (emailInput.value !== '') {
+                checkBtn.disabled = false;
+            }
         }
     }
 
@@ -2121,7 +2151,6 @@ function checkComm(e) {
 
         handleQueryType(e);
     })
-
 
     const checkBtn = eContent.querySelector('button');
     checkBtn.addEventListener('click', async (e) => {
@@ -2157,6 +2186,7 @@ function checkComm(e) {
         if (option === 'single') {
             try {
                 responseContainer.innerHTML = 'Checking email....';
+                progresDiv.hidden = false;
                 response = await window.axios.checkCommChannel(data);
             } catch (error) {
                 hasError = true;
@@ -2164,6 +2194,7 @@ function checkComm(e) {
             } finally {
                 checkBtn.disabled = false;
                 responseContainer.innerHTML += '<p>Done.</p>';
+                progresDiv.hidden = true;
             }
 
             if (!hasError) {
@@ -2172,29 +2203,41 @@ function checkComm(e) {
             }
         } else {
             progresDiv.hidden = false;
-            progressBar.style.width = '0%';
-            let progress = 0;
+            // progressBar.style.width = '0%';
+            // let progress = 0;
             try {
-                // just some status to show it's still doing something
-                progressBar.innerHTML = `
-                <div class="spinner-border" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>`
                 responseContainer.innerHTML = 'Checking domain pattern....';
                 response = await window.axios.checkCommDomain(data);
+                responseContainer.innerHTML += 'Done.';
             } catch (error) {
-                checkBtn.disabled = false;
                 errorHandler(error, responseContainer);
+            } finally {
+                checkBtn.disabled = false;
+                progresDiv.hidden = true;
+            }
+
+            if (response) {
+                responseContainer.innerHTML += `<p>Found suppressed email. Download them here: <button id="download-emails">Download Emails</button>.</p>`;
+                const downloadEmails = responseContainer.querySelector('#download-emails');
+                downloadEmails.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    window.csv.sendToText();
+                });
+            } else {
+                responseContainer.innerHTML += `<p>Didn't find any emails matching the specified pattern.</p>`;
             }
         }
-    })
-
-    // adding response container
-    // const eResponse = document.createElement('div');
-    // eResponse.id = "response-container";
-    // eResponse.classList.add('mt-5');
-    // eContent.append(eResponse);
+    });
 }
+
+// adding response container
+// const eResponse = document.createElement('div');
+// eResponse.id = "response-container";
+// eResponse.classList.add('mt-5');
+// eContent.append(eResponse);
+
 
 function courseTemplate(e) {
     switch (e.target.id) {

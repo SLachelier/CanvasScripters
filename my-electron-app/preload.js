@@ -116,6 +116,11 @@ contextBridge.exposeInMainWorld('csv', {
         //console.log(data);
 
         await ipcRenderer.invoke('csv:sendToCSV', data);
+    },
+    sendToText: async () => {
+        console.log('inside preload sendToText');
+
+        ipcRenderer.send('csv:sendToText');
     }
 });
 

@@ -151,7 +151,7 @@ async function checkCommDomain(data) {
                 }
             }
         } catch (error) {
-            console.log('There was an error: ', error.response.status)
+            console.log('There was an error: ', error)
             throw error;
         }
     }
