@@ -134,7 +134,7 @@ async function checkCommDomain(data) {
                     await waitFunc(60000);
                 }
             } else if (response.status !== 200) {
-
+                throw new Error(response.status);
             } else {
                 retryCounter = 1;
                 data = response.data;
@@ -158,6 +158,51 @@ async function checkCommDomain(data) {
     return suppList;
 }
 
+async function checkUnconfirmedEmails(data) {
+    const url = `https://${data.domain}/api/v1/accounts/self/unconfirmed_communication_channels.csv?pattern=*${data.pattern}*`;
+
+    const axiosConfig = {
+        method: 'get',
+        url: url,
+        headers: {
+            'Authorization': `Bearer ${data.token}`
+        },
+        responseType: 'stream'
+    };
+    try {
+        const request = async () => {
+            return await axios(axiosConfig);
+        };
+        const response = await errorCheck(request);
+        return response.data;
+    } catch (error) {
+        throw error
+    }
+}
+
+async function confirmEmail(data) {
+    const url = `https://${data.domain}/api/v1/accounts/self/unconfirmed_communication_channels/confirm?pattern=${encodeURIComponent(data.email)}`;
+
+    const axiosConfig = {
+        method: 'post',
+        url: url,
+        headers: {
+            'Authorization': `Bearer ${data.token}`
+        }
+    };
+
+    try {
+        const request = async () => {
+            return await axios(axiosConfig);
+        };
+
+        const response = await errorCheck(request);
+        return response.statusText;
+    } catch (error) {
+        throw error
+    }
+}
+
 module.exports = {
-    emailCheck, checkCommDomain
+    emailCheck, checkCommDomain, checkUnconfirmedEmails, confirmEmail
 }
