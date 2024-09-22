@@ -2,27 +2,27 @@
 
 const axios = require('axios');
 const pagination = require('./pagination.js');
+const { errorCheck } = require('./utilities.js');
 
-async function resetCourse(baseURL, courseID, token) {
+async function resetCourse(data) {
     console.log('inside resetCourse');
 
-    let url = baseURL + '/api/v1/courses/' + courseID + '/reset_content';
+    let url = `https://${data.domain}/api/v1/courses/${data.course}/reset_content`;
 
     try {
-        const response = await axios.post(url, {}, {
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + token
-            }
-        });
-        if (response.status === 200) {
-            return 'success';
-        } else {
-            return 'failed';
-        }
+        const request = async () => {
+            return await axios.post(url, {}, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + data.token
+                }
+            });
+        };
+
+        const response = await errorCheck(request);
+        return response.data.id;
     } catch (error) {
-        console.error('Error in resetCourse', error);
-        return 'failed';
+        throw error;
     }
 }
 
