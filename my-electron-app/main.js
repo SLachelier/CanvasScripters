@@ -14,7 +14,7 @@ const assignments = require('./assignments');
 const { getPageViews } = require('./users');
 const { send } = require('process');
 const { deleteRequester, waitFunc } = require('./utilities');
-const { emailCheck, checkCommDomain } = require('./comm_channels');
+const { emailCheck, checkCommDomain, checkUnconfirmedEmails, confirmEmail } = require('./comm_channels');
 const { resetCourse } = require('./courses');
 
 let mainWindow;
@@ -153,10 +153,12 @@ app.whenReady().then(() => {
         console.log('inside axios:checkCommDomain');
         suppressedEmails = [];
 
+        // const fakeEmails = Array.from({ length: 20 }, (_, i) => `fake${i + 1}@example.com`);
+        // suppressedEmails.push(...fakeEmails);
+
         try {
             const response = await checkCommDomain(data);
             suppressedEmails.push(...response);
-            suppressedEmails.push('example@example.com');
             if (suppressedEmails.length > 0) {
                 return true;
             } else {
@@ -452,24 +454,135 @@ app.whenReady().then(() => {
     ipcMain.handle('axios:resetCourses', async (event, data) => {
         console.log('main.js > axios:resetCourses');
 
-        let responses = [];
-        for (let course of data.courses) {
-            const response = { course_id: course, status: 'success' };
+        let completedRequests = 0;
+        const totalRequests = data.courses.length;
+
+        const updateProgress = () => {
+            completedRequests++;
+            mainWindow.webContents.send('update-progress', (completedRequests / totalRequests) * 100)
+        }
+
+        const request = async (requestData) => {
             try {
-                response.status = await resetCourse(data.domain, course, data.token);
+                const response = await resetCourse(requestData);
+                return response;
             } catch (error) {
-                console.error('Error in resetCourses: ', error);
+                throw error;
+            } finally {
+                updateProgress();
             }
-            if (response.status === 'success') {
-                console.log(course, ' reset');
-            } else {
-                console.log(course, ' failed');
-            }
-            responses.push(response);
-        };
-        console.log('Finished resetting courses');
-        return responses;
+        }
+
+        const requests = [];
+        data.courses.forEach((course) => {
+            const requestData = {
+                domain: data.domain,
+                token: data.token,
+                course: course
+            };
+            requests.push(() => request(requestData));
+        })
+
+        const batchResponse = await batchHandler(requests);
+        return batchResponse;
+        // let responses = [];
+        // for (let course of data.courses) {
+        //     const response = { course_id: course, status: 'success' };
+        //     try {
+        //         response.status = await resetCourse(data.domain, course, data.token);
+        //     } catch (error) {
+        //         console.error('Error in resetCourses: ', error);
+        //     }
+        //     if (response.status === 'success') {
+        //         console.log(course, ' reset');
+        //     } else {
+        //         console.log(course, ' failed');
+        //     }
+        //     responses.push(response);
+        // };
+        // console.log('Finished resetting courses');
+        // return responses;
     });
+
+    ipcMain.handle('axios:checkUnconfirmedEmails', async (event, data) => {
+        try {
+            const response = await checkUnconfirmedEmails(data); //returns a data stream to write to file
+            const filePath = getFileLocation('unconfirmed_emails.csv')
+            const wStream = fs.createWriteStream(filePath);
+
+            response.pipe(wStream);
+
+            return new Promise((resolve, reject) => {
+                wStream.on('finish', resolve)
+                wStream.on('error', (error) => {
+                    reject(error);
+                })
+            }).catch((error) => {
+                if (error.code === 'EBUSY') {
+                    throw new Error('File write failed. resource busy, locked or open. Make sure you\'re not trying to overwrite a file currently open.');
+                }
+                throw new Error('File write failed: ', error.message);
+            });
+        } catch (error) {
+            throw error;
+        }
+    });
+
+    ipcMain.handle('fileUpload:confirmEmails', async (event, data) => {
+
+        let emails = [];
+        try {
+
+            const fileContent = await getFileContents('txt');
+            emails = removeBlanks(fileContent.split(/\r?\n|\r|\,/));
+
+
+            // const result = await dialog.showOpenDialog({
+            //     properties: ['openFile'],
+            //     filters: [{ name: 'Text Files', extensions: ['txt'] }]
+            // });
+
+            // if (result.canceled) {
+            //     return 'cancelled';
+            // }
+            // console.log(result.filePaths);
+            // const filePath = result.filePaths[0];
+            // const fileContent = await fs.promises.readFile(filePath, 'utf8');
+            // const emails = removeBlanks(fileContent.split(/\r?\n|\r|,/));
+
+        } catch (error) {
+            throw error;
+        }
+
+        const totalRequests = emails.length;
+        let completedRequests = 0;
+
+        const updateProgress = () => {
+            completedRequests++;
+            mainWindow.webContents.send('update-progress', (completedRequests / totalRequests) * 100);
+        };
+
+        const request = async (data) => {
+            try {
+                const response = await confirmEmail(data);
+                return response;
+            } catch (error) {
+                throw error;
+            } finally {
+                updateProgress();
+            }
+        }
+
+        const requests = [];
+        for (let email of emails) {
+            data.email = email;
+            requests.push(() => request(data));
+        };
+
+        const batchResponse = await batchHandler(requests);
+
+        return batchResponse;
+    })
 
     ipcMain.handle('csv:sendToCSV', () => {
         sendToCSV(data);
@@ -484,6 +597,7 @@ app.whenReady().then(() => {
             console.log('There was an error in the sendToText');
         }
     })
+
 
     //ipcMain.handle('')
     createWindow();
@@ -500,6 +614,27 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
 })
+
+async function getFileContents(ext) {
+    const result = await dialog.showOpenDialog({
+        properties: ['openFile'],
+        filters: [{ name: '', extensions: [ext] }]
+    });
+
+    if (result.canceled) {
+        return 'cancelled';
+    }
+
+    console.log(result.filePaths);
+    const filePath = result.filePaths[0];
+    const fileContent = await fs.promises.readFile(filePath, 'utf8');
+    // const emails = removeBlanks(fileContent.split(/\r?\n|\r|,/));
+    return fileContent;
+}
+
+function removeBlanks(arr) {
+    return arr.filter((element) => element.length > 0);
+}
 
 function sendToCSV(data) {
     console.log('inside sendToCSV()');
