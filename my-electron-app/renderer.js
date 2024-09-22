@@ -1,7 +1,6 @@
 // (async () => {
 //     const result = await window.axios.get();
 //     console.log(result);
-
 // })();
 const endpointSelect = document.querySelector('#endpoints');
 endpointSelect.addEventListener('click', (e) => {
@@ -2028,6 +2027,9 @@ async function commChannelTemplate(e) {
         case 'check-commchannel':
             checkComm(e);
             break;
+        case 'unconfirm-commchannels':
+            unconfirmed(e);
+            break;
         case 'download-conversations-csv':
             downloadConvos(e);
             break;
@@ -2232,6 +2234,187 @@ function checkComm(e) {
     });
 }
 
+function unconfirmed(e) {
+    const eContent = document.querySelector('#endpoint-content');
+    // eContent.append(eHeader);
+    eContent.innerHTML = `
+        <div>
+            <h3>Unconfirmed emails</h3>
+        </div>
+    `;
+
+    const eForm = document.createElement('form');
+    eForm.innerHTML = `
+        <div id="switches">
+            <div class="form-check form-switch">
+                <label class="form-check-label" for="uncofirmed-email-switch">Check for unconfirmed emails</label>
+                <input class="form-check-input" type="checkbox" role="switch" id="unconfirmed-email-switch">
+                <div id="email-pattern-div" hidden>
+                    <input id="unconfirmed-email-pattern" type="text" class="form-control" placeholder="email.domain.edu" aria-describedby="unconfirmed-pattern-description">
+                    <div id="email-warning" style="color: red;" class="form-text" hidden>***Must enter a pattern***</div>
+                    <span id="unconfirmed-pattern-description" class="form-text">Email domain pattern to search for unconfirmed emails (wildcards accepted *pattern*edu)</span>
+                </div>
+            </div>
+            <div class="form-check form-switch">
+                <label class="form-check-label" for="confirm-email-switch">Upload file of emails to confirm</label>
+                <input class="form-check-input" type="checkbox" role="switch" id="confirm-email-switch">
+            </div>
+        </div>
+        <button type="button" class="btn btn-primary mt-3" id="unconfirmed-check-btn" disabled>Check</button>
+        <button type="button" class="btn btn-primary mt-3" id="confirm-email-btn" hidden disabled>Upload</button>
+        <div hidden id="progress-div">
+            <p id="progress-info"></p>
+            <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-bar" style="width: 0%"></div>
+            </div>
+        </div>
+        <div id="response-container" class="mt-5">
+            <div id="loading-wheel" hidden>
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+            <div id="response"></div>
+        </div>
+        `
+    eContent.append(eForm);
+
+    const switchListener = eContent.querySelector('#switches');
+    switchListener.addEventListener('change', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        console.log('inside switchListerner');
+        console.log('the target', e.target);
+        if (e.target.id === "unconfirmed-email-pattern") {
+            return;
+        }
+
+        handleSwitches(e);
+    })
+
+    function handleSwitches(e) {
+        const inputs = switchListener.querySelectorAll('input');
+        const patternDiv = eContent.querySelector('#email-pattern-div');
+        // disable all other inputs inputs
+        for (let input of inputs) {
+            if (input.id !== e.target.id) {
+                input.checked = false;
+            }
+        }
+
+        // showing the correct button
+        if (e.target.checked === false) {
+            unconfirmBtn.disabled = true;
+            confirmBtn.disabled = true;
+        } else if (e.target.id.includes('unconfirm')) {
+            unconfirmBtn.hidden = false;
+            unconfirmBtn.disabled = false;
+            patternDiv.hidden = false;
+            confirmBtn.hidden = true;
+            confirmBtn.disabled = true;
+        } else {
+            unconfirmBtn.hidden = true;
+            unconfirmBtn.disabled = true;
+            patternDiv.hidden = true;
+            confirmBtn.hidden = false;
+            confirmBtn.disabled = false;
+        }
+    }
+
+
+    const unconfirmBtn = eContent.querySelector('#unconfirmed-check-btn');
+    const confirmBtn = eContent.querySelector('#confirm-email-btn');
+    unconfirmBtn.addEventListener('click', handleUnconfirmedCheck);
+    confirmBtn.addEventListener('click', handleConfirmCheck);
+
+    async function handleUnconfirmedCheck(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        unconfirmBtn.disabled = true;
+
+        console.log('Inside handleUnonfirmedCheck');
+        const domain = document.querySelector('#domain').value.trim();
+        const token = document.querySelector('#token').value.trim();
+        const emailPatternInput = eContent.querySelector('#unconfirmed-email-pattern');
+        const emailPattern = emailPatternInput.value.trim();
+        const emailWarning = eContent.querySelector('#email-warning');
+        const progresDiv = eContent.querySelector('#progress-div');
+        const responseContainer = eContent.querySelector('#response-container');
+        const responseDetails = responseContainer.querySelector('#response');
+
+        if (emailPattern.length < 1) {
+            emailWarning.hidden = false;
+            emailPatternInput.focus();
+            unconfirmBtn.disabled = false;
+            return;
+        } else {
+            emailWarning.hidden = true;
+        }
+
+        const requestData = {
+            domain: domain,
+            token: token,
+            pattern: emailPattern
+        };
+
+        try {
+            // progresDiv.hidden = false;
+            responseContainer.querySelector('div').hidden = false; // showing the spinning wheel
+            const response = await window.axios.checkUnconfirmedEmails(requestData)
+            responseContainer.querySelector('div').hidden = true;
+            responseDetails.innerHTML = 'List of unconfirmed emails saved.';
+        } catch (error) {
+            console.log('There was an error', error);
+            responseContainer.querySelector('div').hidden = true;
+            errorHandler(error, responseDetails);
+        } finally {
+            unconfirmBtn.disabled = false;
+            progresDiv.hidden = true;
+        }
+    }
+
+    async function handleConfirmCheck(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        confirmBtn.disabled = true;
+
+        const domain = document.querySelector('#domain').value.trim();
+        const token = document.querySelector('#token').value.trim();
+        const progresDiv = eContent.querySelector('#progress-div');
+        const progressBar = eContent.querySelector('.progress-bar');
+        const progressInfo = eContent.querySelector('#progress-info');
+
+        progressInfo.innerHTML = '';
+
+        const requestData = {
+            domain: domain,
+            token: token
+        }
+
+        progresDiv.hidden = false;
+        window.progressAPI.onUpdateProgress((progress) => {
+            progressBar.style.width = `${progress}%`;
+        });
+
+        try {
+            const result = await window.fileUpload.confirmEmails(requestData);
+            if (result.successful.length > 0) {
+                progressInfo.innerHTML += `<p>Successfully confirmed ${result.successful.length} emails</p>`
+            }
+            if (result.failed.length > 0) {
+                progressBar.parentElement.hidden = true;
+                progressInfo.innerHTML += `Failed to confirm ${result.failed.length} emails`;
+                errorHandler({ message: `${result.failed[0].reason}` }, progressInfo);
+            }
+        } catch (error) {
+            errorHandler(error, progressInfo);
+        } finally {
+            confirmBtn.disabled = false;
+        }
+
+    }
+}
 // adding response container
 // const eResponse = document.createElement('div');
 // eResponse.id = "response-container";
@@ -2253,8 +2436,6 @@ function courseTemplate(e) {
 }
 
 async function resetCourses(e) {
-    const domain = `https://${document.querySelector('#domain').value}`;
-    const apiToken = document.querySelector('#token').value;
     const eContent = document.querySelector('#endpoint-content');
 
     eContent.innerHTML = `
@@ -2271,21 +2452,45 @@ async function resetCourses(e) {
                 <div class="mb-3">
                     <div class="col-auto">
                         <label for="reset-courses-area" class="form-label">Courses to be reset - useful when an Admin is needing to re-apply a template</label>
-                        <textarea class="form-control" id="reset-courses-area" rows="3"></textarea>
+                        <textarea class="form-control" id="reset-courses-area" rows="3" placeholder="Enter comma separated course ids to be reset here."></textarea>
                     </div>
                 </div>
             </div>
-        <button type="button" class="btn btn-primary mt-3" id="resetBtn">Reset</button>`
+        <button type="button" class="btn btn-primary mt-3" id="resetBtn" disabled>Reset</button>
+        <div id="progress-div" hidden>
+            <p id="progress-info"></p>
+            <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-bar" style="width: 0%"></div>
+            </div>
+        </div>`
 
     eContent.append(eForm);
 
-    const resetBtn = eContent.querySelector('button');
+    const progressDiv = eContent.querySelector('#progress-div');
+    const progressBar = eContent.querySelector('.progress-bar');
+    const progressInfo = eContent.querySelector('#progress-info');
+    const resetBtn = eContent.querySelector('#resetBtn');
+    const courseTextArea = eContent.querySelector('#reset-courses-area');
+    courseTextArea.addEventListener('input', (e) => {
+        if (courseTextArea.value.length < 1) {
+            resetBtn.disabled = true;
+        } else {
+            resetBtn.disabled = false;
+        }
+    })
+
     resetBtn.addEventListener('click', async (e) => {
         e.preventDefault();
         e.stopPropagation();
 
-        const courses = eContent.querySelector('#reset-courses-area').value.split('\n').map(course => course.trim());
-        console.log('The courses to reset are: ', courses);
+
+        resetBtn.disabled = true;
+        progressDiv.hidden = false;
+        progressInfo.innerHTML = 'Resetting courses....';
+
+        const domain = document.querySelector('#domain').value.trim();
+        const apiToken = document.querySelector('#token').value.trim();
+        const courses = eContent.querySelector('#reset-courses-area').value.split(/[\n,]/).map(course => course.trim());
 
         const data = {
             domain: domain,
@@ -2293,16 +2498,31 @@ async function resetCourses(e) {
             courses: courses
         }
 
+        let response;
         try {
-            const responses = await window.axios.resetCourses(data);
+            window.progressAPI.onUpdateProgress((progress) => {
+                progressBar.style.width = `${progress}%`;
+            });
 
-            for (let response of responses) {
-                eContent.querySelector('#response-container').innerHTML += '<p>Course ID: ' + response.course_id + ' ' + response.status + '</p>';
+            response = await window.axios.resetCourses(data);
+            if (response.successful.length > 0) {
+                progressInfo.innerHTML = `Successfully reset ${response.successful.length} courses.`;
             }
+            if (response.failed.length > 0) {
+                progressInfo.innerHTML += `Failed to reset ${response.failed.length} courses.`;
+                progressBar.parentElement.hidden = true;
+                for (let failure of response.failed) {
+                    errorHandler({ message: `${failure.reason}` }, progressInfo);
+                }
+            }
+
+            // for (let response of responses) {
+            //     eContent.querySelector('#response-container').innerHTML += '<p>Course ID: ' + response.course_id + ' ' + response.status + '</p>';
+            // }
         } catch (error) {
-            console.log('Error: ', error);
+            errorHandler(error, progressInfo);
         } finally {
-            checkBtn.disabled = false;
+            resetBtn.disabled = false;
         }
     })
 
