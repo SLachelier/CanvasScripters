@@ -106,6 +106,11 @@ contextBridge.exposeInMainWorld('axios', {
         console.log('preload.js > resetCourses');
 
         return await ipcRenderer.invoke('axios:resetCourses', data);
+    },
+    checkUnconfirmedEmails: async (data) => {
+        console.log('preload.js > checkUnconfirmedEmails');
+
+        return await ipcRenderer.invoke('axios:checkUnconfirmedEmails', data);
     }
 });
 
@@ -123,6 +128,12 @@ contextBridge.exposeInMainWorld('csv', {
         ipcRenderer.send('csv:sendToText');
     }
 });
+
+contextBridge.exposeInMainWorld('fileUpload', {
+    confirmEmails: async (data) => {
+        return await ipcRenderer.invoke('fileUpload:confirmEmails', data);
+    }
+})
 
 contextBridge.exposeInMainWorld('progressAPI', {
     onUpdateProgress: (callback) => ipcRenderer.on('update-progress', (_event, value) => callback(value))
