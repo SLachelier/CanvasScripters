@@ -111,6 +111,11 @@ contextBridge.exposeInMainWorld('axios', {
         console.log('preload.js > checkUnconfirmedEmails');
 
         return await ipcRenderer.invoke('axios:checkUnconfirmedEmails', data);
+    },
+    confirmEmails: async (data) => {
+        console.log('preload.js > confirmEmails');
+
+        return await ipcRenderer.invoke('axios:confirmEmails', data);
     }
 });
 
@@ -128,6 +133,10 @@ contextBridge.exposeInMainWorld('csv', {
         ipcRenderer.send('csv:sendToText');
     }
 });
+
+contextBridge.exposeInMainWorld('dataUpdate', {
+    onUpdate: async (callback) => ipcRenderer.on('email-count', (_event, value) => callback(value))
+})
 
 contextBridge.exposeInMainWorld('fileUpload', {
     confirmEmails: async (data) => {
