@@ -238,12 +238,21 @@ function unconfirmed(e) {
             </div>
             <div class="form-check form-switch">
                 <label class="form-check-label" for="confirm-email-switch">Upload file of emails to confirm</label>
-                <input class="form-check-input" type="checkbox" role="switch" id="confirm-email-switch" aria-describedby="confirm-file-description">
+                <input class="form-check-input" type="checkbox" role="switch" id="upload-email-switch" aria-describedby="confirm-file-description">
                 <div id="confirm-file-description" class="form-text" hidden>Must be a simple text file only containing a list of emails. Emails may be comma separated or on individual lines</div>
+            </div>
+            <div class="form-check form-switch">
+                <label class="form-check-label" for="confirm-email-list-switch">Input list of emails</label>
+                <input class="form-check-input" type="checkbox" role="switch" id="confirm-email-list-switch" aria-describedby="confirm-email-list-desc">
+                <div id="confirm-email-list-box" hidden>
+                    <textarea class="form-control" id="email-list-box" rows="3" placeholder="example1@example.com,example2@example.com, etc."></textarea>
+                </div>
             </div>
         </div>
         <button type="button" class="btn btn-primary mt-3" id="unconfirmed-check-btn" disabled>Check</button>
-        <button type="button" class="btn btn-primary mt-3" id="confirm-email-btn" hidden disabled>Upload</button>
+        <button type="button" class="btn btn-primary mt-3" id="upload-email-btn" hidden disabled>Upload</button>
+        <button type="button" class="btn btn-primary mt-3" id="confirm-email-btn" hidden disabled>Confirm</button>
+
         <div hidden id="progress-div">
             <p id="progress-info"></p>
             <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
@@ -279,6 +288,7 @@ function unconfirmed(e) {
         const inputs = switchListener.querySelectorAll('input');
         const patternDiv = eContent.querySelector('#email-pattern-div');
         const fileSpan = eContent.querySelector('#confirm-file-description');
+        const confirmDiv = eContent.querySelector('#confirm-email-list-box')
         // disable all other inputs inputs
         for (let input of inputs) {
             if (input.id !== e.target.id) {
@@ -290,28 +300,47 @@ function unconfirmed(e) {
         if (e.target.checked === false) {
             unconfirmBtn.disabled = true;
             confirmBtn.disabled = true;
+            uploadBtn.disabled = true;
         } else if (e.target.id.includes('unconfirm')) {
             unconfirmBtn.hidden = false;
             unconfirmBtn.disabled = false;
             patternDiv.hidden = false;
             confirmBtn.hidden = true;
             confirmBtn.disabled = true;
+            confirmDiv.hidden = true;
+            uploadBtn.hidden = true;
+            uploadBtn.disabled = true;
             fileSpan.hidden = true;
+        } else if (e.target.id.includes('upload')) {
+            unconfirmBtn.hidden = true;
+            unconfirmBtn.disabled = true;
+            patternDiv.hidden = true;
+            confirmBtn.hidden = true;
+            confirmBtn.disabled = true;
+            confirmDiv.hidden = true;
+            uploadBtn.disabled = false;
+            uploadBtn.hidden = false;
+            fileSpan.hidden = false;
         } else {
             unconfirmBtn.hidden = true;
             unconfirmBtn.disabled = true;
             patternDiv.hidden = true;
             confirmBtn.hidden = false;
             confirmBtn.disabled = false;
-            fileSpan.hidden = false;
+            confirmDiv.hidden = false;
+            uploadBtn.disabled = true;
+            uploadBtn.hidden = true;
+            fileSpan.hidden = true;
         }
     }
 
 
     const unconfirmBtn = eContent.querySelector('#unconfirmed-check-btn');
+    const uploadBtn = eContent.querySelector('#upload-email-btn');
     const confirmBtn = eContent.querySelector('#confirm-email-btn');
     unconfirmBtn.addEventListener('click', handleUnconfirmedCheck);
     confirmBtn.addEventListener('click', handleConfirmCheck);
+    uploadBtn.addEventListener('click', handleUploadCheck);
 
     async function handleUnconfirmedCheck(e) {
         e.preventDefault();
@@ -359,10 +388,10 @@ function unconfirmed(e) {
         }
     }
 
-    async function handleConfirmCheck(e) {
+    async function handleUploadCheck(e) {
         e.preventDefault();
         e.stopPropagation();
-        confirmBtn.disabled = true;
+        uploadBtn.disabled = true;
 
         const domain = document.querySelector('#domain').value.trim();
         const token = document.querySelector('#token').value.trim();
@@ -382,11 +411,58 @@ function unconfirmed(e) {
             progressBar.style.width = `${progress}%`;
         });
 
+        let totalEmails = 0;
+        window.dataUpdate.onUpdate((data) => {
+            totalEmails = data;
+        });
         try {
             const result = await window.fileUpload.confirmEmails(requestData);
-            if (result.successful.length > 0) {
-                progressInfo.innerHTML += `<p>Successfully confirmed ${result.successful.length} emails</p>`
+            progressInfo.innerHTML += `<h5>Results:</h5><p class="mb-1">Processed:  ${totalEmails}</p>`;
+            progressInfo.innerHTML += `<p class="mb-1">Confirmed: ${result.confirmed} <div class="form-text">NOTE: Number of emails confirmed may be different than the number processed if the email didn't need to be confirmed</div></p>`;
+            if (result.failed.length > 0) {
+                progressBar.parentElement.hidden = true;
+                progressInfo.innerHTML += `Failed to confirm ${result.failed.length} emails`;
+                errorHandler({ message: `${result.failed[0].reason}` }, progressInfo);
             }
+        } catch (error) {
+            errorHandler(error, progressInfo);
+        } finally {
+            uploadBtn.disabled = false;
+        }
+
+    }
+
+    async function handleConfirmCheck(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        confirmBtn.disabled = true;
+
+        const domain = document.querySelector('#domain').value.trim();
+        const token = document.querySelector('#token').value.trim();
+        const progresDiv = eContent.querySelector('#progress-div');
+        const progressBar = eContent.querySelector('.progress-bar');
+        const progressInfo = eContent.querySelector('#progress-info');
+        const emailBox = eContent.querySelector('#email-list-box').value;
+        const emails = emailBox.split(/\r?\n|\n|\,/)
+            .map((email) => email.trim());
+
+        progressInfo.innerHTML = '';
+
+        const requestData = {
+            domain: domain,
+            token: token,
+            emails: emails
+        }
+
+        progresDiv.hidden = false;
+        window.progressAPI.onUpdateProgress((progress) => {
+            progressBar.style.width = `${progress}%`;
+        });
+
+        try {
+            const result = await window.axios.confirmEmails(requestData);
+            progressInfo.innerHTML += `<h5>Results:</h5><p class="mb-1">Processed:  ${requestData.emails.length}</p>`;
+            progressInfo.innerHTML += `<p class="mb-1">Confirmed: ${result.confirmed} <div class="form-text">NOTE: Number of emails confirmed may be different than the number processed if the email didn't need to be confirmed</div></p>`;
             if (result.failed.length > 0) {
                 progressBar.parentElement.hidden = true;
                 progressInfo.innerHTML += `Failed to confirm ${result.failed.length} emails`;
