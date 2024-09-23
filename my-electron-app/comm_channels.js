@@ -197,7 +197,7 @@ async function confirmEmail(data) {
         };
 
         const response = await errorCheck(request);
-        return response.statusText;
+        return { confirmed: response.data.confirmed_count > 0, status: response.statusText };
     } catch (error) {
         throw error
     }
