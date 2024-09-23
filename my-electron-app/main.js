@@ -528,6 +528,53 @@ app.whenReady().then(() => {
         }
     });
 
+    ipcMain.handle('axios:confirmEmails', async (event, data) => {
+        console.log('main.js > axios:resetCourses');
+
+        let completedRequests = 0;
+        const totalRequests = data.emails.length;
+
+        const updateProgress = () => {
+            completedRequests++;
+            mainWindow.webContents.send('update-progress', (completedRequests / totalRequests) * 100)
+        }
+
+        const request = async (requestData) => {
+            try {
+                const response = await confirmEmail(requestData);
+                return response;
+            } catch (error) {
+                throw error;
+            } finally {
+                updateProgress();
+            }
+        }
+
+        const requests = [];
+        data.emails.forEach((email) => {
+            const requestData = {
+                domain: data.domain,
+                token: data.token,
+                email: email
+            };
+            requests.push(() => request(requestData));
+        })
+
+        const batchResponse = await batchHandler(requests);
+        let confirmedCount = 0;
+        batchResponse.successful.forEach((success) => {
+            if (success.id.confirmed) {
+                confirmedCount++;
+            }
+        });
+        const reMappedResponse = {
+            failed: batchResponse.failed,
+            successful: batchResponse.successful,
+            confirmed: confirmedCount
+        };
+        return reMappedResponse;
+    })
+
     ipcMain.handle('fileUpload:confirmEmails', async (event, data) => {
 
         let emails = [];
@@ -549,6 +596,8 @@ app.whenReady().then(() => {
         // ********************************
         const totalRequests = emails.length;
         let completedRequests = 0;
+
+        mainWindow.webContents.send('email-count', totalRequests);
 
         const updateProgress = () => {
             completedRequests++;
@@ -573,8 +622,18 @@ app.whenReady().then(() => {
         };
 
         const batchResponse = await batchHandler(requests);
-
-        return batchResponse;
+        let confirmedCount = 0;
+        batchResponse.successful.forEach((success) => {
+            if (success.id.confirmed) {
+                confirmedCount++;
+            }
+        });
+        const reMappedResponse = {
+            failed: batchResponse.failed,
+            successful: batchResponse.successful,
+            confirmed: confirmedCount
+        };
+        return reMappedResponse;
     })
 
     ipcMain.handle('csv:sendToCSV', () => {
