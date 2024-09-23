@@ -138,3 +138,10 @@ contextBridge.exposeInMainWorld('fileUpload', {
 contextBridge.exposeInMainWorld('progressAPI', {
     onUpdateProgress: (callback) => ipcRenderer.on('update-progress', (_event, value) => callback(value))
 });
+
+contextBridge.exposeInMainWorld('testAPI', {
+    testing: () => {
+        console.log('preload > testAPI:testing');
+        ipcRenderer.send('testAPI:testing');
+    }
+});

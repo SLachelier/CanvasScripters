@@ -531,29 +531,22 @@ app.whenReady().then(() => {
     ipcMain.handle('fileUpload:confirmEmails', async (event, data) => {
 
         let emails = [];
+        // get the file contents
         try {
 
             const fileContent = await getFileContents('txt');
-            emails = removeBlanks(fileContent.split(/\r?\n|\r|\,/));
-
-
-            // const result = await dialog.showOpenDialog({
-            //     properties: ['openFile'],
-            //     filters: [{ name: 'Text Files', extensions: ['txt'] }]
-            // });
-
-            // if (result.canceled) {
-            //     return 'cancelled';
-            // }
-            // console.log(result.filePaths);
-            // const filePath = result.filePaths[0];
-            // const fileContent = await fs.promises.readFile(filePath, 'utf8');
-            // const emails = removeBlanks(fileContent.split(/\r?\n|\r|,/));
-
+            emails = removeBlanks(fileContent.split(/\r?\n|\r|\,/))
+                .map((email) => { // remove spaces
+                    return email.trim();
+                });
         } catch (error) {
             throw error;
         }
 
+        // ********************************
+        // handle the bulk requests for 
+        //  confirming the emails
+        // ********************************
         const totalRequests = emails.length;
         let completedRequests = 0;
 
@@ -598,6 +591,9 @@ app.whenReady().then(() => {
         }
     })
 
+    ipcMain.on('testAPI:testing', () => {
+        console.log('main.js > testAPI:testing');
+    });
 
     //ipcMain.handle('')
     createWindow();
