@@ -141,6 +141,9 @@ contextBridge.exposeInMainWorld('dataUpdate', {
 contextBridge.exposeInMainWorld('fileUpload', {
     confirmEmails: async (data) => {
         return await ipcRenderer.invoke('fileUpload:confirmEmails', data);
+    },
+    resetCourse: async () => {
+        return await ipcRenderer.invoke('fileUpload:resetCourses');
     }
 })
 
