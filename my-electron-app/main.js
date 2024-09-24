@@ -485,23 +485,6 @@ app.whenReady().then(() => {
 
         const batchResponse = await batchHandler(requests);
         return batchResponse;
-        // let responses = [];
-        // for (let course of data.courses) {
-        //     const response = { course_id: course, status: 'success' };
-        //     try {
-        //         response.status = await resetCourse(data.domain, course, data.token);
-        //     } catch (error) {
-        //         console.error('Error in resetCourses: ', error);
-        //     }
-        //     if (response.status === 'success') {
-        //         console.log(course, ' reset');
-        //     } else {
-        //         console.log(course, ' failed');
-        //     }
-        //     responses.push(response);
-        // };
-        // console.log('Finished resetting courses');
-        // return responses;
     });
 
     ipcMain.handle('axios:checkUnconfirmedEmails', async (event, data) => {
@@ -634,6 +617,21 @@ app.whenReady().then(() => {
             confirmed: confirmedCount
         };
         return reMappedResponse;
+    })
+
+    ipcMain.handle('fileUpload:resetCourses', async (event) => {
+        let courses = [];
+        try {
+            const fileContent = await getFileContents('txt');
+            courses = removeBlanks(fileContent.split(/\r?\n|\r|\,/))
+                .filter((course) => !isNaN(Number(course)))
+                .map((course) => { // remove spaces
+                    return course.trim();
+                });
+        } catch (error) {
+            throw error;
+        }
+        return courses;
     })
 
     ipcMain.handle('csv:sendToCSV', () => {
