@@ -30,14 +30,23 @@ async function resetCourses(e) {
 
     eForm.innerHTML = `
             <div class="row">
-                <div class="mb-3">
-                    <div class="col-auto">
-                        <label for="reset-courses-area" class="form-label">Courses to be reset - useful when an Admin is needing to re-apply a template</label>
-                        <textarea class="form-control" id="reset-courses-area" rows="3" placeholder="Enter comma separated course ids to be reset here."></textarea>
+                <div class="mb-3" id="reset-switches">
+                    <div class="form-check form-switch">
+                        <label class="form-check-label" for="course-reset-file">Upload file of courses to reset</label>
+                        <input class="form-check-input" type="checkbox" role="switch" id="upload-courses-switch" aria-describedby="course-reset-description">
+                        <div id="course-reset-description" class="form-text" hidden>Must be a simple text file only containing a list of courses. Courses may be comma separated or on individual lines</div>
+                    </div>
+                    <div class="form-check form-switch">
+                        <label class="form-check-label" for="course-reset-textarea">Manually enter list of courses</label>
+                        <input class="form-check-input" type="checkbox" role="switch" id="manual-courses-reset-switch">
                     </div>
                 </div>
+                <div id="course-text-div" hidden>
+                    <textarea class="form-control" id="reset-courses-area" rows="3" placeholder="course1,course2,course3, etc."></textarea>
+                </div>
             </div>
-        <button type="button" class="btn btn-primary mt-3" id="resetBtn" disabled>Reset</button>
+        <button type="button" class="btn btn-primary mt-3" id="resetBtn" disabled hidden>Reset</button>
+        <button type="button" class="btn btn-primary mt-3" id="uploadBtn" disabled hidden>Upload</button>
         <div id="progress-div" hidden>
             <p id="progress-info"></p>
             <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
@@ -51,12 +60,99 @@ async function resetCourses(e) {
     const progressBar = eContent.querySelector('.progress-bar');
     const progressInfo = eContent.querySelector('#progress-info');
     const resetBtn = eContent.querySelector('#resetBtn');
+    const uploadBtn = eContent.querySelector('#uploadBtn');
+    const courseTextDiv = eContent.querySelector('#course-text-div');
     const courseTextArea = eContent.querySelector('#reset-courses-area');
     courseTextArea.addEventListener('input', (e) => {
-        if (courseTextArea.value.length < 1) {
+        const inputSwitch = eContent.querySelector('#manual-courses-reset-switch');
+        if (courseTextArea.value.length < 1 || !inputSwitch.checked) {
             resetBtn.disabled = true;
         } else {
             resetBtn.disabled = false;
+        }
+    });
+    const switches = eContent.querySelector('#reset-switches');
+    switches.addEventListener('change', (e) => {
+        const inputs = switches.querySelectorAll('input');
+
+        // disable all inputs other than the one that's checked
+        for (let input of inputs) {
+            if (input.id !== e.target.id) {
+                input.checked = false;
+            }
+        }
+
+        // if nothing is checked disable and hide all buttons
+        if (!e.target.checked) {
+            for (let input of inputs) {
+                input.checked = false;
+            }
+            resetBtn.disabled = true;
+            uploadBtn.disabled = true;
+        } else if (e.target.id === 'upload-courses-switch') {
+            resetBtn.disabled = true;
+            resetBtn.hidden = true;
+            courseTextDiv.hidden = true;
+            uploadBtn.disabled = false;
+            uploadBtn.hidden = false;
+        } else {
+            resetBtn.hidden = false;
+            courseTextDiv.hidden = false;
+            uploadBtn.disabled = true;
+            uploadBtn.hidden = true;
+        }
+    })
+
+    uploadBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        uploadBtn.disabled = true;
+        progressInfo.innerHTML = '';
+
+        const domain = document.querySelector('#domain').value.trim();
+        const apiToken = document.querySelector('#token').value.trim();
+
+        let courses = [];
+        try {
+            courses = await window.fileUpload.resetCourse();
+        } catch (error) {
+            errorHandler(error, progressInfo);
+        }
+
+        if (courses.length > 0) {
+            const data = {
+                domain: domain,
+                token: apiToken,
+                courses: courses
+            }
+
+            let response;
+            try {
+                window.progressAPI.onUpdateProgress((progress) => {
+                    progressBar.style.width = `${progress}%`;
+                });
+
+                response = await window.axios.resetCourses(data);
+                if (response.successful.length > 0) {
+                    progressInfo.innerHTML = `Successfully reset ${response.successful.length} course(s).`;
+                }
+                if (response.failed.length > 0) {
+                    progressInfo.innerHTML += `Failed to reset ${response.failed.length} course(s).`;
+                    progressBar.parentElement.hidden = true;
+                    for (let failure of response.failed) {
+                        errorHandler({ message: `${failure.reason}` }, progressInfo);
+                    }
+                }
+
+                // for (let response of responses) {
+                //     eContent.querySelector('#response-container').innerHTML += '<p>Course ID: ' + response.course_id + ' ' + response.status + '</p>';
+                // }
+            } catch (error) {
+                errorHandler(error, progressInfo);
+            } finally {
+                uploadBtn.disabled = false;
+            }
         }
     })
 
@@ -87,10 +183,10 @@ async function resetCourses(e) {
 
             response = await window.axios.resetCourses(data);
             if (response.successful.length > 0) {
-                progressInfo.innerHTML = `Successfully reset ${response.successful.length} courses.`;
+                progressInfo.innerHTML = `Successfully reset ${response.successful.length} course(s).`;
             }
             if (response.failed.length > 0) {
-                progressInfo.innerHTML += `Failed to reset ${response.failed.length} courses.`;
+                progressInfo.innerHTML += `Failed to reset ${response.failed.length} course(s).`;
                 progressBar.parentElement.hidden = true;
                 for (let failure of response.failed) {
                     errorHandler({ message: `${failure.reason}` }, progressInfo);
