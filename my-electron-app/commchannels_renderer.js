@@ -242,7 +242,7 @@ function unconfirmed(e) {
                 <div id="confirm-file-description" class="form-text" hidden>Must be a simple text file only containing a list of emails. Emails may be comma separated or on individual lines</div>
             </div>
             <div class="form-check form-switch">
-                <label class="form-check-label" for="confirm-email-list-switch">Input list of emails</label>
+                <label class="form-check-label" for="confirm-email-list-switch">Input list of emails to confirm</label>
                 <input class="form-check-input" type="checkbox" role="switch" id="confirm-email-list-switch" aria-describedby="confirm-email-list-desc">
                 <div id="confirm-email-list-box" hidden>
                     <textarea class="form-control" id="email-list-box" rows="3" placeholder="example1@example.com,example2@example.com, etc."></textarea>
@@ -326,7 +326,7 @@ function unconfirmed(e) {
             unconfirmBtn.disabled = true;
             patternDiv.hidden = true;
             confirmBtn.hidden = false;
-            confirmBtn.disabled = false;
+            // confirmBtn.disabled = false;
             confirmDiv.hidden = false;
             uploadBtn.disabled = true;
             uploadBtn.hidden = true;
@@ -341,6 +341,15 @@ function unconfirmed(e) {
     unconfirmBtn.addEventListener('click', handleUnconfirmedCheck);
     confirmBtn.addEventListener('click', handleConfirmCheck);
     uploadBtn.addEventListener('click', handleUploadCheck);
+
+    const emailBox = eContent.querySelector('#email-list-box');
+    emailBox.addEventListener('input', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const inputSwitch = eContent.querySelector('#confirm-email-list-switch');
+
+        confirmBtn.disabled = emailBox.value.length < 1 || !inputSwitch.checked;
+    })
 
     async function handleUnconfirmedCheck(e) {
         e.preventDefault();
@@ -442,7 +451,6 @@ function unconfirmed(e) {
         const progresDiv = eContent.querySelector('#progress-div');
         const progressBar = eContent.querySelector('.progress-bar');
         const progressInfo = eContent.querySelector('#progress-info');
-        const emailBox = eContent.querySelector('#email-list-box').value;
         const emails = emailBox.split(/\r?\n|\n|\,/)
             .map((email) => email.trim());
 
