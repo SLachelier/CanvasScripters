@@ -1,3 +1,45 @@
+window.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    window.menus.rightclick();
+});
+
+// used to detect which input you're in for pasting
+let focusedTextBox = null;
+document.addEventListener('focusin', (e) => {
+    if (e.target.tagName === 'INPUT' && e.target.type === 'text') {
+        focusedTextBox = e.target;
+    }
+})
+
+// cut, copy, paste
+window.menus.onMenuCommand(async (data) => {
+    console.log('Returned from context Menu. The command is: ', data.command);
+
+    switch (data.command) {
+        case 'copy':
+            getSelectedText();
+            break;
+        case 'cut':
+            const selectedText = window.getSelection();
+            window.menus.writeText(selectedText.toString());
+            selectedText.deleteFromDocument();
+            break;
+        case 'paste':
+            console.log('The clipboard is ', data.text);
+            if (focusedTextBox) {
+                focusedTextBox.value += data.text;
+            }
+            break;
+        default:
+            console.log('failed to paste');
+    }
+});
+
+function getSelectedText() {
+    const selectedText = window.getSelection();
+    window.menus.writeText(selectedText.toString());
+}
+
 const endpointSelect = document.querySelector('#endpoints');
 endpointSelect.addEventListener('click', (e) => {
 
@@ -160,4 +202,13 @@ function errorHandler(error, progressInfo) {
 
     }
     progressInfo.innerHTML += `<p>There was an error: <span class="error">${error.message.slice(lastIndex + 1)}</span></p><p>${errorInfo}</p>`;
+}
+
+function hideEndpoints() {
+    const eContent = document.querySelector('#endpoint-content');
+    const forms = eContent.querySelectorAll('form');
+    // hide all forms
+    for (let form of forms) {
+        form.hidden = true;
+    }
 }
