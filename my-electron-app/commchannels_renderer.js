@@ -8,6 +8,9 @@ async function commChannelTemplate(e) {
         case 'check-commchannel':
             checkComm(e);
             break;
+        case 'reset-commchannel':
+            resetComm(e);
+            break;
         case 'unconfirm-commchannels':
             unconfirmed(e);
             break;
@@ -212,6 +215,247 @@ function checkComm(e) {
                 responseContainer.innerHTML += `<p>Didn't find any emails matching the specified pattern.</p>`;
             }
         }
+    });
+}
+
+function resetComm(e) {
+    console.log('The target is: ', e.target);
+    hideEndpoints(e);
+
+    const eContent = document.querySelector('#endpoint-content');
+    let resetCommForm = eContent.querySelector('#reset-comm-form');
+
+    if (!resetCommForm) {
+        const resetCommHeader = document.createElement('div');
+        resetCommHeader.id = 'reset-comm-header';
+        resetCommHeader.innerHTML = `<h3>Reset Communication Channels</h3>`;
+
+        resetCommForm = document.createElement('form');
+        resetCommForm.id = 'reset-comm-form';
+        resetCommForm.innerHTML = `
+        <div>
+            <div class="col-2">
+                <select id="region" class="form-select" aria-label="Region info">
+                    <option value="iad_pdx" selected>IAD/PDX</option>
+                    <option value="dub_fra">DUB/FRA</option>
+                    <option value="syd_sin">SYD/SIN</option>
+                    <option value="yul" selected>YUL</option>
+                </select>
+            </div>
+            <div id="reset-switches" class="mt-2">
+                <div class="form-check form-switch">
+                    <label clas="form-label" for="reset-single-email">Reset single email</label>
+                    <input id="reset-single-email" type="checkbox" role="switch" class="form-check-input">
+                </div>
+                <div class="form-check form-switch">
+                    <label clas="form-label" for="reset-upload-input">Upload file to reset</label>
+                    <input id="reset-upload-input" type="checkbox" role="switch" class="form-check-input">
+                </div>
+            </div>
+            <div id="reset-data-inputs" hidden>
+                <div id="reset-single-div">
+                    <input id="reset-single-input" type="text" class="form-control">
+                </div>
+            </div>
+        </div>
+        <div id="reset-btns">
+            <button id="reset-upload-btn" class="btn btn-primary mt-3" hidden>Upload</button>
+            <button id="reset-single-btn" class="btn btn-primary mt-3" hidden>Reset</button>
+        </div>
+        <div hidden id="progress-div">
+            <p id="progress-info"></p>
+            <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-bar" style="width: 0%"></div>
+            </div>
+        </div>
+        <div id="reset-single-comm-response-container" class="mt-3" hidden></div>
+        <div id="reset-upload-comm-response-container" class="mt-3" hidden></div>
+        `;
+
+        eContent.append(resetCommHeader, resetCommForm);
+    }
+    resetCommForm.hidden = false;
+
+
+    const singleContainer = resetCommForm.querySelector('#reset-single-comm-response-container');
+    const uploadContainer = resetCommForm.querySelector('#reset-upload-comm-response-container');
+    const resetSwitches = eContent.querySelector('#reset-switches');
+    const inputs = resetSwitches.querySelectorAll('input');
+    const dataInputs = resetCommForm.querySelector('#reset-data-inputs');
+    const resetBtns = resetCommForm.querySelector('#reset-btns');
+    const allBtns = resetBtns.querySelectorAll('button');
+    const resetBtn = resetCommForm.querySelector('#reset-single-btn');
+    const uploadBtn = resetCommForm.querySelector('#reset-upload-btn');
+    const resetSingleInput = resetCommForm.querySelector('#reset-single-input');
+    const progresDiv = resetCommForm.querySelector('#progress-div');
+    const progressInfo = resetCommForm.querySelector('#progress-info');
+    const proegressBar = resetCommForm.querySelector('.progress-bar');
+
+    // listener for the toggle switches
+    resetSwitches.addEventListener('change', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // if the change was to disable the switch
+        // disable all inputs
+        if (e.target.checked === false) {
+            dataInputs.hidden = true;
+            resetBtns.hidden = true;
+            singleContainer.hidden = true;
+            uploadContainer.hidden = true;
+        } else {
+            resetBtns.hidden = false;
+            for (let input of inputs) {
+                if (input.id !== e.target.id) {
+                    input.checked = false;
+                }
+            }
+            if (e.target.id === 'reset-single-email') {
+                dataInputs.hidden = false;
+                singleContainer.hidden = false;
+                uploadContainer.hidden = true;
+                handleResetOptions(allBtns, resetBtn);
+                resetBtn.disabled = true;
+            } else {
+                dataInputs.hidden = true;
+                singleContainer.hidden = true;
+                uploadContainer.hidden = false;
+                handleResetOptions(allBtns, uploadBtn);
+            }
+        }
+
+    });
+
+    // disabled or enabled the buttons and inputs based on toggle switches
+    function handleResetOptions(allBtns, theButton) {
+        for (let button of allBtns) {
+            if (button.id !== theButton.id) {
+                button.disabled = true;
+                button.hidden = true;
+            } else {
+                theButton.disabled = false;
+                theButton.hidden = false;
+            }
+        }
+    }
+
+    resetSingleInput.addEventListener('input', (e) => {
+        resetBtn.disabled = resetSingleInput.value.trim().length < 1;
+    })
+
+    resetBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const domain = document.querySelector('#domain').value.trim();
+        const token = document.querySelector('#token').value.trim();
+        const resetValue = resetSingleInput.value.trim();
+        const regionVal = resetCommForm.querySelector('#region').value;
+
+        const requestData = {
+            domain: domain,
+            token: token,
+            email: resetValue,
+            region: regionVal
+        };
+
+        try {
+            const response = await window.axios.resetCommChannel(requestData);
+            // { bounce: { status: reset},suppression: {status, reset}}
+            singleContainer.innerHTML = `<h5>Bounce</h5>`;
+            if (response.bounce.error != null) {
+                errorHandler(response.bounce.error, singleContainer);
+            } else if (response.bounce.reset < 1) {
+                singleContainer.innerHTML += `Email wasn't on the bounce list.`;
+            } else {
+                singleContainer.innerHTML += `Cleared email from bounce list.`;
+            }
+            singleContainer.innerHTML += '<h5>Suppression</h5>'
+            if (response.suppression.error != null) {
+                errorHandler(response.suppression.error, singleContainer);
+            } else if (response.suppression.status === '404') {
+                singleContainer.innerHTML += 'Email wasn\'t found on suppression list.';
+            } else {
+                singleContainer.innerHTML += 'Cleared email from suppression list.';
+            }
+        } catch (error) {
+            errorHandler(error, singleContainer);
+        };
+    });
+
+    uploadBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        uploadBtn.disabled = true;
+
+        const domain = document.querySelector('#domain').value.trim();
+        const token = document.querySelector('#token').value.trim();
+        const regionVal = resetCommForm.querySelector('#region').value;
+
+        const requestData = {
+            domain: domain,
+            token: token,
+            region: regionVal
+        };
+
+        window.progressAPI.onUpdateProgress((progress) => {
+            proegressBar.style.width = `${progress}%`;
+        });
+
+        try {
+            progresDiv.hidden = false;
+            uploadContainer.innerHTML = "Working...";
+            const response = await window.axios.resetEmails(requestData);
+            progresDiv.hidden = true;
+            const successful = response.successful.map((success) => success.id);
+            const failed = response.failed.map((failed) => failed.id);
+            const totalProcessed = response.successful.length + response.failed.length;
+            let totalBounceReset = 0;
+            let totalAWSReset = 0;
+            for (let success of successful) {
+                totalBounceReset += success.bounce.reset;
+                totalAWSReset += success.suppression.reset;
+            };
+
+            const errorBounce = successful.filter((email) => email.bounce.error != null);
+            const errorSuppressed = successful.filter((email) => email.suppression.error != null);
+            // { bounce: { status: reset},suppression: {status, reset}}
+            uploadContainer.innerHTML = `<p>Total Processed: ${totalProcessed}</p>`;
+            uploadContainer.innerHTML += `<h5>Bounce</h5>`;
+            // handle any that errored
+            errorBounce.forEach(element => {
+                errorHandler(element.bounce.error, uploadContainer);
+            });
+
+            if (totalBounceReset < 1) {
+                uploadContainer.innerHTML += `No Emails were cleared from the bounce list.`;
+            } else {
+                uploadContainer.innerHTML += `Cleared ${totalBounceReset} email(s) from bounce list.`;
+            }
+
+            uploadContainer.innerHTML += '<h5 class="mt-3">Suppression</h5>'
+            errorSuppressed.forEach(email => {
+                errorHandler(email.suppression.error, uploadContainer);
+            })
+
+            if (totalAWSReset < 1) {
+                uploadContainer.innerHTML += 'No Emails were found on suppression list.';
+            } else {
+                uploadContainer.innerHTML += `Cleared ${totalAWSReset} emails from suppression list.`;
+            }
+
+        } catch (error) {
+            if (error.message.toLowerCase().includes('cancelled')) {
+                progresDiv.hidden = true;
+                uploadContainer.innerHTML = 'Upload was cancelled.';
+            } else {
+                errorHandler(error, uploadContainer);
+            }
+        } finally {
+            uploadBtn.disabled = false;
+
+        };
     });
 }
 

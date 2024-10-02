@@ -107,6 +107,11 @@ contextBridge.exposeInMainWorld('axios', {
 
         return await ipcRenderer.invoke('axios:resetCourses', data);
     },
+    resetCommChannel: async (data) => {
+        console.log('preload.js > rsetCommChannel');
+
+        return await ipcRenderer.invoke('axios:resetCommChannel', data);
+    },
     checkUnconfirmedEmails: async (data) => {
         console.log('preload.js > checkUnconfirmedEmails');
 
@@ -116,6 +121,11 @@ contextBridge.exposeInMainWorld('axios', {
         console.log('preload.js > confirmEmails');
 
         return await ipcRenderer.invoke('axios:confirmEmails', data);
+    },
+    resetEmails: async (data) => {
+        console.log('preload.js > resetEmails');
+
+        return await ipcRenderer.invoke('axios:resetEmails', data);
     }
 });
 
@@ -144,6 +154,9 @@ contextBridge.exposeInMainWorld('fileUpload', {
     },
     resetCourse: async () => {
         return await ipcRenderer.invoke('fileUpload:resetCourses');
+    },
+    resetEmails: async (data) => {
+        return await ipcRenderer.invoke('fileUpload:resetEmails', data);
     }
 })
 
@@ -155,5 +168,17 @@ contextBridge.exposeInMainWorld('testAPI', {
     testing: () => {
         console.log('preload > testAPI:testing');
         ipcRenderer.send('testAPI:testing');
+    }
+});
+
+contextBridge.exposeInMainWorld('menus', {
+    rightclick: () => {
+        ipcRenderer.send('right-click');
+    },
+    onMenuCommand: (callback) => {
+        ipcRenderer.on('context-menu-command', (_event, data) => callback(data));
+    },
+    writeText: (data) => {
+        ipcRenderer.send('write-text', (data));
     }
 });

@@ -241,7 +241,7 @@ function waitFunc(ms) {
 
 async function errorCheck(request) {
     try {
-        let newError;
+        let newError = { status: null, message: null, request: null };
         const response = await request();
         if (response.data.errors?.length > 0) {
             newError = {
@@ -261,10 +261,11 @@ async function errorCheck(request) {
         return response;
     } catch (error) {
         console.log('there was an error');
-        if (error.code && error.code === 'ERR_TLS_CERT_ALTNAME_INVALID') {
+        if (error.code && (error.code === 'ERR_TLS_CERT_ALTNAME_INVALID' || error.code === 'ENOTFOUND')) {
             newError = {
                 status: '',
-                message: `${error.code} - Check the domain to make sure it's valid.`
+                message: `${error.code} - Check the domain to make sure it's valid.`,
+                request: error.config.url
             }
             throw newError;
         } else if (error.response?.status) {
@@ -274,14 +275,32 @@ async function errorCheck(request) {
                 case '404':
                     newError = {
                         status: `${error.response.status} - ${error.response.statusText}`,
-                        message: error.message
+                        message: error.message,
+                        request: error.config.url
+                    }
+                    throw newError;
+                case '502':
+                    newError = {
+                        status: error.response.status,
+                        message: error.message,
+                        request: error.config.url
                     }
                     throw newError;
                 default:
-                    throw new Error(`${error.response.status} - ${error.message}`);
+                    newError = {
+                        status: error.response.status,
+                        message: error.message,
+                        request: error.config.url
+                    }
+                    throw newError;
             }
         } else {
-            throw new Error(`${error.status} - ${error.message}`);
+            newError = {
+                status: error?.status || null,
+                message: error.message,
+                request: error.config.url
+            }
+            throw newError;
         }
     }
 }

@@ -4,7 +4,9 @@ const {
     app,
     BrowserWindow,
     ipcMain,
-    dialog
+    dialog,
+    clipboard,
+    Menu
 } = require('electron');
 //const axios = require('axios');
 const convos = require('./conversations');
@@ -14,7 +16,7 @@ const assignments = require('./assignments');
 const { getPageViews } = require('./users');
 const { send } = require('process');
 const { deleteRequester, waitFunc } = require('./utilities');
-const { emailCheck, checkCommDomain, checkUnconfirmedEmails, confirmEmail } = require('./comm_channels');
+const { emailCheck, checkCommDomain, checkUnconfirmedEmails, confirmEmail, resetEmail } = require('./comm_channels');
 const { resetCourse } = require('./courses');
 
 let mainWindow;
@@ -153,12 +155,22 @@ app.whenReady().then(() => {
         console.log('inside axios:checkCommDomain');
         suppressedEmails = [];
 
+        // handle 1000 items at a time to prevent max call stack size exceeded
+        function processLargeArray(largeArray) {
+            const chunkSize = 1000;
+            for (let i = 0; i < largeArray.length; i += chunkSize) {
+                const chunk = largeArray.slice(i, i + chunkSize);
+                suppressedEmails.push(...chunk);
+            }
+        }
         // const fakeEmails = Array.from({ length: 20 }, (_, i) => `fake${i + 1}@example.com`);
         // suppressedEmails.push(...fakeEmails);
 
         try {
             const response = await checkCommDomain(data);
-            suppressedEmails.push(...response);
+            processLargeArray(response);
+
+            // suppressedEmails.push(...response);
             if (suppressedEmails.length > 0) {
                 return true;
             } else {
@@ -256,11 +268,14 @@ app.whenReady().then(() => {
 
         let completedRequests = 0;
         const totalRequests = data.content.length;
+        let batchResponse = null;
+        const failed = [];
 
         const updateProgress = () => {
             completedRequests++;
             mainWindow.webContents.send('update-progress', (completedRequests / totalRequests) * 100);
         }
+
 
         const request = async (data) => {
             try {
@@ -274,16 +289,21 @@ app.whenReady().then(() => {
         }
 
         let requests = [];
+        let requestCounter = 1;
         data.content.forEach((group) => {
             const requestData = {
                 domain: data.url,
                 token: data.token,
                 groupID: group._id
             }
-            requests.push(() => request(requestData));
+            requests.push({ id: requestCounter, request: () => request(requestData) });
+            requestCounter++;
         });
 
-        const batchResponse = await batchHandler(requests);
+        batchResponse = await batchHandler(requests);
+        failed = batchResponse
+
+
         console.log('Finished Deleting Empty Assignment groups.');
         return batchResponse;
     });
@@ -403,7 +423,7 @@ app.whenReady().then(() => {
 
         const requests = [];
         for (let i = 0; i < totalRequests; i++) {
-            requests.push(() => request(data));
+            requests.push({ id: i+1, request: () => request(data) });
         }
 
         const batchResponse = await batchHandler(requests);
@@ -487,6 +507,15 @@ app.whenReady().then(() => {
         return batchResponse;
     });
 
+    ipcMain.handle('axios:resetCommChannel', async (event, data) => {
+        try {
+            const response = await resetEmail(data);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    });
+
     ipcMain.handle('axios:checkUnconfirmedEmails', async (event, data) => {
         try {
             const response = await checkUnconfirmedEmails(data); //returns a data stream to write to file
@@ -558,6 +587,50 @@ app.whenReady().then(() => {
         return reMappedResponse;
     })
 
+    ipcMain.handle('axios:resetEmails', async (event, data) => {
+        const fileContents = await getFileContents('txt');
+        if (fileContents != 'cancelled') {
+            const emails = removeBlanks(fileContents.split(/\r?\n|\r|\,/))
+                .map((email) => { // remove spaces
+                    return email.trim();
+                });
+
+            const totalRequests = emails.length;
+            let completedRequests = 0;
+
+            const updateProgress = () => {
+                completedRequests++;
+                mainWindow.webContents.send('update-progress', (completedRequests / totalRequests) * 100);
+            };
+
+            const request = async (requestData) => {
+                try {
+                    const response = await resetEmail(requestData);
+                    return response;
+                } catch (error) {
+                    throw error;
+                } finally {
+                    updateProgress();
+                }
+            };
+
+            const requests = [];
+            emails.forEach((email) => {
+                const requestData = {
+                    domain: data.domain,
+                    token: data.token,
+                    region: data.region,
+                    email: email
+                };
+                requests.push(() => request(requestData));
+            })
+
+            const batchResponse = await batchHandler(requests);
+            return batchResponse;
+        } else {
+            throw new Error('Cancelled');
+        }
+    });
     ipcMain.handle('fileUpload:confirmEmails', async (event, data) => {
 
         let emails = [];
@@ -619,6 +692,11 @@ app.whenReady().then(() => {
         return reMappedResponse;
     })
 
+    ipcMain.handle('fileUpload:resetEmails', async (event, data) => {
+        const fileContent = await getFileContents('txt');
+
+        return true;
+    });
     ipcMain.handle('fileUpload:resetCourses', async (event) => {
         let courses = [];
         try {
@@ -652,6 +730,38 @@ app.whenReady().then(() => {
         console.log('main.js > testAPI:testing');
     });
 
+    // right click menu
+    ipcMain.on('right-click', (event) => {
+        const template = [
+            {
+                label: 'Copy',
+                click: () => {
+                    const text = clipboard.readText();
+                    event.sender.send('context-menu-command', { command: 'copy', text: text });
+                }
+            },
+            {
+                label: 'Cut',
+                click: () => {
+                    event.sender.send('context-menu-command', { command: 'cut', text: null })
+                }
+            },
+            {
+                label: 'Paste',
+                click: () => {
+                    const text = clipboard.readText();
+
+                    event.sender.send('context-menu-command', { command: 'paste', text: text })
+                }
+            },
+        ]
+        const menu = Menu.buildFromTemplate(template)
+        menu.popup({ window: BrowserWindow.fromWebContents(event.sender) })
+    });
+
+    ipcMain.on('write-text', (event, data) => {
+        clipboard.writeText(data);
+    });
     //ipcMain.handle('')
     createWindow();
 
@@ -669,20 +779,23 @@ app.on('window-all-closed', () => {
 })
 
 async function getFileContents(ext) {
-    const result = await dialog.showOpenDialog({
+    const options = {
         properties: ['openFile'],
-        filters: [{ name: '', extensions: [ext] }]
-    });
+        filters: [{ name: '', extensions: [ext] }],
+        modal: true
+    };
+
+    const result = await dialog.showOpenDialog(mainWindow, options);
 
     if (result.canceled) {
         return 'cancelled';
+    } else {
+        console.log(result.filePaths);
+        const filePath = result.filePaths[0];
+        const fileContent = await fs.promises.readFile(filePath, 'utf8');
+        // const emails = removeBlanks(fileContent.split(/\r?\n|\r|,/));
+        return fileContent;
     }
-
-    console.log(result.filePaths);
-    const filePath = result.filePaths[0];
-    const fileContent = await fs.promises.readFile(filePath, 'utf8');
-    // const emails = removeBlanks(fileContent.split(/\r?\n|\r|,/));
-    return fileContent;
 }
 
 function removeBlanks(arr) {
@@ -775,83 +888,110 @@ function convertToPageViewsCsv(data) {
     return csvRows;
 }
 
-async function batchHandler(requests) {
-    const batchSize = 35;
-    const timeDelay = 2000;
-
+async function batchHandler(requests, batchSize = 35, timeDelay = 2000) {
     let myRequests = requests
-
-    const processBatchRequests = async (myRequests) => {
-        console.log('Inside processBatchRequests');
-
-        const results = [];
-        for (let i = 0; i < myRequests.length; i += batchSize) {
-            const batch = myRequests.slice(i, i + batchSize);
-            const batchResults = await Promise.allSettled(batch.map(request => request()));
-            results.push(...batchResults);
-            if (i + batchSize < myRequests.length) {
-                await waitFunc(timeDelay);
-            }
-        }
-        return results;
-    }
-
+    const successful = [];
+    const failed = [];
     let counter = 0;
-    const finalResults = {
-        successful: [],
-        failed: []
+
+    // const processBatchRequests = async (myRequests) => {
+    console.log('Inside processBatchRequests');
+
+    const results = [];
+    for (let i = 0; i < myRequests.length; i += batchSize) {
+        const batch = myRequests.slice(i, i + batchSize);
+        const batchResults = await Promise.allSettled(batch.map(request => request.request()
+            .then(response => successful.push(handleSuccess(response, request)))
+            .catch(error => failed.push(handleError(error, request)))));
+        results.push(...batchResults);
+        if (i + batchSize < myRequests.length) {
+            await waitFunc(timeDelay);
+        }
     }
 
-    do {
-        const response = await processBatchRequests(myRequests);
+    function handleSuccess(response, request) {
+        return {
+            id: request.id,
+            status: 'fulfilled',
+            value: response
+        };
+    }
+    
+    function handleError(error, request) {
+        throw {
+            id: request.id,
+            reason: error.message
+        };
+    }
 
-        // checking for successful requests and mapping them to a new array
-        successful = response.filter((result) => {
-            if (result.status === 'fulfilled') {
-                return result;
-            }
-        }).map((result) => {
-            return {
-                status: result.status,
-                id: result.value
-            }
-        });
-        finalResults.successful.push(...successful);
-
-        // checking for failed requests and mapping them to a new array
-        failed = response.filter((result) => {
-            if (result.status === 'rejected') {
-                return result
-            }
-        }).map((result) => {
-            const failedResult = {
-                status: result.status,
-                reason: result.reason.message
-            }
-            if (result.reason?.config?.url) {
-                failedResult.id = result.reason.config.url.split('/').pop();
-            }
-            return failedResult;
-        });
-        finalResults.failed.push(...failed);
-
-        // removing successful requests from the failed requests
-        finalResults.successful.forEach((success) => {
-            finalResults.failed = finalResults.failed.filter((fail) => {
-                return fail.id != success.id;
-            });
-        });
-
-        // filters results to attempt a retry for any which may have been throttled
-        const toRetry = failed.filter((fail) => {
-            if (fail.reason.match(/403/)) {
-                return fail;
-            }
-        });
-        myRequests = toRetry;
-        counter++;
-    } while (myRequests.length > 0 && counter < 3);
-
-    return finalResults;
+    while (counter < 3 && failed.length > 0) {
+        
+    }
+    return results;
 }
 
+    // let counter = 0;
+    // const finalResults = {
+    //     successful: [],
+    //     failed: []
+    // }
+
+    // do {
+    //     const response = await processBatchRequests(myRequests);
+
+    //     // checking for successful requests and mapping them to a new array
+    //     successful = response.filter((result) => {
+    //         if (result.status === 'fulfilled') {
+    //             return result;
+    //         }
+    //     }).map((result) => {
+    //         return {
+    //             status: result.status,
+    //             id: result.value
+    //         }
+    //     });
+    //     finalResults.successful.push(...successful);
+
+    //     // checking for failed requests and mapping them to a new array
+    //     failed = response.filter((result) => {
+    //         if (result.status === 'rejected') {
+    //             return result
+    //         }
+    //     }).map((result) => {
+    //         const failedResult = {
+    //             status: result.status,
+    //             reason: result.reason.message
+    //         }
+    //         if (result.reason?.config?.url) {
+    //             failedResult.id = result.reason.config.url.split('/').pop();
+    //         }
+    //         return failedResult;
+    //     });
+    //     finalResults.failed.push(...failed);
+
+    //     // removing successful requests from the failed requests
+    //     finalResults.successful.forEach((success) => {
+    //         finalResults.failed = finalResults.failed.filter((fail) => {
+    //             return fail.id != success.id;
+    //         });
+    //     });
+
+    //     // filters results to attempt a retry for any which may have been throttled
+    //     // const toRetry = failed.filter((fail) => {
+    //     //     if (fail.reason.match(/4[0-9]{2}/)) {
+    //     //         return fail;
+    //     //     }
+    //     // });
+    //     // myRequests = toRetry;
+
+    //     myRequests = failed;
+    //     // if there are failed requests wait before retrying
+    //     if (failed.length > 0) {
+    //         console.log('Retring the failed requests....');
+    //         await waitFunc(5000) //wait 5 seconds 
+    //     }
+    //     counter++;
+    // } while (myRequests.length > 0 && counter < 3);
+
+    // return finalResults;
+// }
