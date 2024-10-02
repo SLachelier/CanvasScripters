@@ -123,39 +123,134 @@ async function checkCommDomain(data) {
             };
 
             const response = await errorCheck(request);
-            if (response.status === 502) {
+            if (response.status !== 200) {
+                throw new Error(response.status);
+            } else {
+                retryCounter = 1;
+                const responseData = response.data;
+
+                for (let item of responseData.suppressed) {
+                    suppList.push(item.email);
+                }
+                if (!responseData.next_token) {
+                    next = false;
+                    console.log('end of list');
+                } else {
+                    next = `${url}?next_token=${encodeURIComponent(responseData.next_token)}`;
+                    axiosConfig.url = next;
+                }
+            }
+        } catch (error) {
+            if (response && response.status === 502) {
                 if (retryCounter > 3) {
                     console.log('Retry has failed more than 4 times. Returning found emails and exiting.');
-                    break;
+                    throw new Error('Retry has failed more than 4 times. Returning found emails and exiting.');
                 } else {
                     console.log(retryCounter);
                     retryCounter++;
                     console.log('Retrying in 1 minute.');
                     await waitFunc(60000);
                 }
-            } else if (response.status !== 200) {
-                throw new Error(response.status);
             } else {
-                retryCounter = 1;
-                data = response.data;
-
-                for (let item of data.suppressed) {
-                    suppList.push(item.email);
-                }
-                if (!data.next_token) {
-                    next = false;
-                    console.log('end of list');
-                } else {
-                    next = `${url}?next_token=${encodeURIComponent(data.next_token)}`;
-                    axiosConfig.url = next;
-                }
+                console.log('An unexpected error: ', error);
+                throw error;
             }
-        } catch (error) {
-            console.log('There was an error: ', error)
-            throw error;
         }
     }
     return suppList;
+}
+
+async function resetEmail(data) {
+    const resetStatus = {
+        bounce: { reset: null, status: null, error: null },
+        suppression: { reset: null, status: null, error: null }
+    };
+
+    try {
+        resetStatus.bounce = await bounceReset(data);
+    } catch (error) {
+        resetStatus.bounce = error;
+    }
+    try {
+        resetStatus.suppression = await awsReset(data);
+    } catch (error) {
+        throw error;
+    }
+
+    return resetStatus;
+}
+
+async function bounceReset(data) {
+    const url = `https://${data.domain}/api/v1/accounts/self/bounced_communication_channels/reset?pattern=${encodeURIComponent(data.email)}`;
+
+    const axiosConfig = {
+        method: 'post',
+        url: url,
+        headers: {
+            'Authorization': `Bearer ${data.token}`
+        }
+    }
+
+    try {
+        const request = async () => {
+            return await axios(axiosConfig);
+        };
+        const response = await errorCheck(request);
+        return {
+            reset: response.data.scheduled_reset_approximate_count,
+            status: response.statusText,
+            error: null
+        };
+    } catch (error) {
+        return { reset: null, status: null, error: { status: error.status, message: error.message } };
+    }
+}
+
+async function awsReset(data) {
+
+    const region = REGION[data.region];
+    const url = `${region}${encodeURIComponent(data.email)}`;
+    const axiosConfig = {
+        method: 'delete',
+        url: url,
+        headers: {
+            'Authorization': `Bearer ${data.token}`
+        }
+    };
+
+
+    try {
+        const request = async () => {
+            return await axios(axiosConfig);
+        };
+        const response = await errorCheck(request);
+        return {
+            status: response.status,
+            reset: 1,
+            error: null
+        };
+    } catch (error) {
+        if (error.status.includes('404')) {
+            return {
+                status: '404',
+                reset: 0,
+                error: null
+            };
+        } else if (error.status.includes('401')) {
+            return {
+                status: '401',
+                reset: 0,
+                error: null
+            };
+        } else if (error.status.includes('422')) {
+            return {
+                status: '422',
+                reset: 0,
+                error: null
+            };
+        }
+        return { status: null, reset: null, error: { status: error.status, message: error.message } };
+    }
 }
 
 async function checkUnconfirmedEmails(data) {
@@ -204,5 +299,5 @@ async function confirmEmail(data) {
 }
 
 module.exports = {
-    emailCheck, checkCommDomain, checkUnconfirmedEmails, confirmEmail
+    emailCheck, checkCommDomain, checkUnconfirmedEmails, confirmEmail, resetEmail
 }
