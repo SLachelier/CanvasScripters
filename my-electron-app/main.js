@@ -268,8 +268,8 @@ app.whenReady().then(() => {
 
         let completedRequests = 0;
         const totalRequests = data.content.length;
-        let batchResponse = null;
-        const failed = [];
+        // let batchResponse = null;
+        // let failed = [];
 
         const updateProgress = () => {
             completedRequests++;
@@ -300,12 +300,23 @@ app.whenReady().then(() => {
             requestCounter++;
         });
 
-        batchResponse = await batchHandler(requests);
-        failed = batchResponse
+        // batchResponse = await batchHandler(requests);
+        // failed = batchResponse
 
+        const responses = [];
+        for (let request of requests) {
+            responses.push(await request.request());
+        }
 
+        const formattedResponses = {
+            successful: [], failed: []
+        };
+        
+        formattedResponses.successful = responses.filter(response => !isNaN(response));
+        formattedResponses.failed = responses.filter(response => isNaN(response));
+        
         console.log('Finished Deleting Empty Assignment groups.');
-        return batchResponse;
+        return formattedResponses;
     });
 
     ipcMain.handle('axios:getNoSubmissionAssignments', async (event, data) => {
@@ -891,43 +902,57 @@ function convertToPageViewsCsv(data) {
 async function batchHandler(requests, batchSize = 35, timeDelay = 2000) {
     let myRequests = requests
     const successful = [];
-    const failed = [];
+    let failed = [];
     let counter = 0;
 
-    // const processBatchRequests = async (myRequests) => {
-    console.log('Inside processBatchRequests');
+    const processBatchRequests = async (myRequests) => {
+        console.log('Inside processBatchRequests');
 
-    const results = [];
-    for (let i = 0; i < myRequests.length; i += batchSize) {
-        const batch = myRequests.slice(i, i + batchSize);
-        const batchResults = await Promise.allSettled(batch.map(request => request.request()
-            .then(response => successful.push(handleSuccess(response, request)))
-            .catch(error => failed.push(handleError(error, request)))));
-        results.push(...batchResults);
-        if (i + batchSize < myRequests.length) {
-            await waitFunc(timeDelay);
+        failed = []; // zeroing out failed requests
+        // const results = [];
+        for (let i = 0; i < myRequests.length; i += batchSize) {
+            const batch = myRequests.slice(i, i + batchSize);
+            await Promise.allSettled(batch.map(request => request.request()
+                .then(response => successful.push(handleSuccess(response, request)))
+                .catch(error => failed.push(handleError(error, request)))));
+            // results.push(...batchResults);
+            if (i + batchSize < myRequests.length) {
+                await waitFunc(timeDelay);
+            }
+        }
+
+        // return results;
+        
+        function handleSuccess(response, request) {
+            return {
+                id: request.id,
+                status: 'fulfilled',
+                value: response
+            };
+        }
+    
+        function handleError(error, request) {
+            return {
+                id: request.id,
+                reason: error.message
+            };
         }
     }
-
-    function handleSuccess(response, request) {
-        return {
-            id: request.id,
-            status: 'fulfilled',
-            value: response
-        };
-    }
     
-    function handleError(error, request) {
-        throw {
-            id: request.id,
-            reason: error.message
-        };
+    do {
+        if (failed.length > 0) {
+            const retryRequests = failed.filter(request => !request.reason.includes('404') && !request.reason.includes('401') && !request.reason.includes('422')); // don't retry for 401, 404 or 422 errors
+            myRequests = requests.filter(request => retryRequests.some(r => r.id === request.id)); // find the request data to process the failed requests
+            counter++;
+            await waitFunc(timeDelay); // wait for the time delay before attempting a retry
+            await processBatchRequests(myRequests);
+        } else {
+            await processBatchRequests(myRequests); 
+        }
     }
+    while (counter < 3 && failed.length > 0) // loop through if there are failed requests until the counter is ove 3
 
-    while (counter < 3 && failed.length > 0) {
-        
-    }
-    return results;
+    return {successful, failed};
 }
 
     // let counter = 0;
