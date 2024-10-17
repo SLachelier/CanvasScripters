@@ -3,6 +3,20 @@ window.addEventListener('contextmenu', (e) => {
     window.menus.rightclick();
 });
 
+// formatting the domain 
+const domain = document.querySelector('#domain');
+domain.addEventListener('change', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // console.log('The domain value: ', e.target.value);
+    const domainString = e.target.value;
+    const httpsRemoved = domainString.match(/https:\/\/([^/\/\s]+)/)[1];
+    if (httpsRemoved) {
+        e.target.value = httpsRemoved;
+    }
+});
+
 // used to detect which input you're in for pasting
 let focusedTextBox = null;
 document.addEventListener('focusin', (e) => {
