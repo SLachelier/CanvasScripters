@@ -6,6 +6,7 @@ const {
     ipcMain,
     dialog,
     clipboard,
+    shell,
     Menu
 } = require('electron');
 //const axios = require('axios');
@@ -17,7 +18,7 @@ const { getPageViews } = require('./users');
 const { send } = require('process');
 const { deleteRequester, waitFunc } = require('./utilities');
 const { emailCheck, checkCommDomain, checkUnconfirmedEmails, confirmEmail, resetEmail } = require('./comm_channels');
-const { resetCourse } = require('./courses');
+const { resetCourse, createSupportCourse, editCourse } = require('./courses');
 
 let mainWindow;
 let suppressedEmails = [];
@@ -294,9 +295,10 @@ app.whenReady().then(() => {
             const requestData = {
                 domain: data.url,
                 token: data.token,
-                groupID: group._id
+                groupID: group._id,
+                id: requestCounter
             }
-            requests.push({ id: requestCounter, request: () => request(requestData) });
+            requests.push(() => request(requestData) );
             requestCounter++;
         });
 
@@ -305,7 +307,7 @@ app.whenReady().then(() => {
 
         const responses = [];
         for (let request of requests) {
-            responses.push(await request.request());
+            responses.push(await request());
         }
 
         const formattedResponses = {
@@ -518,6 +520,53 @@ app.whenReady().then(() => {
         return batchResponse;
     });
 
+    ipcMain.handle('axios:createSupportCourse', async (event, data) => {
+        // 1. Create the course
+        // 2. Add options
+
+        // creating the course
+        let response;
+        try {
+            response = await createSupportCourse(data);
+        } catch (error) {
+            throw error;
+        }
+
+        data.course_id = response.id;
+        
+        // check other options 
+        try {
+            if (data.course.blueprint.state) { // do we need to make it a blueprint course 
+                await enableBlueprint(data);
+                const associatedCourses = data.course.blueprint.associated_courses;
+                
+                // loop through and create basic courses to be associated to the blueprint
+                const requests = [];
+                for (let i = 0; i < associatedCourses; i++){
+                    const courseData = { ...data };
+                    courseData.name = `${data.name} - AC ${1 + i}`;
+
+                    const request = async (courseData) => {
+                        try {
+                            return await createSupportCourse(courseData);
+                        } catch (error) {
+                            throw error;
+                        }
+                    };
+                    requests.push(() => request(courseData));
+                }
+            }
+            if (data.course.addUsers.state) {
+                await addUsers(data);
+            }
+        } catch (error) {
+            throw error;   
+        }
+       
+
+        return {course_id: data.course_id, status: 200};
+    });
+    
     ipcMain.handle('axios:resetCommChannel', async (event, data) => {
         try {
             const response = await resetEmail(data);
@@ -626,17 +675,27 @@ app.whenReady().then(() => {
             };
 
             const requests = [];
-            emails.forEach((email) => {
+            for (let i = 0; i < emails.length; i++){
                 const requestData = {
                     domain: data.domain,
                     token: data.token,
                     region: data.region,
-                    email: email
+                    email: emails[i],
                 };
-                requests.push(() => request(requestData));
-            })
+                requests.push({ id: i + 1, request: () => request(requestData) });
+            }
+            // emails.forEach((email) => {
+            //     const requestData = {
+            //         domain: data.domain,
+            //         token: data.token,
+            //         region: data.region,
+            //         email: email
+            //     };
+            //     requests.push(() => request(requestData));
+            // })
 
             const batchResponse = await batchHandler(requests);
+            console.log('Finished processing emails.');
             return batchResponse;
         } else {
             throw new Error('Cancelled');
@@ -770,6 +829,11 @@ app.whenReady().then(() => {
         menu.popup({ window: BrowserWindow.fromWebContents(event.sender) })
     });
 
+    ipcMain.on('shell:openExternal', (event, data) => {
+        console.log('main.js > shell:openExternal');
+        shell.openExternal(data);
+    })
+    
     ipcMain.on('write-text', (event, data) => {
         clipboard.writeText(data);
     });
@@ -788,6 +852,21 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
 })
+
+async function enableBlueprint(data) {
+    try {
+        await editCourse(data);
+    } catch (error) {
+        throw error
+    } finally {
+        console.log('Finished enabling blueprint course');
+        return;
+    }
+}
+
+async function addUsers(data) {
+    
+}
 
 async function getFileContents(ext) {
     const options = {
