@@ -254,8 +254,8 @@ async function createSupportCourse(e) {
                             </div>
                         </div>
                         <div class="col-auto form-check form-switch">
-                            <label for="course-assignments" class="form-label">Add Assignments</label>
-                            <input type="checkbox" class="form-check-input" role="switch" id="course-assignments">
+                            <label for="course-assignments" class="form-label"><em style="color:gray;">Add Assignments - Disabled</em></label>
+                            <input type="checkbox" class="form-check-input" role="switch" id="course-assignments" disabled>
                         </div>
                         <div id="add-assignments-div" class="row hidden">
                             <div class="col-2">
@@ -264,43 +264,44 @@ async function createSupportCourse(e) {
                             </div>
                         </div>
                         <div class="col-auto form-check form-switch">
-                            <label for="course-add-cq" class="form-label">Add Classic Quizzes</label>
-                            <input type="checkbox" class="form-check-input" role="switch" id="course-add-cq">
+                            <label for="course-add-cq" class="form-label"><em style="color:gray;">Add Classic Quizzes - Disabled</em></label>
+                            <input type="checkbox" class="form-check-input" role="switch" id="course-add-cq" disabled>
                         </div>
                         <div class="col-auto form-check form-switch">
-                            <label for="course-add-nq" class="form-label">Add New Quizzes</label>
-                            <input type="checkbox" class="form-check-input"  role="switch" id="course-add-nq">
+                            <label for="course-add-nq" class="form-label"><em style="color:gray;">Add New Quizzes - Disabled</em></label>
+                            <input type="checkbox" class="form-check-input"  role="switch" id="course-add-nq" disabled>
                         </div>
                         <div class="col-auto form-check form-switch">
-                            <label for="course-add-discussions" class="form-label">Add Discussions</label>
-                            <input type="checkbox" class="form-check-input"  role="switch" id="course-add-discussions">
+                            <label for="course-add-discussions" class="form-label"><em style="color:gray;">Add Discussions - Disabled</em></label>
+                            <input type="checkbox" class="form-check-input"  role="switch" id="course-add-discussions" disabled>
                         </div>
                         <div class="col-auto form-check form-switch">
-                            <label for="course-add-pages" class="form-label">Add Pages</label>
-                            <input type="checkbox" class="form-check-input"  role="switch" id="course-add-pages">
+                            <label for="course-add-pages" class="form-label"><em style="color:gray;">Add Pages - Disabled</em></label>
+                            <input type="checkbox" class="form-check-input"  role="switch" id="course-add-pages" disabled>
                         </div>
                         <div class="col-auto form-check form-switch">
-                            <label for="course-add-modules" class="form-label">Add Modules</label>
-                            <input type="checkbox" class="form-check-input"  role="switch" id="course-add-modules">
+                            <label for="course-add-modules" class="form-label"><em style="color:gray;">Add Modules - Disabled</em></label>
+                            <input type="checkbox" class="form-check-input"  role="switch" id="course-add-modules" disabled>
                         </div>
                         <div class="col-auto form-check form-switch">
-                            <label for="course-add-sections" class="form-label">Add Sections</label>
-                            <input type="checkbox" class="form-check-input"  role="switch" id="course-add-sections">
+                            <label for="course-add-sections" class="form-label"><em style="color:gray;">Add Sections - Disabled</em></label>
+                            <input type="checkbox" class="form-check-input"  role="switch" id="course-add-sections" disabled>
                         </div>
                         <div class="col-auto form-check form-switch">
-                            <label for="course-submissions" class="form-label">Create Submissions</label>
-                            <input type="checkbox" class="form-check-input"  role="switch" id="course-submissions">
+                            <label for="course-submissions" class="form-label" disabled><em style="color: gray;">Create Submissions - Disabled</em></label>
+                            <input type="checkbox" class="form-check-input" role="switch" id="course-submissions" disabled>
                         </div>
                     </div>
                 </div>
             </div>
-        <button type="button" class="btn btn-primary mt-3" id="createBtn">Create</button>
-        <div id="response-container></div>`
+        <button type="button" class="btn btn-primary mt-3" id="createBtn">Create</button>`
 
     eContent.append(eForm);
 
-    // currently disabled features
-    eContent.querySelector('#course-blueprint').disabled = true;
+    const eResponse = document.createElement('div');
+    eResponse.id = "response-container";
+    eResponse.classList.add('mt-5');
+    eContent.append(eResponse);
 
     const courseOptions = eContent.querySelector('#course-options');
     courseOptions.addEventListener('change', (e) => {
@@ -351,7 +352,29 @@ async function createSupportCourse(e) {
         }
     }
 
+    function courseAssignmentsToggle(e) {
+
+    }
+
+    function courseAddClassicToggle(e) {
+
+    }
+    function courseAddNewQToggle(e) {
+
+    }
+    function courseAddDiscussionsToggle(e) {
+
+    }
+    function courseAddPagesToggle(e) {
+
+    }
+    function courseAddModulesToggle(e) {
+
+    }
     function courseAddSectionsToggle(e) {
+
+    }
+    function courseCreateSubmissionsToggle(e) {
 
     }
     // const addUsersToggle = eContent.querySelector('#course-add-users');
@@ -385,6 +408,7 @@ async function createSupportCourse(e) {
         e.preventDefault();
         e.stopPropagation();
 
+        const responseContainer = eContent.querySelector('#response-container');
         const courseName = eContent.querySelector('#course-name').value;
         const coursePublishChbx = eContent.querySelector('#course-publish').checked;
         const courseBlueprintChbx = eContent.querySelector('#course-blueprint').checked;
@@ -398,25 +422,58 @@ async function createSupportCourse(e) {
         const courseAddSectionsChbx = eContent.querySelector('#course-add-sections').checked;
         const courseSubmissionsChbx = eContent.querySelector('#course-submissions').checked;
 
+        // Users to add
+        const addStudents = eContent.querySelector('#course-add-students').value;
+        const addTeachers = eContent.querySelector('#course-add-teachers').value;
+
+
 
 
 
         const data = {
             domain: domain,
             token: apiToken,
+            course_id: null,
             course: {
                 name: courseName,
                 publish: coursePublishChbx,
-                blueprint: courseBlueprintChbx,
-                addUsers: courseAddUsersChbx,
-                addAssignments: courseAddAssignmentsChbx,
-                addCQ: courseAddCQChbx,
-                addNQ: courseAddNQChbx,
-                addDiscussions: courseAddDiscussionsChbx,
-                addPages: courseAddPagesChbx,
-                addModules: courseAddModulesChbx,
-                addSections: courseAddSectionsChbx,
-                submissions: courseSubmissionsChbx
+                blueprint: {
+                    state: courseBlueprintChbx,
+                    associated_courses: null
+                },
+                addUsers: {
+                    state: courseAddUsersChbx,
+                    students: addStudents > 0 ? addStudents : null,
+                    teachers: addTeachers > 0 ? addTeachers : null
+                },
+                addAssignments: {
+                    state: courseAddAssignmentsChbx,
+                    number: null
+                },
+                addCQ: {
+                    state: courseAddCQChbx,
+                    number: null
+                },
+                addNQ: {
+                    state: courseAddNQChbx,
+                    number: null
+                },
+                addDiscussions: {
+                    state: courseAddDiscussionsChbx,
+                    number: null
+                },
+                addPages: {
+                    state: courseAddPagesChbx,
+                    number: null
+                },
+                addModules: {
+                    state: courseAddModulesChbx,
+                    number: null
+                },
+                addSections: {
+                    state: courseAddSectionsChbx,
+                    number: null
+                }
             }
         }
 
@@ -424,13 +481,21 @@ async function createSupportCourse(e) {
 
         try {
             const response = await window.axios.createSupportCourse(data);
-            eContent.querySelector('#response-container').innerHTML = '<p>Course ID: ' + response.course_id + ' ' + response.status + '</p>';
+            responseContainer.innerHTML = `<p>Course ID: <a id="course-link" href=${domain}/courses/${response.course_id} target="_blank">${response.course_id}`;
         } catch (error) {
             console.log('Error: ', error);
         } finally {
-            checkBtn.disabled = false;
+            createBtn.disabled = false;
         }
+
+        const courseLink = responseContainer.querySelector('#course-link');
+        courseLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            console.log('Inside courseLink click listener');
+            console.log('The target is ', e.target.href);
+            window.shell.openExternal(e.target.href);
+        })
     })
-
-
 }
