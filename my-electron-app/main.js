@@ -126,14 +126,23 @@ app.whenReady().then(() => {
         };
 
         let requests = [];
-        data.messages.forEach((message) => {
+        for (let i = 0; i < data.messages.length; i++){
             const requestData = {
-                domain: data.domain,
-                token: data.token,
-                message: message.id
+                    domain: data.domain,
+                    token: data.token,
+                    message: data.messages[i].id
             }
-            requests.push(() => request(requestData));
-        })
+            requests.push({ id: i + 1, request: () => request(requestData) });
+        };
+        
+        // data.messages.forEach((message) => {
+        //     const requestData = {
+        //         domain: data.domain,
+        //         token: data.token,
+        //         message: message.id
+        //     }
+        //     requests.push(() => request(requestData));
+        // })
 
         const batchResponse = await batchHandler(requests);
 
@@ -556,8 +565,24 @@ app.whenReady().then(() => {
                     requests.push(() => request(courseData));
                 }
             }
-            if (data.course.addUsers.state) {
-                await addUsers(data);
+            if (data.course.addUsers.state) { // do we need to add users
+                const usersToEnroll = { students: null, teachers: null };
+
+                // create the users in canvas and them the the enrollment type
+                usersToEnroll.students = createUsers(data.course.addUsers.students);
+                usersToEnroll.teachers = createUsers(data.course.addUsers.teachers);
+                const enrollStudentRequests = [];
+                for (let student of usersToEnroll.students) {
+                    const studentData = {
+                        domain: data.domain,
+                        token: data.token,
+                        course_id: data.course_id,
+                        enrollment: {
+                            user_id: 1234
+                        }
+                    }
+                    enrollStudentRequests
+                }
             }
         } catch (error) {
             throw error;   
