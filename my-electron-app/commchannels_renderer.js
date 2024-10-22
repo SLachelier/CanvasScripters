@@ -289,7 +289,7 @@ function resetComm(e) {
     const resetSingleInput = resetCommForm.querySelector('#reset-single-input');
     const progresDiv = resetCommForm.querySelector('#progress-div');
     const progressInfo = resetCommForm.querySelector('#progress-info');
-    const proegressBar = resetCommForm.querySelector('.progress-bar');
+    const progressBar = resetCommForm.querySelector('.progress-bar');
 
     // listener for the toggle switches
     resetSwitches.addEventListener('change', (e) => {
@@ -400,7 +400,7 @@ function resetComm(e) {
         };
 
         window.progressAPI.onUpdateProgress((progress) => {
-            proegressBar.style.width = `${progress}%`;
+            progressBar.style.width = `${progress}%`;
         });
 
         try {
@@ -408,24 +408,43 @@ function resetComm(e) {
             uploadContainer.innerHTML = "Working...";
             const response = await window.axios.resetEmails(requestData);
             progresDiv.hidden = true;
-            const successful = response.successful.map((success) => success.id);
-            const failed = response.failed.map((failed) => failed.id);
+            // const successful = response.successful.map((success) => {
+            //     const newSuccess = {
+            //         status: success.status,
+            //         value: { ...success.value }
+            //     };
+            //     return newSuccess;
+            // });
+            // const failed = response.failed.map((failed) => {
+            //     const newFailed = {
+            //         status: failed.status,
+            //         value: { ...failed.value }
+            //     };
+            //     return newFailed;
+            // });
+            // const successful = { ...response.successful };
+            // const failed = response.failed.map((failed) => failed.id);
+            // const failed = { ...response.failed };
             const totalProcessed = response.successful.length + response.failed.length;
             let totalBounceReset = 0;
             let totalAWSReset = 0;
-            for (let success of successful) {
-                totalBounceReset += success.bounce.reset;
-                totalAWSReset += success.suppression.reset;
-            };
+            // for (let success of successful) {
+            //     totalBounceReset += success.value.bounce.reset;
+            //     totalAWSReset += success.value.suppression.reset;
+            // };
+            response.successful.forEach(success => {
+                totalBounceReset += success.value.bounce.reset;
+                totalAWSReset += success.value.suppression.reset;
+            });
 
-            const errorBounce = successful.filter((email) => email.bounce.error != null);
-            const errorSuppressed = successful.filter((email) => email.suppression.error != null);
+            const errorBounce = response.successful.filter((email) => email.value.bounce.error != null);
+            const errorSuppressed = response.successful.filter((email) => email.value.suppression.error != null);
             // { bounce: { status: reset},suppression: {status, reset}}
             uploadContainer.innerHTML = `<p>Total Processed: ${totalProcessed}</p>`;
             uploadContainer.innerHTML += `<h5>Bounce</h5>`;
             // handle any that errored
             errorBounce.forEach(element => {
-                errorHandler(element.bounce.error, uploadContainer);
+                errorHandler(element.value.bounce.error, uploadContainer);
             });
 
             if (totalBounceReset < 1) {
@@ -436,7 +455,7 @@ function resetComm(e) {
 
             uploadContainer.innerHTML += '<h5 class="mt-3">Suppression</h5>'
             errorSuppressed.forEach(email => {
-                errorHandler(email.suppression.error, uploadContainer);
+                errorHandler(email.value.suppression.error, uploadContainer);
             })
 
             if (totalAWSReset < 1) {
@@ -454,7 +473,7 @@ function resetComm(e) {
             }
         } finally {
             uploadBtn.disabled = false;
-
+            progressBar.style.width = '0%';
         };
     });
 }
