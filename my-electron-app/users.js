@@ -50,22 +50,124 @@ const { errorCheck } = require('./utilities.js');
 //     return users;
 // }
 
-// async function createUser() {
-//     console.log('Creating new user...');
-//     console.log(axios.defaults.baseURL);
+function generateRandomName() {
+    const firstNames = [
+        'Aaron', 'Abigail', 'Adam', 'Adrian', 'Aiden', 'Alex', 'Alexa', 'Alexander', 'Alexandra', 'Alice',
+        'Alicia', 'Allison', 'Alyssa', 'Amanda', 'Amber', 'Amelia', 'Amy', 'Andrea', 'Andrew', 'Angela',
+        'Anna', 'Anthony', 'Ashley', 'Austin', 'Ava', 'Barbara', 'Benjamin', 'Brandon', 'Brayden',
+        'Brianna', 'Brittany', 'Brooke', 'Bryan', 'Caleb', 'Cameron', 'Carlos', 'Carly', 'Carmen', 'Caroline',
+        'Carter', 'Catherine', 'Charles', 'Charlotte', 'Chase', 'Chloe', 'Christian', 'Christina', 'Christopher',
+        'Clara', 'Cole', 'Colin', 'Connor', 'Courtney', 'Daniel', 'David', 'Dean', 'Derek', 'Diana',
+        'Dominic', 'Dylan', 'Edward', 'Elena', 'Eli', 'Elijah', 'Elizabeth', 'Ella', 'Emily', 'Emma',
+        'Eric', 'Erica', 'Ethan', 'Eva', 'Evan', 'Evelyn', 'Faith', 'Fiona', 'Gabriel', 'Gavin',
+        'Genesis', 'George', 'Grace', 'Grayson', 'Hailey', 'Hannah', 'Harper', 'Hayden', 'Henry', 'Holly',
+        'Hudson', 'Hunter', 'Ian', 'Isaac', 'Isabella', 'Isaiah', 'Jack', 'Jackson', 'Jacob', 'James',
+        'Jasmine', 'Jason', 'Jayden', 'Jeffrey', 'Jenna', 'Jennifer', 'Jessica', 'Jillian', 'John', 'Jonathan',
+        'Jordan', 'Joseph', 'Joshua', 'Julia', 'Julian', 'Justin', 'Kaitlyn', 'Katherine', 'Kayla', 'Kaylee',
+        'Kevin', 'Kimberly', 'Kyle', 'Kylie', 'Landon', 'Laura', 'Lauren', 'Layla', 'Leah', 'Liam',
+        'Lillian', 'Lily', 'Logan', 'Lucas', 'Lucy', 'Luke', 'Mackenzie', 'Madeline', 'Madison', 'Makayla',
+        'Maria', 'Mason', 'Matthew', 'Megan', 'Melanie', 'Melissa', 'Michael', 'Mia', 'Michelle', 'Mikayla',
+        'Molly', 'Morgan', 'Nathan', 'Nathaniel', 'Nicholas', 'Nicole', 'Noah', 'Nolan', 'Olivia', 'Owen',
+        'Paige', 'Parker', 'Patrick', 'Paul', 'Peter', 'Peyton', 'Rachel', 'Reagan', 'Rebecca', 'Riley',
+        'Robert', 'Ryan', 'Samantha', 'Samuel', 'Sara', 'Sarah', 'Savannah', 'Sean', 'Sebastian', 'Serenity',
+        'Seth', 'Shane', 'Sierra', 'Sophia', 'Sophie', 'Spencer', 'Stephanie', 'Stephen', 'Steven', 'Sydney',
+        'Taylor', 'Thomas', 'Travis', 'Trinity', 'Tyler', 'Valeria', 'Vanessa', 'Victoria', 'Vincent', 'William',
+        'Wyatt', 'Xavier', 'Zachary', 'Zoe', 'Zoey', 'Aaliyah', 'Abby', 'Addison', 'Adeline', 'Adriana',
+        'Ainsley', 'Alana', 'Alayna', 'Alison', 'Alivia', 'Allie', 'Alondra', 'Alyson', 'Amara', 'Amari',
+        'Amaya', 'Amira', 'Anastasia', 'Angel', 'Angelina', 'Anika', 'Annabelle', 'Annie', 'April', 'Arianna',
+        'Ariel', 'Ariella', 'Arya', 'Ashlyn', 'Aspen', 'Athena', 'Aubree', 'Aubrey', 'Audrey', 'Aurora',
+        'Autumn', 'Ava', 'Avery', 'Bailey', 'Bella', 'Bianca', 'Blake', 'Blakely', 'Braelyn', 'Braylee',
+        'Brianna', 'Brielle', 'Brinley', 'Bristol', 'Brooke', 'Brooklyn', 'Brynn', 'Cadence', 'Caitlin', 'Callie',
+        'Camila', 'Camille', 'Carina', 'Carla', 'Carmen', 'Carolina', 'Caroline', 'Cassandra', 'Cassidy', 'Catalina',
+        'Cecilia', 'Celeste', 'Celia', 'Chelsea', 'Cheyenne', 'Christina', 'Claire',
+        'Clarissa', 'Clementine', 'Colette', 'Cora', 'Coraline', 'Crystal', 'Daisy', 'Dakota',
+        'Dalia', 'Dallas', 'Dana', 'Daniela', 'Daniella', 'Danielle', 'Daphne', 'Darla', 'Darlene', 'Davina'
+    ];
+    const lastNames = [
+        'Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez',
+        'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin',
+        'Lee', 'Perez', 'Thompson', 'White', 'Harris', 'Sanchez', 'Clark', 'Ramirez', 'Lewis', 'Robinson',
+        'Walker', 'Young', 'Allen', 'King', 'Wright', 'Scott', 'Torres', 'Nguyen', 'Hill', 'Flores',
+        'Green', 'Adams', 'Nelson', 'Baker', 'Hall', 'Rivera', 'Campbell', 'Mitchell', 'Carter', 'Roberts',
+        'Gomez', 'Phillips', 'Evans', 'Turner', 'Diaz', 'Parker', 'Cruz', 'Edwards', 'Collins', 'Reyes',
+        'Stewart', 'Morris', 'Morales', 'Murphy', 'Cook', 'Rogers', 'Gutierrez', 'Ortiz', 'Morgan', 'Cooper',
+        'Peterson', 'Bailey', 'Reed', 'Kelly', 'Howard', 'Ramos', 'Kim', 'Cox', 'Ward', 'Richardson',
+        'Watson', 'Brooks', 'Chavez', 'Wood', 'James', 'Bennett', 'Gray', 'Mendoza', 'Ruiz', 'Hughes',
+        'Price', 'Alvarez', 'Castillo', 'Sanders', 'Patel', 'Myers', 'Long', 'Ross', 'Foster', 'Jimenez',
+        'Powell', 'Jenkins', 'Perry', 'Russell', 'Sullivan', 'Bell', 'Coleman', 'Butler', 'Henderson', 'Barnes',
+        'Gonzales', 'Fisher', 'Vasquez', 'Simmons', 'Romero', 'Jordan', 'Patterson', 'Alexander', 'Hamilton', 'Graham',
+        'Reynolds', 'Griffin', 'Wallace', 'Moreno', 'West', 'Cole', 'Hayes', 'Bryant', 'Herrera', 'Gibson',
+        'Ellis', 'Tran', 'Medina', 'Aguilar', 'Stevens', 'Murray', 'Ford', 'Castro', 'Marshall', 'Owens',
+        'Harrison', 'Fernandez', 'McDonald', 'Woods', 'Washington', 'Kennedy', 'Wells', 'Vargas', 'Henry', 'Chen',
+        'Freeman', 'Webb', 'Tucker', 'Guzman', 'Burns', 'Crawford', 'Olson', 'Simpson', 'Porter', 'Hunter',
+        'Gordon', 'Mendez', 'Silva', 'Shaw', 'Snyder', 'Mason', 'Dixon', 'Muñoz', 'Hunt', 'Hicks',
+        'Holmes', 'Palmer', 'Wagner', 'Black', 'Robertson', 'Boyd', 'Rose', 'Stone', 'Salazar', 'Fox',
+        'Warren', 'Mills', 'Meyer', 'Rice', 'Schmidt', 'Garza', 'Daniels', 'Ferguson', 'Nichols', 'Stephens',
+        'Soto', 'Weaver', 'Ryan', 'Gardner', 'Payne', 'Grant', 'Dunn', 'Kelley', 'Spencer', 'Hawkins',
+        'Arnold', 'Pierce', 'Vazquez', 'Hansen', 'Peters', 'Santos', 'Hart', 'Bradley', 'Knight', 'Elliott',
+        'Cunningham', 'Duncan', 'Armstrong', 'Hudson', 'Carroll', 'Lane', 'Riley', 'Andrews', 'Alvarado', 'Ray',
+        'Delgado', 'Berry', 'Perkins', 'Hoffman', 'Johnston', 'Matthews', 'Pena', 'Richards', 'Contreras', 'Willis',
+        'Carpenter', 'Lawrence', 'Sandoval', 'Guerrero', 'George', 'Chapman', 'Rios', 'Estrada', 'Ortega', 'Watkins',
+        'Greene', 'Nunez', 'Wheeler', 'Valdez', 'Harper', 'Burke', 'Larson', 'Santiago', 'Maldonado', 'Morrison',
+        'Franklin', 'Carlson', 'Austin', 'Dominguez', 'Carr', 'Lawson', 'Jacobs', 'O’Brien', 'Lynch', 'Singh',
+        'Vega', 'Bishop', 'Montgomery', 'Oliver', 'Jensen', 'Harvey', 'Williamson', 'Gilbert', 'Dean', 'Sims',
+        'Espinoza', 'Howell', 'Li', 'Wong', 'Reid', 'Hanson', 'Le', 'McCoy', 'Garrett', 'Burton',
+        'Fuller', 'Wang', 'Weber', 'Welch', 'Rojas', 'Lucas', 'Marquez', 'Fields', 'Park', 'Yang',
+        'Little', 'Banks', 'Padilla', 'Day', 'Walsh', 'Bowman', 'Schultz', 'Luna', 'Fowler', 'Mejia',
+        'Davidson', 'Acosta', 'Brewer', 'May', 'Holland', 'Juarez', 'Newman', 'Pearson', 'Curtis', 'Cortez',
+        'Douglas', 'Schneider', 'Joseph', 'Barrett', 'Navarro', 'Figueroa', 'Keller', 'Avila', 'Wade', 'Molina',
+        'Stanley', 'Hopkins', 'Campos', 'Barnett', 'Bates', 'Chambers', 'Caldwell', 'Beck', 'Lambert', 'Miranda',
+        'Byrd', 'Craig', 'Ayala', 'Lowe', 'Frazier', 'Powers', 'Neal', 'Leonard', 'Gregory', 'Carrillo',
+        'Sutton', 'Fleming', 'Rhodes', 'Shelton', 'Schwartz', 'Norris', 'Jennings', 'Watts', 'Duran', 'Walters',
+        'Cohen', 'McDaniel', 'Moran', 'Parks', 'Steele', 'Vaughn', 'Becker', 'Holt', 'DeLeon', 'Barker'
+    ];
 
-//     let url = 'accounts/self/users';
-//     let newPerson = await error_check.errorCheck(random_user.getRandomPerson);
-//     updateUserParams(newPerson);
+    const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+    const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
 
-//     let startTime = performance.now();
-//     const response = await error_check.errorCheck(async () => {
-//         return await axios.post(url, userData)
-//     });
-//     let endTime = performance.now();
-//     console.log(`Created a user in ${Math.floor(endTime - startTime) / 1000} seconds`);
-//     return response.data;
-// }
+    return { firstName: firstName, lastName: lastName, login_id: firstName + lastName + Math.floor(Math.random() * 1000), password: 12341234 };
+}
+
+function createUsers(count) {
+    const users = [];
+    for (let i = 0; i < count; i++) {
+        users.push(generateRandomName());
+    }
+    return users;
+}
+
+
+async function addStudents(data) {
+    const numToAdd = data.course.addUsers.addStudents;
+    const studentsToAdd = createUsers(numToAdd);
+    for (let theUser of studentsToAdd) {
+        const student = {
+            user: {
+                name: theUser.firstName + theUser.lastName,
+                skip_registration: true
+            },
+            pseudonym: {
+                unique_id: theUser.login_id,
+                password: theUser.password,
+                send_confirmation: false
+            }
+        }
+    }
+}
+
+async function addTeachers(data) {
+
+}
+
+async function addUsers(data) {
+    for (let i = 0; i < data.course.addUsers.addStudents; i++) {
+        await addStudents(data);
+    }
+
+    for (let i = 0; i < data.course.addUsers.addTeachers; i++) {
+        await addTeachers(data);
+    }
+}
 
 async function getPageViews(data) {
     const domain = data.domain;
