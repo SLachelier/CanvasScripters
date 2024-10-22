@@ -126,6 +126,11 @@ contextBridge.exposeInMainWorld('axios', {
         console.log('preload.js > resetEmails');
 
         return await ipcRenderer.invoke('axios:resetEmails', data);
+    },
+    createSupportCourse: async (data) => {
+        console.log('preload.js > createSupportCourse');
+
+        return await ipcRenderer.invoke('axios:createSupportCourse', data);
     }
 });
 
@@ -180,5 +185,11 @@ contextBridge.exposeInMainWorld('menus', {
     },
     writeText: (data) => {
         ipcRenderer.send('write-text', (data));
+    }
+});
+
+contextBridge.exposeInMainWorld('shell', {
+    openExternal: (data) => {
+        ipcRenderer.send('shell:openExternal', data);
     }
 });
