@@ -14,7 +14,7 @@ const convos = require('./conversations');
 const csvExporter = require('./csvExporter');
 const assignmentGroups = require('./assignment_groups');
 const assignments = require('./assignments');
-const { getPageViews } = require('./users');
+const { getPageViews, createUsers, enrollUser,addUsers } = require('./users');
 const { send } = require('process');
 const { deleteRequester, waitFunc } = require('./utilities');
 const { emailCheck, checkCommDomain, checkUnconfirmedEmails, confirmEmail, resetEmail } = require('./comm_channels');
@@ -542,6 +542,7 @@ app.whenReady().then(() => {
         }
 
         data.course_id = response.id;
+        let totalUsers = null;
         
         // check other options 
         try {
@@ -566,30 +567,36 @@ app.whenReady().then(() => {
                 }
             }
             if (data.course.addUsers.state) { // do we need to add users
-                const usersToEnroll = { students: null, teachers: null };
+                const usersToEnroll = {
+                    domain: data.domain,
+                    token: data.token,
+                    course_id: data.course_id,
+                    students: null,
+                    teachers: null
+                };
 
-                // create the users in canvas and them the the enrollment type
-                usersToEnroll.students = createUsers(data.course.addUsers.students);
-                usersToEnroll.teachers = createUsers(data.course.addUsers.teachers);
-                const enrollStudentRequests = [];
-                for (let student of usersToEnroll.students) {
-                    const studentData = {
-                        domain: data.domain,
-                        token: data.token,
-                        course_id: data.course_id,
-                        enrollment: {
-                            user_id: 1234
-                        }
-                    }
-                    enrollStudentRequests
-                }
+                // genereate randomUsers to add to Canvas
+                usersToEnroll.students = createUsers(data.course.addUsers.students, data.email);
+                usersToEnroll.teachers = createUsers(data.course.addUsers.teachers, data.email);
+
+                // add users to Canvas
+                console.log('Adding users to Canvas')
+                const userResponse = await addUsersToCanvas(usersToEnroll);
+                const userIDs = userResponse.successful.map(user => user.value); // store the successfully created user IDs
+                console.log('Finished adding users to Canvas.');
+
+                // enroll users to course
+                console.log('Enrolling users to course.');
+                const enrollResponse = await enrollUsers(usersToEnroll, userIDs);
+                totalUsers = enrollResponse.successful.length;
+                console.log('Finished enrolling users in the course.');
             }
         } catch (error) {
             throw error;   
         }
        
 
-        return {course_id: data.course_id, status: 200};
+        return {course_id: data.course_id, status: 200, totalUsersEnrolled: totalUsers};
     });
     
     ipcMain.handle('axios:resetCommChannel', async (event, data) => {
@@ -648,13 +655,15 @@ app.whenReady().then(() => {
         }
 
         const requests = [];
+        let requestID = 1;
         data.emails.forEach((email) => {
             const requestData = {
                 domain: data.domain,
                 token: data.token,
                 email: email
             };
-            requests.push(() => request(requestData));
+            requests.push({ id: requestID, request: () => request(requestData) });
+            requestID++;
         })
 
         const batchResponse = await batchHandler(requests);
@@ -889,8 +898,75 @@ async function enableBlueprint(data) {
     }
 }
 
-async function addUsers(data) {
+async function addUsersToCanvas(data) {
+
+    const request = async (requestData) => {
+        try {
+            return await addUsers(requestData);
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    const requests = [];
+
+    // add student users to the requests
+    for (let i = 0; i < data.students.length; i++){
+        requests.push({ id: i + 1, request: () => request({ domain: data.domain, token: data.token, user: data.students[i] }) });
+    }
+
+    // add teachers users to the requests
+    for (let i = 0; i < data.teachers.length; i++){
+        requests.push({ id: i + data.students.length, request: () => request({ domain: data.domain, token: data.token, user: data.teachers[i] }) });
+    }
+
+    const batchResponse = await batchHandler(requests);
+    return batchResponse;
+}
+
+async function enrollUsers(data, userIds) {
+
+    const totalUsers = userIds.length;
+    const totalStudents = data.students.length;
+    const totalTeachers = data.teachers.length;
+
+    const request = async (requestData) => {
+        try {
+            const response = await enrollUser(requestData);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    };
+
+    const requests = [];
+    // loop through the total users to be added
+    for (let i = 0; i < totalUsers; i++){
+        let enrollType = i < totalStudents ? 'StudentEnrollment': 'TeacherEnrollment';
+       
+        const userData = {
+            domain: data.domain,
+            token: data.token,
+            type: enrollType,
+            course_id: data.course_id,
+            user_id: userIds[i]
+        }
+        requests.push({ id: i+1, request: () => request(userData) });
+    }
     
+    // loop through all the teaches to be added
+    // for (let t = 0; t < totalTeachers; t++){
+    //     const teacherData = {
+    //         domain: data.domain,
+    //         token: data.token,
+    //         type: 'TeacherEnrollment',
+    //         user_id: userIds[counter]
+    //     }
+    //     requests.push({ id: counter, request: () => request(teacherData) });
+    // }
+
+    const batchResponse = await batchHandler(requests);
+    return batchResponse;
 }
 
 async function getFileContents(ext) {
