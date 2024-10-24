@@ -714,7 +714,7 @@ function unconfirmed(e) {
         const progresDiv = eContent.querySelector('#progress-div');
         const progressBar = eContent.querySelector('.progress-bar');
         const progressInfo = eContent.querySelector('#progress-info');
-        const emails = emailBox.split(/\r?\n|\n|\,/)
+        const emails = emailBox.value.split(/\r?\n|\n|\,/)
             .map((email) => email.trim());
 
         progressInfo.innerHTML = '';
