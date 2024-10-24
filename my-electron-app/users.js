@@ -50,7 +50,7 @@ const { errorCheck } = require('./utilities.js');
 //     return users;
 // }
 
-function generateRandomName() {
+function generateRandomUser() {
     const firstNames = [
         'Aaron', 'Abigail', 'Adam', 'Adrian', 'Aiden', 'Alex', 'Alexa', 'Alexander', 'Alexandra', 'Alice',
         'Alicia', 'Allison', 'Alyssa', 'Amanda', 'Amber', 'Amelia', 'Amy', 'Andrea', 'Andrew', 'Angela',
@@ -125,22 +125,42 @@ function generateRandomName() {
     const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
     const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
 
-    return { firstName: firstName, lastName: lastName, login_id: firstName + lastName + Math.floor(Math.random() * 1000), password: 12341234 };
+    return {
+        user: {
+            name: firstName + lastName,
+            skip_registration: true
+        },
+        pseudonym: {
+            unique_id: firstName + lastName + Math.floor(Math.random() * 1000),
+            password: 12341234,
+            send_confirmation: false
+        },
+        communication_channel: {
+            type: 'email',
+            address: '',
+            skip_confirmation: true
+        }
+    };
 }
 
-function createUsers(count) {
+// create random users
+function createUsers(count, email) {
     const users = [];
     for (let i = 0; i < count; i++) {
-        users.push(generateRandomName());
+        const newUser = generateRandomUser();
+        if (email != null) {
+            newUser.communication_channel.address = `${email}+${newUser.pseudonym.unique_id}@instructure.com`;
+        }
+        users.push(newUser);
     }
     return users;
 }
 
-
 async function addStudents(data) {
     const numToAdd = data.course.addUsers.addStudents;
-    const studentsToAdd = createUsers(numToAdd);
-    for (let theUser of studentsToAdd) {
+    const usersToAdd = createUsers(numToAdd);
+    const students = [];
+    for (let user of usersToAdd) {
         const student = {
             user: {
                 name: theUser.firstName + theUser.lastName,
@@ -152,20 +172,83 @@ async function addStudents(data) {
                 send_confirmation: false
             }
         }
+        students.push(student);
     }
+    return students;
 }
 
 async function addTeachers(data) {
-
+    const numToAdd = data.course.addUsers.addTeachers;
+    const usersToAdd = createUsers(numToAdd);
+    const teachers = [];
+    for (let user of usersToAdd) {
+        const teacher = {
+            user: {
+                name: theUser.firstName + theUser.lastName,
+                skip_registration: true
+            },
+            pseudonym: {
+                unique_id: theUser.login_id,
+                password: theUser.password,
+                send_confirmation: false
+            }
+        }
+        students.push(student);
+    }
+    return students;
 }
 
+// adds new users to Canvas
 async function addUsers(data) {
-    for (let i = 0; i < data.course.addUsers.addStudents; i++) {
-        await addStudents(data);
-    }
+    const url = `${data.domain}/api/v1/accounts/self/users`;
+    const axiosConfig = {
+        method: 'post',
+        url: url,
+        headers: {
+            'Authorization': `Bearer ${data.token}`
+        },
+        data: data.user
+    };
 
-    for (let i = 0; i < data.course.addUsers.addTeachers; i++) {
-        await addTeachers(data);
+    try {
+        const request = async () => {
+            return await axios(axiosConfig);
+        }
+        const response = await errorCheck(request);
+        return response.data.id;
+    } catch (error) {
+        throw error;
+    }
+}
+
+// enroll a user in a course
+async function enrollUser(data) {
+    const url = `${data.domain}/api/v1/courses/${data.course_id}/enrollments`;
+
+    const axiosConfig = {
+        method: 'post',
+        url: url,
+        headers: {
+            'Authorization': `Bearer ${data.token}`
+        },
+        data: {
+            enrollment: {
+                user_id: data.user_id,
+                type: data.type,
+                enrollment_state: 'active'
+            }
+        }
+    };
+
+    try {
+        const request = async () => {
+            return await axios(axiosConfig);
+        };
+
+        const response = await errorCheck(request);
+        return response.status;
+    } catch (error) {
+        throw error;
     }
 }
 
@@ -287,7 +370,5 @@ async function getPageViews(data) {
 // })();
 
 module.exports = {
-    // getUsers,
-    // createUser,
-    getPageViews
+    addUsers, createUsers, enrollUser, getPageViews
 };
