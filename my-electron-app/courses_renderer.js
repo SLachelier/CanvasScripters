@@ -244,6 +244,11 @@ async function createSupportCourse(e) {
                             <input type="checkbox" class="form-check-input" role="switch" id="course-add-users">
                         </div>
                         <div id="add-users-div" class="row hidden">
+                            <div class="col-4">
+                                <label for="user-email" class="form-label">Email</label>
+                                <input type="text" class="form-control" role="switch" id="user-email">
+                                <div id="course-reset-description" class="form-text">NOTE: Your instructure email. Used to create emails for the new users so they can receive notifications.</div>
+                            </div>
                             <div class="col-2">
                                 <label for="course-add-students" class="form-label">Students</label>
                                 <input type="text" class="form-control" role="switch" id="course-add-students">
@@ -423,17 +428,17 @@ async function createSupportCourse(e) {
         const courseSubmissionsChbx = eContent.querySelector('#course-submissions').checked;
 
         // Users to add
+        const emailInput = eContent.querySelector('#user-email').value;
+        const emailMatch = emailInput.match(/^[^@]+/);
+        const emailPrefix = emailMatch ? emailMatch[0] : null;
         const addStudents = eContent.querySelector('#course-add-students').value;
         const addTeachers = eContent.querySelector('#course-add-teachers').value;
-
-
-
-
 
         const data = {
             domain: domain,
             token: apiToken,
             course_id: null,
+            email: emailPrefix,
             course: {
                 name: courseName,
                 publish: coursePublishChbx,
