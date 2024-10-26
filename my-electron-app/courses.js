@@ -29,14 +29,14 @@ async function resetCourse(data) {
 async function createSupportCourse(data) {
     console.log('inside createSupportCourse');
 
-    let url = `${data.domain}/api/v1/accounts/self/courses`;
+    let url = `https://${data.domain}/api/v1/accounts/self/courses`;
 
     const courseData = {
         course: {
-            name: data.course.name,
+            name: data?.course?.name || 'I\'m a basic course',
             default_view: 'feed'
         },
-        offer: data.course.publish
+        offer: data?.course?.publish || false
     }
 
     const axiosConfig = {
@@ -60,7 +60,7 @@ async function createSupportCourse(data) {
 }
 
 async function editCourse(data) {
-    let url = `${data.domain}/api/v1/courses/${data.course_id}`;
+    let url = `https://${data.domain}/api/v1/courses/${data.course_id}`;
 
     const courseData = {
         course: {
@@ -90,6 +90,30 @@ async function editCourse(data) {
     }
 }
 
+async function getCourseInfo(data) {
+    let url = `https://${data.domain}/api/v1/courses/${data.bpCourseID}`;
+
+    const axiosConfig = {
+        method: 'get',
+        url: url,
+        headers: {
+            'Authorization': `Bearer ${data.token}`
+        }
+    };
+
+
+    const request = async () => {
+        try {
+            return await axios(axiosConfig);
+        } catch (error) {
+            throw error;
+        }
+    };
+
+    const response = await errorCheck(request);
+    return response.data;
+}
+
 module.exports = {
-    resetCourse, createSupportCourse, editCourse
+    resetCourse, createSupportCourse, editCourse, getCourseInfo
 };
