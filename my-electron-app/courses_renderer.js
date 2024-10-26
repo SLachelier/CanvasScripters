@@ -11,6 +11,9 @@ function courseTemplate(e) {
         case 'create-support-course':
             createSupportCourse(e);
             break;
+        case 'create-associated-courses':
+            createAssociatedCourses(e);
+            break;
         default:
             break;
     }
@@ -211,7 +214,7 @@ async function resetCourses(e) {
 }
 
 async function createSupportCourse(e) {
-    const domain = `https://${document.querySelector('#domain').value}`;
+    const domain = document.querySelector('#domain').value;
     const apiToken = document.querySelector('#token').value;
     const eContent = document.querySelector('#endpoint-content');
 
@@ -503,4 +506,155 @@ async function createSupportCourse(e) {
             window.shell.openExternal(e.target.href);
         })
     })
+}
+
+async function createAssociatedCourses(e) {
+    const eContent = document.querySelector('#endpoint-content');
+
+    eContent.innerHTML = `
+        <div>
+            <h3>Create Associated Courses</h3>
+        </div>
+    `;
+
+    const eForm = document.createElement('form');
+
+
+    eForm.innerHTML = `
+        <div id="ac-container">
+            <div class="row flex-column">
+                <div class="mb-3 col-auto">
+                    <label class="form-label" for="bp-course-id">Blueprint Course ID to associated courses to</label>
+                </div>
+                <div class="row">
+                    <div class="mb-3 col-2">
+                        <input type="text" class="form-control" id="bp-course-id" aria-describedby="bp-course-text">
+                    </div>
+                    <div class="col-auto">
+                        <span id="bp-course-text" class="form-text" hidden style="color: red;">Must be a number</span>
+                    </div>
+                </div>
+            </div>
+            <div class="row flex-column">
+                <div class="mb-3 col-auto">
+                    <label class="form-label" for="num-ac-courses">How many courses do you want to associate</label>
+                </div>
+                <div class="row">
+                    <div class="mb-3 col-2">
+                        <input type="text" class="form-control" id="num-ac-courses" aria-describedby="ac-course-text">
+                    </div>
+                    <div class="col-auto">
+                        <span id="ac-course-text" class="form-text" hidden style="color: red;">Must be a number</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button type="button" class="btn btn-primary mt-3" id="associateBtn">Associate</button>
+        <div id="progress-div" hidden>
+            <p id="progress-info"></p>
+            <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-bar" style="width: 0%"></div>
+            </div>
+        </div>`
+
+    eContent.append(eForm);
+
+    const associateBtn = eContent.querySelector('#associateBtn');
+    const bpCourseText = eContent.querySelector('#bp-course-text');
+    const acCourseText = eContent.querySelector('#ac-course-text');
+
+    const acContainer = eContent.querySelector('#ac-container');
+
+    const bpInput = eContent.querySelector('#bp-course-id');
+    const acInput = eContent.querySelector('#num-ac-courses');
+
+    // bpInput.addEventListener('change', (e) => {
+    //     e.preventDefault();
+    //     e.stopPropagation();
+
+    //     const bpValue = e.target.value;
+    //     if (isNaN(bpValue)) {
+    //         associateBtn.disabled = true;
+    //         bpCourseText.hidden = false;
+    //     } else {
+    //         bpCourseText.hidden = true;
+    //         associateBtn.disabled = false;
+    //     }
+    // });
+
+    // acInput.addEventListener('change', (e) => {
+    //     e.preventDefault();
+    //     e.stopPropagation();
+
+    //     const acValue = acInput.value;
+    //     const bpValue = bpInput.value;
+
+    //     if (isNaN(acValue) || isNaN(bpValue) || acValue.length > 0 || bpValue.length > 0) {
+    //         associateBtn.disabled = true;
+    //         acCourseText.hidden = false;
+    //     } else {
+    //         acCourseText.hidden = true;
+    //         associateBtn.disabled = false;
+    //     }
+    // });
+
+    associateBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        associateBtn.disabled = true;
+
+        const bpValue = bpInput.value;
+        const acValue = acInput.value;
+        let inputError = true;
+        let bpValid;
+        let acValid;
+
+        bpValid = validateInput(bpValue, bpCourseText);
+        acValid = validateInput(acValue, acCourseText);
+
+        if (bpValid && acValid) {
+            const domain = document.querySelector('#domain').value;
+            const token = document.querySelector('#token').value;
+            const progressDiv = eContent.querySelector('#progress-div');
+            const progressInfo = eContent.querySelector('#progress-info');
+            const progressBar = eContent.querySelector('.progress-bar');
+
+            const data = {
+                domain: domain,
+                token: token,
+                bpCourseID: parseInt(bpValue),
+                acCourseNum: parseInt(acValue)
+            }
+
+            // check to make sure the BP course is a BP course
+            let isBluePrint = false;
+            try {
+                const request = await window.axios.getCourseInfo(data);
+                isBluePrint = request.blueprint;
+            } catch (error) {
+                errorHandler(error, progressInfo);
+            }
+
+            if (isBluePrint) {
+                // create the courses to be added as associated courses
+                try {
+                    const courseResponse = await window.axios.createBasicCourse(data);
+                    const associatedCourses = courseResponse.successful.map(course => course.value.id);
+                    console.log('did this work');
+
+                    // const acResponse = await window.axios.addAssociateCourse(data);
+                } catch (error) {
+                    errorHandler(error, progressInfo);
+                } finally {
+                    associateBtn.disabled = false;
+                }
+            } else {
+                progressInfo.innerHTML = 'BluePrint course isn\'t setup as blueprint. Unable to associate courses.';
+                associateBtn.disabled = false;
+            }
+        } else {
+            associateBtn.disabled = false;
+        }
+    });
 }
