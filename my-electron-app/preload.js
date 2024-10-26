@@ -107,6 +107,16 @@ contextBridge.exposeInMainWorld('axios', {
 
         return await ipcRenderer.invoke('axios:resetCourses', data);
     },
+    getCourseInfo: async (data) => {
+        console.log('preload.js > getCourseInfo');
+
+        return await ipcRenderer.invoke('axios:getCourseInfo', data);
+    },
+    addAssociateCourse: async (data) => {
+        console.log('preload.js > addAssociateCourse');
+
+        return await ipcRenderer.invoke('axios:addAssociateCourse', data);
+    },
     resetCommChannel: async (data) => {
         console.log('preload.js > rsetCommChannel');
 
@@ -131,6 +141,11 @@ contextBridge.exposeInMainWorld('axios', {
         console.log('preload.js > createSupportCourse');
 
         return await ipcRenderer.invoke('axios:createSupportCourse', data);
+    },
+    createBasicCourse: async (data) => {
+        console.log('preload.js > createBasicCourse');
+
+        return await ipcRenderer.invoke('axios:createBasicCourse', data);
     }
 });
 
