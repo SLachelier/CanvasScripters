@@ -18,7 +18,7 @@ const { getPageViews, createUsers, enrollUser,addUsers } = require('./users');
 const { send } = require('process');
 const { deleteRequester, waitFunc } = require('./utilities');
 const { emailCheck, checkCommDomain, checkUnconfirmedEmails, confirmEmail, resetEmail } = require('./comm_channels');
-const { resetCourse, createSupportCourse, editCourse } = require('./courses');
+const { resetCourse, getCourseInfo,createSupportCourse, editCourse } = require('./courses');
 
 let mainWindow;
 let suppressedEmails = [];
@@ -599,6 +599,77 @@ app.whenReady().then(() => {
         return {course_id: data.course_id, status: 200, totalUsersEnrolled: totalUsers};
     });
     
+    ipcMain.handle('axios:createBasicCourse', async (event, data) => {
+        console.log('main.js > axios:createBasicCourse');
+
+        let completedRequests = 0;
+        const totalRequests = data.acCourseNum;
+
+        const request = async (requestData) => {
+            try {
+                const response = await createSupportCourse(requestData)
+                return response;
+            } catch (error) {
+                throw error;
+            }
+        };
+
+        const requests = [];
+        for (let i = 0; i < totalRequests; i++) {
+            const requestData = {
+                domain: data.domain,
+                token: data.token
+            };
+            requests.push({ id: i + 1, request: () => request(requestData) });
+        }
+
+        const batchResponse = await batchHandler(requests);
+        return batchResponse;
+    });
+
+    ipcMain.handle('axios:getCourseInfo', async (event, data) => {
+        console.log('getting course info');
+        
+        try {
+            return await getCourseInfo(data);
+        } catch (error) {
+            throw error;
+        }
+    });
+
+    ipcMain.handle('axios:addAssociateCourse', async (event, data) => {
+        console.log('main.js > axios:addAssociateCourse');
+
+        const totalRequests = data.acCourseNum;
+        let completedRequests = 0;
+
+        const updateProgress = () => {
+            completedRequests++;
+            mainWindow.webContents.send('update-progress', (completedRequests / totalRequests) * 100);
+        };
+
+        const request = async (requestD) => {
+            try {
+                const response = addAssociateCourse(requestD);
+                return response;
+            } catch (error) {
+                throw error;
+            } finally {
+                updateProgress();
+            }
+        };
+
+        const requests = [];
+        for (let i = 0; i < totalRequests; i++){
+            const requestData = {
+                domain: data.domain,
+                token: data.token,
+                bp_course: data.bpCourseID,
+                ac_course
+            }
+        }
+    });
+
     ipcMain.handle('axios:resetCommChannel', async (event, data) => {
         try {
             const response = await resetEmail(data);
