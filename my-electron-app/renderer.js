@@ -172,6 +172,18 @@ function checkCourseID(courseID, eContent) {
     }
 }
 
+function validateInput(value, errorText) {
+    let valid = false;
+    if (value.lenth < 1 || isNaN(value)) {
+        valid = false;
+        errorText.hidden = false;
+    } else {
+        valid = true;
+        errorText.hidden = true;
+    }
+    return valid;
+}
+
 function getInputs(eContent) {
     const data = {};
     data.domain = document.querySelector('#domain').value.trim();
