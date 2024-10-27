@@ -112,6 +112,7 @@ async function resetCourses(e) {
 
         uploadBtn.disabled = true;
         progressInfo.innerHTML = '';
+        progressDiv.hidden = false;
 
         const domain = document.querySelector('#domain').value.trim();
         const apiToken = document.querySelector('#token').value.trim();
@@ -143,9 +144,9 @@ async function resetCourses(e) {
                 if (response.failed.length > 0) {
                     progressInfo.innerHTML += `Failed to reset ${response.failed.length} course(s).`;
                     progressBar.parentElement.hidden = true;
-                    for (let failure of response.failed) {
-                        errorHandler({ message: `${failure.reason}` }, progressInfo);
-                    }
+                    errorHandler({ message: `${response.failed[0].reason}` }, progressInfo); // only display the error code for the first failed request
+                    // for (let failure of response.failed) {
+                    // }
                 }
 
                 // for (let response of responses) {
@@ -641,7 +642,15 @@ async function createAssociatedCourses(e) {
                 try {
                     const courseResponse = await window.axios.createBasicCourse(data);
                     const associatedCourses = courseResponse.successful.map(course => course.value.id);
-                    console.log('did this work');
+
+                    // adding the ids of the courses to be associated to the data set
+                    data.associated_course_ids = associatedCourses;
+
+                    const associate = await window.axios.associateCourses(data);
+                    if (associate.workflow_state === 'queued') {
+                        progressInfo.innerHTML = `Finished associating ${acValue} courses to the Blueprint, sync has started.`;
+                    }
+                    console.log('Finished associating courses.');
 
                     // const acResponse = await window.axios.addAssociateCourse(data);
                 } catch (error) {
