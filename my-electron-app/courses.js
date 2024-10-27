@@ -90,6 +90,31 @@ async function editCourse(data) {
     }
 }
 
+async function associateCourses(data) {
+    let url = `https://${data.domain}/api/v1/courses/${data.bpCourseID}/blueprint_templates/default/update_associations`;
+
+    const axiosConfig = {
+        method: 'put',
+        url: url,
+        headers: {
+            'Authorization': `Bearer ${data.token}`
+        },
+        data: {
+            course_ids_to_add: data.associated_course_ids
+        }
+    };
+
+    try {
+        const request = async () => {
+            return await axios(axiosConfig);
+        };
+        const response = await errorCheck(request);
+        return response.data;
+    } catch (error) {
+        throw error
+    }
+}
+
 async function getCourseInfo(data) {
     let url = `https://${data.domain}/api/v1/courses/${data.bpCourseID}`;
 
@@ -114,6 +139,31 @@ async function getCourseInfo(data) {
     return response.data;
 }
 
+async function syncBPCourses(data) {
+    let url = `https://${data.domain}/api/v1/courses/${data.bpCourseID}/blueprint_templates/default/migrations`;
+
+    const axiosConfig = {
+        method: 'post',
+        url: url,
+        headers: {
+            'Authorization': `Bearer ${data.token}`
+        },
+        data: {
+            comment: 'From CanvaScripter'
+        }
+    };
+
+    try {
+        const request = async () => {
+            return await axios(axiosConfig);
+        }
+        const response = await errorCheck(request);
+        return response.data;
+    } catch (error) {
+        throw error
+    }
+}
+
 module.exports = {
-    resetCourse, createSupportCourse, editCourse, getCourseInfo
+    resetCourse, createSupportCourse, editCourse, getCourseInfo, associateCourses, syncBPCourses
 };
