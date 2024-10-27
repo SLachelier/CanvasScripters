@@ -18,7 +18,14 @@ const { getPageViews, createUsers, enrollUser,addUsers } = require('./users');
 const { send } = require('process');
 const { deleteRequester, waitFunc } = require('./utilities');
 const { emailCheck, checkCommDomain, checkUnconfirmedEmails, confirmEmail, resetEmail } = require('./comm_channels');
-const { resetCourse, getCourseInfo,createSupportCourse, editCourse } = require('./courses');
+const {
+    resetCourse,
+    getCourseInfo,
+    createSupportCourse,
+    editCourse,
+    associateCourses,
+    syncBPCourses
+} = require('./courses');
 
 let mainWindow;
 let suppressedEmails = [];
@@ -516,13 +523,15 @@ app.whenReady().then(() => {
         }
 
         const requests = [];
+        let requestID = 1;
         data.courses.forEach((course) => {
             const requestData = {
                 domain: data.domain,
                 token: data.token,
                 course: course
             };
-            requests.push(() => request(requestData));
+            requests.push({ id: requestID, request: () => request(requestData) });
+            requestID++;
         })
 
         const batchResponse = await batchHandler(requests);
@@ -627,6 +636,20 @@ app.whenReady().then(() => {
         return batchResponse;
     });
 
+
+    ipcMain.handle('axios:associateCourses', async (event, data) => {
+        console.log('main.js > axios:associateCourses');
+
+        // first associate the courses to the BP
+        try {
+            const associateRequest = await associateCourses(data); // associate the courses to the BP
+            const migrationRequest = await syncBPCourses(data);
+            return migrationRequest.workflow_state;
+        } catch (error) {
+            throw error
+        }
+    });
+
     ipcMain.handle('axios:getCourseInfo', async (event, data) => {
         console.log('getting course info');
         
@@ -650,7 +673,7 @@ app.whenReady().then(() => {
 
         const request = async (requestD) => {
             try {
-                const response = addAssociateCourse(requestD);
+                const response = associateCoruses(requestD);
                 return response;
             } catch (error) {
                 throw error;
@@ -806,6 +829,7 @@ app.whenReady().then(() => {
             throw new Error('Cancelled');
         }
     });
+
     ipcMain.handle('fileUpload:confirmEmails', async (event, data) => {
 
         let emails = [];
