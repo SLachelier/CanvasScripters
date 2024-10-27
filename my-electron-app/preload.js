@@ -146,6 +146,11 @@ contextBridge.exposeInMainWorld('axios', {
         console.log('preload.js > createBasicCourse');
 
         return await ipcRenderer.invoke('axios:createBasicCourse', data);
+    },
+    associateCourses: async (data) => {
+        console.log('preload.js > associateCourses');
+
+        return await ipcRenderer.invoke('axios:associateCourses', data);
     }
 });
 
