@@ -149,7 +149,8 @@ async function syncBPCourses(data) {
             'Authorization': `Bearer ${data.token}`
         },
         data: {
-            comment: 'From CanvaScripter'
+            comment: 'From CanvaScripter',
+            send_notification: false
         }
     };
 
