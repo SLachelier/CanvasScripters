@@ -206,6 +206,7 @@ function assignmentCreator() {
             token: apiToken.value.trim(),
             course: courseID.value.trim(),
             number: parseInt(assignmentNumber),
+            name: 'Assignment',
             points: parseInt(assignmentPoints.value.trim()),
             publish: publish ? 'published' : 'unpublished',
             peer_reviews: peerReviews,
