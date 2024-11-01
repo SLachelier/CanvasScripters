@@ -200,7 +200,7 @@ async function addTeachers(data) {
 
 // adds new users to Canvas
 async function addUsers(data) {
-    const url = `${data.domain}/api/v1/accounts/self/users`;
+    const url = `https://${data.domain}/api/v1/accounts/self/users`;
     const axiosConfig = {
         method: 'post',
         url: url,
@@ -223,7 +223,7 @@ async function addUsers(data) {
 
 // enroll a user in a course
 async function enrollUser(data) {
-    const url = `${data.domain}/api/v1/courses/${data.course_id}/enrollments`;
+    const url = `https://${data.domain}/api/v1/courses/${data.course_id}/enrollments`;
 
     const axiosConfig = {
         method: 'post',
