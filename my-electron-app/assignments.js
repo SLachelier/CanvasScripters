@@ -99,7 +99,7 @@ async function createAssignments(data) {
 
     const mutationVariables = {
         "courseId": data.course,
-        "name": `Assignment `,
+        "name": data.name,
         "submissionTypes": data.submissionTypes,
         "gradingType": data.grade_type,
         "pointsPossible": data.points,
