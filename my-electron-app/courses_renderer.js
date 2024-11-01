@@ -215,8 +215,6 @@ async function resetCourses(e) {
 }
 
 async function createSupportCourse(e) {
-    const domain = document.querySelector('#domain').value;
-    const apiToken = document.querySelector('#token').value;
     const eContent = document.querySelector('#endpoint-content');
 
     eContent.innerHTML = `
@@ -243,6 +241,15 @@ async function createSupportCourse(e) {
                             <label for="course-blueprint" class="form-label">Blueprint</label>
                             <input type="checkbox" class="form-check-input" role="switch" id="course-blueprint">
                         </div>
+                        <div id="add-ac-courses-div" class="row hidden">
+                            <div class="col-auto">
+                                <label class="form-label">Number of courses to associate</label>
+                                <input id="csc-ac-input" class="form-control" type="text" />
+                                <div class="col-auto">
+                                    <span id="ac-course-text" class="form-text" hidden style="color: red;">Must be a number</span>
+                                </div>
+                            </div>
+                        </div>
                         <div class="col-auto form-check form-switch">
                             <label for="course-add-users" class="form-label">Add Users</label>
                             <input type="checkbox" class="form-check-input" role="switch" id="course-add-users">
@@ -256,15 +263,21 @@ async function createSupportCourse(e) {
                             <div class="col-2">
                                 <label for="course-add-students" class="form-label">Students</label>
                                 <input type="text" class="form-control" role="switch" id="course-add-students">
+                                <div class="col-auto">
+                                    <span id="add-students-text" class="form-text" hidden style="color: red;">Must be a number</span>
+                                </div>
                             </div>
                             <div class="col-2">
                                 <label for="course-add-teachers" class="form-label">Teachers</label>
                                 <input type="text" class="form-control" role="switch" id="course-add-teachers">
+                                <div class="col-auto">
+                                    <span id="add-teachers-text" class="form-text" hidden style="color: red;">Must be a number</span>
+                                </div>
                             </div>
                         </div>
                         <div class="col-auto form-check form-switch">
-                            <label for="course-assignments" class="form-label"><em style="color:gray;">Add Assignments - Disabled</em></label>
-                            <input type="checkbox" class="form-check-input" role="switch" id="course-assignments" disabled>
+                            <label for="course-assignments" class="form-label">Add Assignments</label>
+                            <input type="checkbox" class="form-check-input" role="switch" id="course-assignments" >
                         </div>
                         <div id="add-assignments-div" class="row hidden">
                             <div class="col-2">
@@ -318,8 +331,11 @@ async function createSupportCourse(e) {
         e.stopPropagation();
 
         switch (e.target.id) {
+            case 'course-blueprint':
+                courseBPToggle(e);
+                break;
             case 'course-add-users':
-                courseAddUserToggle(e); // TODO
+                courseAddUserToggle(e);
                 break;
             case 'course-assignments':
                 courseAssignmentsToggle(e); // TODO
@@ -350,19 +366,37 @@ async function createSupportCourse(e) {
         }
     })
 
+    function courseBPToggle(e) {
+        const bpCourseDiv = eContent.querySelector('#add-ac-courses-div');
+        if (e.target.checked) {
+            bpCourseDiv.classList.remove('hidden');
+            bpCourseDiv.classList.add('visible', 'mb-3');
+        } else {
+            bpCourseDiv.classList.add('hidden');
+            bpCourseDiv.classList.remove('visible', 'mb-3');
+        }
+    }
+
     function courseAddUserToggle(e) {
         const addUsersDiv = eContent.querySelector('#add-users-div');
         if (e.target.checked) {
             addUsersDiv.classList.remove('hidden');
-            addUsersDiv.classList.add('visible');
+            addUsersDiv.classList.add('visible', 'mb-3');
         } else {
-            addUsersDiv.classList.remove('visible');
+            addUsersDiv.classList.remove('visible', 'mb-3');
             addUsersDiv.classList.add('hidden');
         }
     }
 
     function courseAssignmentsToggle(e) {
-
+        const addAssignmentDiv = eContent.querySelector('#add-assignments-div');
+        if (e.target.checked) {
+            addAssignmentDiv.classList.add('visible', 'mb-3');
+            addAssignmentDiv.classList.remove('hidden');
+        } else {
+            addAssignmentDiv.classList.add('hidden');
+            addAssignmentDiv.classList.remove('visible', 'mb-3');
+        }
     }
 
     function courseAddClassicToggle(e) {
@@ -401,42 +435,75 @@ async function createSupportCourse(e) {
     //     }
     // });
 
-    function checkIfEnabled() {
-        const addUsersDiv = eContent.querySelector('#add-users-div');
-        if (addUsersToggle.checked) {
-            addUsersDiv.classList.remove('hidden');
-            addUsersDiv.classList.add('visible');
-        } else {
-            addUsersDiv.classList.remove('visible');
-            addUsersDiv.classList.add('hidden');
-        }
-    }
+    // function checkIfEnabled() {
+    //     const addUsersDiv = eContent.querySelector('#add-users-div');
+    //     if (addUsersToggle.checked) {
+    //         addUsersDiv.classList.remove('hidden');
+    //         addUsersDiv.classList.add('visible');
+    //     } else {
+    //         addUsersDiv.classList.remove('visible');
+    //         addUsersDiv.classList.add('hidden');
+    //     }
+    // }
 
     const createBtn = eContent.querySelector('button');
     createBtn.addEventListener('click', async (e) => {
         e.preventDefault();
         e.stopPropagation();
 
+        createBtn.disabled = true;
+
+        const domain = document.querySelector('#domain').value;
+        const apiToken = document.querySelector('#token').value;
+
         const responseContainer = eContent.querySelector('#response-container');
+
+        // basic course stuff
         const courseName = eContent.querySelector('#course-name').value;
         const coursePublishChbx = eContent.querySelector('#course-publish').checked;
-        const courseBlueprintChbx = eContent.querySelector('#course-blueprint').checked;
-        const courseAddUsersChbx = eContent.querySelector('#course-add-users').checked;
-        const courseAddAssignmentsChbx = eContent.querySelector('#course-add-assignments').checked;
-        const courseAddCQChbx = eContent.querySelector('#course-add-cq').checked;
-        const courseAddNQChbx = eContent.querySelector('#course-add-nq').checked;
-        const courseAddDiscussionsChbx = eContent.querySelector('#course-add-discussions').checked;
-        const courseAddPagesChbx = eContent.querySelector('#course-add-pages').checked;
-        const courseAddModulesChbx = eContent.querySelector('#course-add-modules').checked;
-        const courseAddSectionsChbx = eContent.querySelector('#course-add-sections').checked;
-        const courseSubmissionsChbx = eContent.querySelector('#course-submissions').checked;
 
+        // blueprint stuff
+        const courseBlueprintChbx = eContent.querySelector('#course-blueprint').checked;
+        // Courses to associate
+        const numACCoursesValue = eContent.querySelector('#csc-ac-input').value;
+        const acErrorText = eContent.querySelector('#ac-course-text');
+
+        // Add users stuff
+        const courseAddUsersChbx = eContent.querySelector('#course-add-users').checked;
         // Users to add
         const emailInput = eContent.querySelector('#user-email').value;
         const emailMatch = emailInput.match(/^[^@]+/);
         const emailPrefix = emailMatch ? emailMatch[0] : null;
         const addStudents = eContent.querySelector('#course-add-students').value;
+        const addStudentsText = eContent.querySelector('#add-students-text');
         const addTeachers = eContent.querySelector('#course-add-teachers').value;
+        const addTeachersText = eContent.querySelector('#add-teachers-text');
+
+        // add assignment stuff
+        const courseAddAssignmentsChbx = eContent.querySelector('#course-assignments').checked;
+        const numOfAssignments = eContent.querySelector('#course-add-assignments').value;
+
+        // add Classic quizzes stuf
+        const courseAddCQChbx = eContent.querySelector('#course-add-cq').checked;
+
+        // add New Quizzes stuff
+        const courseAddNQChbx = eContent.querySelector('#course-add-nq').checked;
+
+        // add discussion stuff
+        const courseAddDiscussionsChbx = eContent.querySelector('#course-add-discussions').checked;
+
+        // add pages stuff
+        const courseAddPagesChbx = eContent.querySelector('#course-add-pages').checked;
+
+        // add module stuff
+        const courseAddModulesChbx = eContent.querySelector('#course-add-modules').checked;
+
+        // add section stuff
+        const courseAddSectionsChbx = eContent.querySelector('#course-add-sections').checked;
+
+        // create submisison stuff
+        const courseSubmissionsChbx = eContent.querySelector('#course-submissions').checked;
+
 
         const data = {
             domain: domain,
@@ -448,7 +515,7 @@ async function createSupportCourse(e) {
                 publish: coursePublishChbx,
                 blueprint: {
                     state: courseBlueprintChbx,
-                    associated_courses: null
+                    associated_courses: numACCoursesValue > 0 ? numACCoursesValue : null
                 },
                 addUsers: {
                     state: courseAddUsersChbx,
@@ -457,7 +524,7 @@ async function createSupportCourse(e) {
                 },
                 addAssignments: {
                     state: courseAddAssignmentsChbx,
-                    number: null
+                    number: numOfAssignments > 0 ? numOfAssignments : null
                 },
                 addCQ: {
                     state: courseAddCQChbx,
@@ -490,7 +557,7 @@ async function createSupportCourse(e) {
 
         try {
             const response = await window.axios.createSupportCourse(data);
-            responseContainer.innerHTML = `<p>Course ID: <a id="course-link" href=${domain}/courses/${response.course_id} target="_blank">${response.course_id}`;
+            responseContainer.innerHTML = `<p>Course ID: <a id="course-link" href="https://${domain}/courses/${response.course_id}" target="_blank">${response.course_id}`;
         } catch (error) {
             console.log('Error: ', error);
         } finally {
@@ -506,7 +573,8 @@ async function createSupportCourse(e) {
             console.log('The target is ', e.target.href);
             window.shell.openExternal(e.target.href);
         })
-    })
+
+    });
 }
 
 async function createAssociatedCourses(e) {
@@ -568,36 +636,6 @@ async function createAssociatedCourses(e) {
 
     const bpInput = eContent.querySelector('#bp-course-id');
     const acInput = eContent.querySelector('#num-ac-courses');
-
-    // bpInput.addEventListener('change', (e) => {
-    //     e.preventDefault();
-    //     e.stopPropagation();
-
-    //     const bpValue = e.target.value;
-    //     if (isNaN(bpValue)) {
-    //         associateBtn.disabled = true;
-    //         bpCourseText.hidden = false;
-    //     } else {
-    //         bpCourseText.hidden = true;
-    //         associateBtn.disabled = false;
-    //     }
-    // });
-
-    // acInput.addEventListener('change', (e) => {
-    //     e.preventDefault();
-    //     e.stopPropagation();
-
-    //     const acValue = acInput.value;
-    //     const bpValue = bpInput.value;
-
-    //     if (isNaN(acValue) || isNaN(bpValue) || acValue.length > 0 || bpValue.length > 0) {
-    //         associateBtn.disabled = true;
-    //         acCourseText.hidden = false;
-    //     } else {
-    //         acCourseText.hidden = true;
-    //         associateBtn.disabled = false;
-    //     }
-    // });
 
     associateBtn.addEventListener('click', async (e) => {
         e.preventDefault();
