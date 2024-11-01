@@ -562,8 +562,11 @@ app.whenReady().then(() => {
                 // loop through and create basic courses to be associated to the blueprint
                 const requests = [];
                 for (let i = 0; i < associatedCourses; i++){
-                    const courseData = { ...data };
-                    courseData.name = `${data.name} - AC ${1 + i}`;
+                    const courseData = {
+                        ...data,
+                        course: { ...data.course }
+                    };
+                    courseData.course.name = `${data.course.name} - AC ${1 + i}`;
 
                     const request = async (courseData) => {
                         try {
@@ -572,9 +575,25 @@ app.whenReady().then(() => {
                             throw error;
                         }
                     };
-                    requests.push(() => request(courseData));
+                    requests.push({ id: i + 1, request: () => request(courseData) });
                 }
+
+                // create the courses to be used to associate
+                const newCourses = await batchHandler(requests);
+                const newCourseIDS = newCourses.successful.map(course => course.value.id);
+
+                const acCourseData = {
+                    domain: data.domain,
+                    token: data.token,
+                    bpCourseID: data.course_id,
+                    associated_course_ids: newCourseIDS
+                };
+                
+                const associateRequest = await associateCourses(acCourseData); // associate the courses to the BP
+                // await waitFunc(2000);
+                const migrationRequest = await syncBPCourses(acCourseData);
             }
+            
             if (data.course.addUsers.state) { // do we need to add users
                 const usersToEnroll = {
                     domain: data.domain,
@@ -599,6 +618,38 @@ app.whenReady().then(() => {
                 const enrollResponse = await enrollUsers(usersToEnroll, userIDs);
                 totalUsers = enrollResponse.successful.length;
                 console.log('Finished enrolling users in the course.');
+            }
+
+            if (data.course.addAssignments.state) {     // do we need to add assignments
+                console.log('creating assignments....');
+
+                const request = async (requestData) => {
+                    try {
+                        return await assignments.createAssignments(requestData);
+                    } catch (error) {
+                        throw error;
+                    }
+                };
+
+                const requests = [];
+                for (let i = 0; i < data.course.addAssignments.number; i++){
+                    const requestData = {
+                        domain: data.domain,
+                        token: data.token,
+                        course: data.course_id,
+                        name: `Assignment ${i+1}`,
+                        submissionTypes: "online_upload",
+                        grade_type: "points",
+                        points: 10,
+                        publish: "published",
+                        peer_reviews: false,
+                        anonymous: false
+                    };
+                    requests.push({ id: i + 1, request: () => request(requestData) });
+                }
+
+                const assignmentResponses = await batchHandler(requests);
+                console.log('finished creating assignments.');
             }
         } catch (error) {
             throw error;   
