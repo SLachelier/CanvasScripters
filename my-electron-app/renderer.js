@@ -11,9 +11,11 @@ domain.addEventListener('change', (e) => {
 
     // console.log('The domain value: ', e.target.value);
     const domainString = e.target.value;
-    const httpsRemoved = domainString.match(/https:\/\/([^/\/\s]+)/)[1];
-    if (httpsRemoved) {
-        e.target.value = httpsRemoved;
+    if (domainString.length > 0) {
+        const httpsRemoved = domainString.match(/https:\/\/([^/\/\s]+)|([^/\/\s]+)/)[1];
+        if (httpsRemoved) {
+            e.target.value = httpsRemoved;
+        }
     }
 });
 
@@ -174,7 +176,7 @@ function checkCourseID(courseID, eContent) {
 
 function validateInput(value, errorText) {
     let valid = false;
-    if (value.lenth < 1 || isNaN(value)) {
+    if (value.length < 1 || isNaN(value)) {
         valid = false;
         errorText.hidden = false;
     } else {
