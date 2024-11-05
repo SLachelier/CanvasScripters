@@ -14,47 +14,61 @@ function userTemplate(e) {
 }
 
 async function getPageViews(e) {
+    hideEndpoints(e)
+
     const eContent = document.querySelector('#endpoint-content');
-    eContent.innerHTML = `
-        <div>
-            <h3>Get User Page Views</h3>
-        </div>
-        <hr />
-        `;
+    let getPageViewsForm = eContent.querySelector('#get-page-views-form');
 
-    const eForm = document.createElement('form');
-    eForm.innerHTML = `
-        <div class="row align-items-center" >
-            <div class="col-auto">
-                <label for="user-id" class="form-label">Canvas user ID</label>
-            </div>
-            <div class="col-2">
-                <input type="text" id="user-id" class="form-control" aria-describedby="input-checker">
-            </div>
-            <div class="col-auto" >
-                <span id="input-checker" class="form-text" style="display: none;">Must only contain numbers</span>
-            </div>
-        </div >
-        <div class="row mt-3 align-items-center">
-            <div class="col-auto">
-                <label for="start-date" class="form-label">Start</label>
-            </div>
-            <div class="col-auto">
-                <input id="start-date" type="date" class="form-control">
-            </div>
-            <div class="col-auto">
-                <label for="end-date" class="form-label">End</label>
-            </div>
-            <div class="col-auto">
-                <input id="end-date" type="date" class="form-control">
-            </div>
-        </div>
-        <button type="button" class="btn btn-primary mt-3" id="action-btn">Search</button>
-        <div id="response-container" class="mt-5">
-        </div>
-        `;
+    if (!getPageViewsForm) {
 
-    eContent.append(eForm);
+        getPageViewsForm = document.createElement('form');
+        getPageViewsForm.id = 'get-page-views-form';
+        // eContent.innerHTML = `
+        //     <div>
+        //         <h3>Get User Page Views</h3>
+        //     </div>
+        //     <hr />
+        //     `;
+
+        // const eForm = document.createElement('form');
+
+        getPageViewsForm.innerHTML = `
+            <div>
+                <h3>Get User Page Views</h3>
+            </div>
+            <div class="row align-items-center" >
+                <div class="col-auto">
+                    <label for="user-id" class="form-label">Canvas user ID</label>
+                </div>
+                <div class="col-2">
+                    <input type="text" id="user-id" class="form-control" aria-describedby="input-checker">
+                </div>
+                <div class="col-auto" >
+                    <span id="input-checker" class="form-text" style="display: none;">Must only contain numbers</span>
+                </div>
+            </div >
+            <div class="row mt-3 align-items-center">
+                <div class="col-auto">
+                    <label for="start-date" class="form-label">Start</label>
+                </div>
+                <div class="col-auto">
+                    <input id="start-date" type="date" class="form-control">
+                </div>
+                <div class="col-auto">
+                    <label for="end-date" class="form-label">End</label>
+                </div>
+                <div class="col-auto">
+                    <input id="end-date" type="date" class="form-control">
+                </div>
+            </div>
+            <button type="button" class="btn btn-primary mt-3" id="action-btn">Search</button>
+            <div id="response-container" class="mt-5">
+            </div>
+            `;
+
+        eContent.append(getPageViewsForm);
+    }
+    getPageViewsForm.hidden = false;
 
     const uID = document.querySelector('#user-id');
     checkCourseID(uID, eContent);

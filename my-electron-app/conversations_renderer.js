@@ -23,51 +23,63 @@ async function conversationTemplate(e) {
 };
 
 async function deleteConvos(e) {
+    hideEndpoints(e);
+
     const eContent = document.querySelector('#endpoint-content');
+    let deleteSpecificConversationsForm = eContent.querySelector('#delete-conversation-form');
 
-    eContent.innerHTML = `
-        <div>
-            <h3>Delete Specific Conversations</h3>
-        </div>
-    `;
+    if (!deleteSpecificConversationsForm) {
+        deleteSpecificConversationsForm = document.createElement('form');
+        deleteSpecificConversationsForm.id = 'delete-conversation-form';
 
-    const eForm = document.createElement('form');
-    eForm.innerHTML = `
-            <div class="row">
+        // eContent.innerHTML = `
+        //     <div>
+        //         <h3>Delete Specific Conversations</h3>
+        //     </div>
+        // `;
+
+        // const eForm = document.createElement('form');
+        deleteSpecificConversationsForm.innerHTML = `
+            <div>
+                <h3>Delete Specific Conversations</h3>
+            </div>
+                <div class="row">
+                    <div class="col-auto">
+                        <label for="input-checker" class="form-label">User ID who sent the message</label>
+                    </div>
+                    <div class="w-100"></div>
+                    <div class="col-2">
+                        <input type="text" id="user-id" class="form-control">
+                    </div>
+                    <div class="col-auto">
+                        <span id="input-checker" class="form-text" style="display: none;">Must only contain numbers</span>
+                    </div>
+                </div>
+                </div>
+            <div class="row mt-3">
                 <div class="col-auto">
-                    <label for="input-checker" class="form-label">User ID who sent the message</label>
+                    <label for="conversation-subject" class="form-label">Message Subject</label>
                 </div>
                 <div class="w-100"></div>
-                <div class="col-2">
-                    <input type="text" id="user-id" class="form-control">
-                </div>
-                <div class="col-auto">
-                    <span id="input-checker" class="form-text" style="display: none;">Must only contain numbers</span>
-                </div>
-            </div>
-            </div>
-        <div class="row mt-3">
-            <div class="col-auto">
-                <label for="conversation-subject" class="form-label">Message Subject</label>
-            </div>
-            <div class="w-100"></div>
-            <div class="col-6">
-                <input id="conversation-subject" type="text" class="form-control" aria-describedby="messageHelper">
-                <div id="messageHelper" class="form-text">
-                    <span>NOTE: This is case sensative and must match exactly</span>
+                <div class="col-6">
+                    <input id="conversation-subject" type="text" class="form-control" aria-describedby="messageHelper">
+                    <div id="messageHelper" class="form-text">
+                        <span>NOTE: This is case sensative and must match exactly</span>
+                    </div>
                 </div>
             </div>
-        </div>
-        <button type="button" class="btn btn-primary mt-3" id="action-btn" disabled>Search</button>
-        <div hidden id="progress-div">
-            <p id="progress-info"></p>
-            <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-                <div class="progress-bar" style="width: 0%"></div>
+            <button type="button" class="btn btn-primary mt-3" id="action-btn" disabled>Search</button>
+            <div hidden id="progress-div">
+                <p id="progress-info"></p>
+                <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar" style="width: 0%"></div>
+                </div>
             </div>
-        </div>
-        <div id="response-container" class="mt-5"></div>`
+            <div id="response-container" class="mt-5"></div>`
 
-    eContent.append(eForm);
+        eContent.append(deleteSpecificConversationsForm);
+    }
+    deleteSpecificConversationsForm.hidden = false;
 
     const uID = eContent.querySelector('#user-id');
     checkCourseID(uID, eContent);
@@ -265,63 +277,75 @@ async function deleteConvos(e) {
 }
 
 async function downloadConvos(e) {
-    const domain = document.querySelector('#domain');
-    const apiToken = document.querySelector('#token');
-    // const eHeader = document.createElement('div');
-    // eHeader.innerHTML = `<h3>${e.target.id}</h3>`;
+    hideEndpoints(e);
+
     const eContent = document.querySelector('#endpoint-content');
-    // eContent.append(eHeader);
-    eContent.innerHTML = `
-        <div>
-            <h3>Download Converations to CSV</h3>
-        </div>
-    `;
+    let downloadConversationsForm = eContent.querySelector('#download-conversations-form');
 
-    const eForm = document.createElement('form');
-    eForm.innerHTML = `
-            <div class="row">
-                <div class="col-auto">
-                    <label for="user-id" class="form-label">Canvas user ID</label>
-                </div>
-                <div class="col-2">
-                    <input type="text" id="user-id" class="form-control" aria-desribedby="userChecker">
-                </div>
-                <div class="col-auto">
-                    <span id="userChecker" class="form-text" style="display: none;">Must only contain numbers</span>
-                </div>
+    if (!downloadConversationsForm) {
+        downloadConversationsForm = document.createElement('form');
+        downloadConversationsForm.id = 'download-conversations-form';
+
+        // const domain = document.querySelector('#domain');
+        // const apiToken = document.querySelector('#token');
+        // const eHeader = document.createElement('div');
+        // eHeader.innerHTML = `<h3>${e.target.id}</h3>`;
+        // eContent.append(eHeader);
+        // eContent.innerHTML = `
+        //     <div>
+        //         <h3>Download Converations to CSV</h3>
+        //     </div>
+        // `;
+
+        // const eForm = document.createElement('form');
+        downloadConversationsForm.innerHTML = `
+            <div>
+                <h3>Download Conversations to CSV</h3>
             </div>
-            <div class="row align-items-center">
-                <div class="col-auto form-check form-switch mt-2 ms-3 mb-2">
-                    <input id="delete-convos" class="form-check-input" type="checkbox" role="switch" />
-                    <label for="deleted-convos" class="form-check-label">Only search for <em>Deleted</em> Conversations</label>
-                        <div id="graded-help" class="form-text">
-                            (otherwise this will search for active and deleted)
-                        </div>
+                <div class="row">
+                    <div class="col-auto">
+                        <label for="user-id" class="form-label">Canvas user ID</label>
+                    </div>
+                    <div class="col-2">
+                        <input type="text" id="user-id" class="form-control" aria-desribedby="userChecker">
+                    </div>
+                    <div class="col-auto">
+                        <span id="userChecker" class="form-text" style="display: none;">Must only contain numbers</span>
+                    </div>
                 </div>
-                <div class="w-100"></div>
-                <div class="col-auto">
-                    <label for="start-date" class="form-label">Start</label>
+                <div class="row align-items-center">
+                    <div class="col-auto form-check form-switch mt-2 ms-3 mb-2">
+                        <input id="delete-convos" class="form-check-input" type="checkbox" role="switch" />
+                        <label for="deleted-convos" class="form-check-label">Only search for <em>Deleted</em> Conversations</label>
+                            <div id="graded-help" class="form-text">
+                                (otherwise this will search for active and deleted)
+                            </div>
+                    </div>
+                    <div class="w-100"></div>
+                    <div class="col-auto">
+                        <label for="start-date" class="form-label">Start</label>
+                    </div>
+                    <div class="col-auto">
+                        <input id="start-date" type="date" class="form-control">
+                    </div>
+                    <div class="col-auto">
+                        <label for="end-date" class="form-label">End</label>
+                    </div>
+                    <div class="col-auto">
+                        <input id="end-date" type="date" class="form-control">
+                    </div>
+                    <div class="w-100"></div>
+                    <div class="col-auto">
+                        <button type="button" class="btn btn-primary mt-3" id="convo-search">Search</button>
+                    </div>
                 </div>
-                <div class="col-auto">
-                    <input id="start-date" type="date" class="form-control">
-                </div>
-                <div class="col-auto">
-                    <label for="end-date" class="form-label">End</label>
-                </div>
-                <div class="col-auto">
-                    <input id="end-date" type="date" class="form-control">
-                </div>
-                <div class="w-100"></div>
-                <div class="col-auto">
-                    <button type="button" class="btn btn-primary mt-3" id="convo-search">Search</button>
-                </div>
-            </div>
-        <div id="response-container" class="mt-5"></div>`
+            <div id="response-container" class="mt-5"></div>`
 
-    eContent.append(eForm);
-
-
+        eContent.append(downloadConversationsForm);
+    }
+    downloadConversationsForm.hidden = false;
 }
+
 // creates a new conversation object simplified to basic data
 // to write to a csv before deletion
 function flattenMessages(conversations) {

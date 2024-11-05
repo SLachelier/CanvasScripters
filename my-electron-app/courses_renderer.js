@@ -20,44 +20,57 @@ function courseTemplate(e) {
 }
 
 async function resetCourses(e) {
+    hideEndpoints(e);
+
     const eContent = document.querySelector('#endpoint-content');
+    let resetCourseForm = eContent.querySelector('#reset-course-form');
 
-    eContent.innerHTML = `
-        <div>
-            <h3>Reset Courses</h3>
-        </div>
-    `;
+    if (!resetCourseForm) {
+        resetCourseForm = document.createElement('form');
+        resetCourseForm.id = 'reset-course-form';
 
-    const eForm = document.createElement('form');
+        // eContent.innerHTML = `
+        //     <div>
+        //         <h3>Reset Courses</h3>
+        //     </div>
+        // `;
+
+        // const eForm = document.createElement('form');
 
 
-    eForm.innerHTML = `
-            <div class="row">
-                <div class="mb-3" id="reset-switches">
-                    <div class="form-check form-switch">
-                        <label class="form-check-label" for="course-reset-file">Upload file of courses to reset</label>
-                        <input class="form-check-input" type="checkbox" role="switch" id="upload-courses-switch" aria-describedby="course-reset-description">
-                        <div id="course-reset-description" class="form-text" hidden>Must be a simple text file only containing a list of courses. Courses may be comma separated or on individual lines</div>
+        resetCourseForm.innerHTML = `
+            <div>
+                <h3>Reset Courses</h3>
+            </div>
+                <div class="row">
+                    <div class="mb-3" id="reset-switches">
+                        <div class="form-check form-switch">
+                            <label class="form-check-label" for="course-reset-file">Upload file of courses to reset</label>
+                            <input class="form-check-input" type="checkbox" role="switch" id="upload-courses-switch" aria-describedby="course-reset-description">
+                            <div id="course-reset-description" class="form-text" hidden>Must be a simple text file only containing a list of courses. Courses may be comma separated or on individual lines</div>
+                        </div>
+                        <div class="form-check form-switch">
+                            <label class="form-check-label" for="course-reset-textarea">Manually enter list of courses</label>
+                            <input class="form-check-input" type="checkbox" role="switch" id="manual-courses-reset-switch">
+                        </div>
                     </div>
-                    <div class="form-check form-switch">
-                        <label class="form-check-label" for="course-reset-textarea">Manually enter list of courses</label>
-                        <input class="form-check-input" type="checkbox" role="switch" id="manual-courses-reset-switch">
+                    <div id="course-text-div" hidden>
+                        <textarea class="form-control" id="reset-courses-area" rows="3" placeholder="course1,course2,course3, etc."></textarea>
                     </div>
                 </div>
-                <div id="course-text-div" hidden>
-                    <textarea class="form-control" id="reset-courses-area" rows="3" placeholder="course1,course2,course3, etc."></textarea>
+            <button type="button" class="btn btn-primary mt-3" id="resetBtn" disabled hidden>Reset</button>
+            <button type="button" class="btn btn-primary mt-3" id="uploadBtn" disabled hidden>Upload</button>
+            <div id="progress-div" hidden>
+                <p id="progress-info"></p>
+                <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar" style="width: 0%"></div>
                 </div>
             </div>
-        <button type="button" class="btn btn-primary mt-3" id="resetBtn" disabled hidden>Reset</button>
-        <button type="button" class="btn btn-primary mt-3" id="uploadBtn" disabled hidden>Upload</button>
-        <div id="progress-div" hidden>
-            <p id="progress-info"></p>
-            <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-                <div class="progress-bar" style="width: 0%"></div>
-            </div>
-        </div>`
+            <div id='response-contailer'></div>`
 
-    eContent.append(eForm);
+        eContent.append(resetCourseForm);
+    }
+    resetCourseForm.hidden = false;
 
     const progressDiv = eContent.querySelector('#progress-div');
     const progressBar = eContent.querySelector('.progress-bar');
@@ -208,122 +221,136 @@ async function resetCourses(e) {
     })
 
     // adding response container
-    const eResponse = document.createElement('div');
-    eResponse.id = "response-container";
-    eResponse.classList.add('mt-5');
-    eContent.append(eResponse);
+    // const eResponse = document.createElement('div');
+    // eResponse.id = "response-container";
+    // eResponse.classList.add('mt-5');
+    // eContent.append(eResponse);
 }
 
 async function createSupportCourse(e) {
+    hideEndpoints(e);
+
     const eContent = document.querySelector('#endpoint-content');
+    let createSupportCourseForm = eContent.querySelector('#create-support-courses-form');
 
-    eContent.innerHTML = `
-        <div>
-            <h3>Create Support Course</h3>
-        </div>
-    `;
+    if (!createSupportCourseForm) {
+        createSupportCourseForm = document.createElement('form');
+        createSupportCourseForm.id = 'create-support-courses-form';
 
-    const eForm = document.createElement('form');
 
-    eForm.innerHTML = `
-            <div class="row">
-                <div class="mb-3">
-                    <div class="col-6">
-                        <label for="course-name" class="form-label">Course name</label>
-                        <input type="text" class="form-control" id="course-name">
-                    </div>
-                    <div id="course-options">
-                        <div class="col-auto form-check form-switch">
-                            <label for="course-publish" class="form-label">Publish</label>
-                            <input type="checkbox" class="form-check-input" role="switch" id="course-publish">
+        // eContent.innerHTML = `
+        //     <div>
+        //         <h3>Create Support Course</h3>
+        //     </div>
+        // `;
+
+        // const eForm = document.createElement('form');
+
+        createSupportCourseForm.innerHTML = `
+            <div>
+                <h3>Create Support Course</h3>
+            </div>
+                <div class="row">
+                    <div class="mb-3">
+                        <div class="col-6">
+                            <label for="course-name" class="form-label">Course name</label>
+                            <input type="text" class="form-control" id="course-name">
                         </div>
-                        <div class="col-auto form-check form-switch">
-                            <label for="course-blueprint" class="form-label">Blueprint</label>
-                            <input type="checkbox" class="form-check-input" role="switch" id="course-blueprint">
-                        </div>
-                        <div id="add-ac-courses-div" class="row hidden">
-                            <div class="col-auto">
-                                <label class="form-label">Number of courses to associate</label>
-                                <input id="csc-ac-input" class="form-control" type="text" />
+                        <div id="course-options">
+                            <div class="col-auto form-check form-switch">
+                                <label for="course-publish" class="form-label">Publish</label>
+                                <input type="checkbox" class="form-check-input" role="switch" id="course-publish">
+                            </div>
+                            <div class="col-auto form-check form-switch">
+                                <label for="course-blueprint" class="form-label">Blueprint</label>
+                                <input type="checkbox" class="form-check-input" role="switch" id="course-blueprint">
+                            </div>
+                            <div id="add-ac-courses-div" class="row hidden">
                                 <div class="col-auto">
-                                    <span id="ac-course-text" class="form-text" hidden style="color: red;">Must be a number</span>
+                                    <label class="form-label">Number of courses to associate</label>
+                                    <input id="csc-ac-input" class="form-control" type="text" />
+                                    <div class="col-auto">
+                                        <span id="ac-course-text" class="form-text" hidden style="color: red;">Must be a number</span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="col-auto form-check form-switch">
-                            <label for="course-add-users" class="form-label">Add Users</label>
-                            <input type="checkbox" class="form-check-input" role="switch" id="course-add-users">
-                        </div>
-                        <div id="add-users-div" class="row hidden">
-                            <div class="col-4">
-                                <label for="user-email" class="form-label">Email</label>
-                                <input type="text" class="form-control" role="switch" id="user-email">
-                                <div id="course-reset-description" class="form-text">NOTE: Your instructure email. Used to create emails for the new users so they can receive notifications.</div>
+                            <div class="col-auto form-check form-switch">
+                                <label for="course-add-users" class="form-label">Add Users</label>
+                                <input type="checkbox" class="form-check-input" role="switch" id="course-add-users">
                             </div>
-                            <div class="col-2">
-                                <label for="course-add-students" class="form-label">Students</label>
-                                <input type="text" class="form-control" role="switch" id="course-add-students">
-                                <div class="col-auto">
-                                    <span id="add-students-text" class="form-text" hidden style="color: red;">Must be a number</span>
+                            <div id="add-users-div" class="row hidden">
+                                <div class="col-4">
+                                    <label for="user-email" class="form-label">Email</label>
+                                    <input type="text" class="form-control" role="switch" id="user-email">
+                                    <div id="course-reset-description" class="form-text">NOTE: Your instructure email. Used to create emails for the new users so they can receive notifications.</div>
+                                </div>
+                                <div class="col-2">
+                                    <label for="course-add-students" class="form-label">Students</label>
+                                    <input type="text" class="form-control" role="switch" id="course-add-students">
+                                    <div class="col-auto">
+                                        <span id="add-students-text" class="form-text" hidden style="color: red;">Must be a number</span>
+                                    </div>
+                                </div>
+                                <div class="col-2">
+                                    <label for="course-add-teachers" class="form-label">Teachers</label>
+                                    <input type="text" class="form-control" role="switch" id="course-add-teachers">
+                                    <div class="col-auto">
+                                        <span id="add-teachers-text" class="form-text" hidden style="color: red;">Must be a number</span>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-2">
-                                <label for="course-add-teachers" class="form-label">Teachers</label>
-                                <input type="text" class="form-control" role="switch" id="course-add-teachers">
-                                <div class="col-auto">
-                                    <span id="add-teachers-text" class="form-text" hidden style="color: red;">Must be a number</span>
+                            <div class="col-auto form-check form-switch">
+                                <label for="course-assignments" class="form-label">Add Assignments</label>
+                                <input type="checkbox" class="form-check-input" role="switch" id="course-assignments" >
+                            </div>
+                            <div id="add-assignments-div" class="row hidden">
+                                <div class="col-2">
+                                    <label for="course-add-assignments" class="form-label">How many</label>
+                                    <input type="text" class="form-control" role="switch" id="course-add-assignments">
                                 </div>
                             </div>
-                        </div>
-                        <div class="col-auto form-check form-switch">
-                            <label for="course-assignments" class="form-label">Add Assignments</label>
-                            <input type="checkbox" class="form-check-input" role="switch" id="course-assignments" >
-                        </div>
-                        <div id="add-assignments-div" class="row hidden">
-                            <div class="col-2">
-                                <label for="course-add-assignments" class="form-label">How many</label>
-                                <input type="text" class="form-control" role="switch" id="course-add-assignments">
+                            <div class="col-auto form-check form-switch">
+                                <label for="course-add-cq" class="form-label"><em style="color:gray;">Add Classic Quizzes - Disabled</em></label>
+                                <input type="checkbox" class="form-check-input" role="switch" id="course-add-cq" disabled>
                             </div>
-                        </div>
-                        <div class="col-auto form-check form-switch">
-                            <label for="course-add-cq" class="form-label"><em style="color:gray;">Add Classic Quizzes - Disabled</em></label>
-                            <input type="checkbox" class="form-check-input" role="switch" id="course-add-cq" disabled>
-                        </div>
-                        <div class="col-auto form-check form-switch">
-                            <label for="course-add-nq" class="form-label"><em style="color:gray;">Add New Quizzes - Disabled</em></label>
-                            <input type="checkbox" class="form-check-input"  role="switch" id="course-add-nq" disabled>
-                        </div>
-                        <div class="col-auto form-check form-switch">
-                            <label for="course-add-discussions" class="form-label"><em style="color:gray;">Add Discussions - Disabled</em></label>
-                            <input type="checkbox" class="form-check-input"  role="switch" id="course-add-discussions" disabled>
-                        </div>
-                        <div class="col-auto form-check form-switch">
-                            <label for="course-add-pages" class="form-label"><em style="color:gray;">Add Pages - Disabled</em></label>
-                            <input type="checkbox" class="form-check-input"  role="switch" id="course-add-pages" disabled>
-                        </div>
-                        <div class="col-auto form-check form-switch">
-                            <label for="course-add-modules" class="form-label"><em style="color:gray;">Add Modules - Disabled</em></label>
-                            <input type="checkbox" class="form-check-input"  role="switch" id="course-add-modules" disabled>
-                        </div>
-                        <div class="col-auto form-check form-switch">
-                            <label for="course-add-sections" class="form-label"><em style="color:gray;">Add Sections - Disabled</em></label>
-                            <input type="checkbox" class="form-check-input"  role="switch" id="course-add-sections" disabled>
-                        </div>
-                        <div class="col-auto form-check form-switch">
-                            <label for="course-submissions" class="form-label" disabled><em style="color: gray;">Create Submissions - Disabled</em></label>
-                            <input type="checkbox" class="form-check-input" role="switch" id="course-submissions" disabled>
+                            <div class="col-auto form-check form-switch">
+                                <label for="course-add-nq" class="form-label"><em style="color:gray;">Add New Quizzes - Disabled</em></label>
+                                <input type="checkbox" class="form-check-input"  role="switch" id="course-add-nq" disabled>
+                            </div>
+                            <div class="col-auto form-check form-switch">
+                                <label for="course-add-discussions" class="form-label"><em style="color:gray;">Add Discussions - Disabled</em></label>
+                                <input type="checkbox" class="form-check-input"  role="switch" id="course-add-discussions" disabled>
+                            </div>
+                            <div class="col-auto form-check form-switch">
+                                <label for="course-add-pages" class="form-label"><em style="color:gray;">Add Pages - Disabled</em></label>
+                                <input type="checkbox" class="form-check-input"  role="switch" id="course-add-pages" disabled>
+                            </div>
+                            <div class="col-auto form-check form-switch">
+                                <label for="course-add-modules" class="form-label"><em style="color:gray;">Add Modules - Disabled</em></label>
+                                <input type="checkbox" class="form-check-input"  role="switch" id="course-add-modules" disabled>
+                            </div>
+                            <div class="col-auto form-check form-switch">
+                                <label for="course-add-sections" class="form-label"><em style="color:gray;">Add Sections - Disabled</em></label>
+                                <input type="checkbox" class="form-check-input"  role="switch" id="course-add-sections" disabled>
+                            </div>
+                            <div class="col-auto form-check form-switch">
+                                <label for="course-submissions" class="form-label" disabled><em style="color: gray;">Create Submissions - Disabled</em></label>
+                                <input type="checkbox" class="form-check-input" role="switch" id="course-submissions" disabled>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        <button type="button" class="btn btn-primary mt-3" id="createBtn">Create</button>`
+            <button type="button" class="btn btn-primary mt-3" id="createBtn">Create</button>
+            <div id='response-container'></div>`
 
-    eContent.append(eForm);
+        eContent.append(createSupportCourseForm);
+    }
+    createSupportCourseForm.hidden = false;
 
-    const eResponse = document.createElement('div');
-    eResponse.id = "response-container";
-    eResponse.classList.add('mt-5');
-    eContent.append(eResponse);
+    // const eResponse = document.createElement('div');
+    // eResponse.id = "response-container";
+    // eResponse.classList.add('mt-5');
+    // eContent.append(eResponse);
 
     const courseOptions = eContent.querySelector('#course-options');
     courseOptions.addEventListener('change', (e) => {
@@ -457,6 +484,7 @@ async function createSupportCourse(e) {
         const apiToken = document.querySelector('#token').value;
 
         const responseContainer = eContent.querySelector('#response-container');
+        responseContainer.innerHTML = '';
 
         // basic course stuff
         const courseName = eContent.querySelector('#course-name').value;
@@ -556,8 +584,9 @@ async function createSupportCourse(e) {
         console.log('The data is: ', data);
 
         try {
+            responseContainer.innerHTML = 'Creating course....';
             const response = await window.axios.createSupportCourse(data);
-            responseContainer.innerHTML = `<p>Course ID: <a id="course-link" href="https://${domain}/courses/${response.course_id}" target="_blank">${response.course_id}`;
+            responseContainer.innerHTML += `Done.<p>Course ID: <a id="course-link" href="https://${domain}/courses/${response.course_id}" target="_blank">${response.course_id}`;
         } catch (error) {
             console.log('Error: ', error);
         } finally {
@@ -578,55 +607,66 @@ async function createSupportCourse(e) {
 }
 
 async function createAssociatedCourses(e) {
+    hideEndpoints(e);
+
     const eContent = document.querySelector('#endpoint-content');
+    let createAssociatedCoursesForm = eContent.querySelector('#create-associated-courses-form');
 
-    eContent.innerHTML = `
-        <div>
-            <h3>Create Associated Courses</h3>
-        </div>
-    `;
-
-    const eForm = document.createElement('form');
+    if (!createAssociatedCoursesForm) {
+        createAssociatedCoursesForm = document.createElement('form');
+        createAssociatedCoursesForm.id = 'create-associated-courses-form';
 
 
-    eForm.innerHTML = `
-        <div id="ac-container">
-            <div class="row flex-column">
-                <div class="mb-3 col-auto">
-                    <label class="form-label" for="bp-course-id">Blueprint Course ID to associated courses to</label>
-                </div>
-                <div class="row">
-                    <div class="mb-3 col-2">
-                        <input type="text" class="form-control" id="bp-course-id" aria-describedby="bp-course-text">
+        // eContent.innerHTML = `
+        //     <div>
+        //         <h3>Create Associated Courses</h3>
+        //     </div>
+        // `;
+
+        // const eForm = document.createElement('form');
+
+
+        createAssociatedCoursesForm.innerHTML = `
+            <div id="ac-container">
+                <div class="row flex-column">
+                    <div class="mb-3 col-auto">
+                        <label class="form-label" for="bp-course-id">Blueprint Course ID to associated courses to</label>
                     </div>
-                    <div class="col-auto">
-                        <span id="bp-course-text" class="form-text" hidden style="color: red;">Must be a number</span>
+                    <div class="row">
+                        <div class="mb-3 col-2">
+                            <input type="text" class="form-control" id="bp-course-id" aria-describedby="bp-course-text">
+                        </div>
+                        <div class="col-auto">
+                            <span id="bp-course-text" class="form-text" hidden style="color: red;">Must be a number</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="row flex-column">
+                    <div class="mb-3 col-auto">
+                        <label class="form-label" for="num-ac-courses">How many courses do you want to associate</label>
+                    </div>
+                    <div class="row">
+                        <div class="mb-3 col-2">
+                            <input type="text" class="form-control" id="num-ac-courses" aria-describedby="ac-course-text">
+                        </div>
+                        <div class="col-auto">
+                            <span id="ac-course-text" class="form-text" hidden style="color: red;">Must be a number</span>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="row flex-column">
-                <div class="mb-3 col-auto">
-                    <label class="form-label" for="num-ac-courses">How many courses do you want to associate</label>
+            <button type="button" class="btn btn-primary mt-3" id="associateBtn">Associate</button>
+            <div id="progress-div" hidden>
+                <p id="progress-info"></p>
+                <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar" style="width: 0%"></div>
                 </div>
-                <div class="row">
-                    <div class="mb-3 col-2">
-                        <input type="text" class="form-control" id="num-ac-courses" aria-describedby="ac-course-text">
-                    </div>
-                    <div class="col-auto">
-                        <span id="ac-course-text" class="form-text" hidden style="color: red;">Must be a number</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <button type="button" class="btn btn-primary mt-3" id="associateBtn">Associate</button>
-        <div id="progress-div" hidden>
-            <p id="progress-info"></p>
-            <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-                <div class="progress-bar" style="width: 0%"></div>
-            </div>
-        </div>`
+            </div>`
 
-    eContent.append(eForm);
+        eContent.append(createAssociatedCoursesForm);
+    }
+    createAssociatedCoursesForm.hidden = false;
+
 
     const associateBtn = eContent.querySelector('#associateBtn');
     const bpCourseText = eContent.querySelector('#bp-course-text');

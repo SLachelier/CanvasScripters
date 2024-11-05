@@ -33,15 +33,15 @@ let suppressedEmails = [];
 const createWindow = () => {
     mainWindow = new BrowserWindow({
         width: 1200,
-        height: 900,
         minWidth: 900,
+        height: 900,
         webPreferences: {
             nodeIntegration: false,
             preload: path.join(__dirname, './preload.js')
         }
     })
 
-    mainWindow.webContents.openDevTools();
+    // mainWindow.webContents.openDevTools();
     mainWindow.loadFile('index.html');
 }
 

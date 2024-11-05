@@ -10,136 +10,142 @@ function assignmentTemplate(e) {
 
     switch (e.target.id) {
         case 'create-assignments':
-            assignmentCreator();
+            assignmentCreator(e);
             break;
         case 'create-assignment-groups':
-            assignmentGroupCreator();
+            assignmentGroupCreator(e);
             break;
         case 'delete-empty-assignment-groups':
-            emptyAssignmentGroups();
+            emptyAssignmentGroups(e);
             break;
         case 'delete-nosubmission-assignments':
-            noSubmissionAssignments();
+            noSubmissionAssignments(e);
             break;
         case 'delete-unpublished-assignments':
-            unpublishedAssignments();
+            unpublishedAssignments(e);
             break;
         case 'delete-nonmodule-assignments':
-            nonModuleAssignments();
+            nonModuleAssignments(e);
             break;
         case 'move-assignments':
-            moveAssignmentsToSingleGroup();
+            moveAssignmentsToSingleGroup(e);
             break;
         default:
             break;
     }
 }
 
-function assignmentCreator() {
+function assignmentCreator(e) {
     let emptyGroups = [];
+    hideEndpoints(e)
 
     const eContent = document.querySelector('#endpoint-content');
-    eContent.innerHTML = `
-        <div>
-            <h3>Create Assignments</h3>
-        </div>
-    `;
+    let assignmentCreatorForm = eContent.querySelector('#assignment-creator-form');
 
-    const eForm = document.createElement('form');
+    if (!assignmentCreatorForm) {
+        // const assignmentCreatorHeader = document.createElement('div');
+        // assignmentCreatorHeader.id = 'assignment-creator-header';
+        // assignmentCreatorHeader.innerHTML = '<h3>Create Assignments</h3>'
 
-    eForm.innerHTML = `
-        <div class="row">
-            <div class="row align-items-center">
-                <div class="col-2">
-                    <label class="form-label">Course</label>
-                    <input id="course-id" type="text" class="form-control" aria-describedby="input-checker" />
-                </div>
-                <div class="col-auto" >
-                    <span id="input-checker" class="form-text" style="display: none;">Must only contain numbers</span>
-                </div>
-                <div class="col-2">
-                    <label class="form-label">How many</label>
-                    <input id="assignment-number" type="text" class="form-control" value="1">
-                </div>
-                <div class="col-2">
-                    <label class="form-label">Points</label>
-                    <input id="assignment-points" type="text" class="form-control" value="10">
-                </div>
+        assignmentCreatorForm = document.createElement('form');
+        assignmentCreatorForm.id = 'assignment-creator-form';
+        assignmentCreatorForm.innerHTML = `
+            <div>
+                <h3>Create Assignments</h3>
             </div>
-            <hr class="mt-2">
             <div class="row">
-                <div>
-                    <h5>Assignment Settings</h5>
-                    <div class="col-auto form-check form-switch" >
-                        <input id="assignment-publish" class="form-check-input" type="checkbox" role="switch" checked>
-                        <label for="assignment-publish" class="form-check-label">Publish</label>
+                <div class="row align-items-center">
+                    <div class="col-2">
+                        <label class="form-label">Course</label>
+                        <input id="course-id" type="text" class="form-control" aria-describedby="input-checker" />
                     </div>
-                    <div class="col-auto form-check form-switch" >
-                        <input id="assignment-peer" class="form-check-input" type="checkbox" role="switch">
-                        <label for="assignment-peer" class="form-check-label">Peer Reviews</label>
+                    <div class="col-auto" >
+                        <span id="input-checker" class="form-text" style="display: none;">Must only contain numbers</span>
                     </div>
-                    <div class="col-auto form-check form-switch" >
-                        <input id="assignment-anonymous" class="form-check-input" type="checkbox" role="switch">
-                        <label for="assignment-anonymous" class="form-check-label">Anonymous</label>
+                    <div class="col-2">
+                        <label class="form-label">How many</label>
+                        <input id="assignment-number" type="text" class="form-control" value="1">
                     </div>
-                    <div class="row justify-content-start align-items-baseline" >
-                        <label for="assignment-grade-type" class="form-label col-auto">Display Grade as</label>
-                        <select id="assignment-grade-type" class="form-select col-auto custom-select-width">
-                            <option value="points" selected>Points</option>
-                            <option value="percent">Percent</option>
-                            <option value="letter">Letter</option>
-                            <option value="gpa_scale">GPA Scale</option>
-                            <option value="pass_fail">Complete/Incomplete</option>
-                        </select>
+                    <div class="col-2">
+                        <label class="form-label">Points</label>
+                        <input id="assignment-points" type="text" class="form-control" value="10">
                     </div>
                 </div>
-                <div id="submission-types">
-                    <h5>Submission Types</h5>
-                    <div class="col-auto form-check form-switch" >
-                        <label for="submission-none" class="form-label">No Submission</label>
-                        <input id="submission-none" class="form-check-input" type="checkbox" role="switch" />
+                <hr class="mt-2">
+                <div class="row">
+                    <div>
+                        <h5>Assignment Settings</h5>
+                        <div class="col-auto form-check form-switch" >
+                            <input id="assignment-publish" class="form-check-input" type="checkbox" role="switch" checked>
+                            <label for="assignment-publish" class="form-check-label">Publish</label>
+                        </div>
+                        <div class="col-auto form-check form-switch" >
+                            <input id="assignment-peer" class="form-check-input" type="checkbox" role="switch">
+                            <label for="assignment-peer" class="form-check-label">Peer Reviews</label>
+                        </div>
+                        <div class="col-auto form-check form-switch" >
+                            <input id="assignment-anonymous" class="form-check-input" type="checkbox" role="switch">
+                            <label for="assignment-anonymous" class="form-check-label">Anonymous</label>
+                        </div>
+                        <div class="row justify-content-start align-items-baseline" >
+                            <label for="assignment-grade-type" class="form-label col-auto">Display Grade as</label>
+                            <select id="assignment-grade-type" class="form-select col-auto custom-select-width">
+                                <option value="points" selected>Points</option>
+                                <option value="percent">Percent</option>
+                                <option value="letter">Letter</option>
+                                <option value="gpa_scale">GPA Scale</option>
+                                <option value="pass_fail">Complete/Incomplete</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="col-auto form-check form-switch" >
-                        <label for="submission-on_paper" class="form-label">On Paper</label>
-                        <input id="submission-on_paper" class="form-check-input" type="checkbox" role="switch" />
-                    </div>
-                    <div class="col-auto form-check form-switch" >
-                        <label for="submission-online_upload" class="form-label">File Upload</label>
-                        <input id="submission-online_upload" class="form-check-input" type="checkbox" role="switch" checked/>
-                    </div>
-                    <div class="col-auto form-check form-switch" >
-                        <label for="submission-online_text_entry" class="form-label">Text Entry</label>
-                        <input id="submission-online_text_entry" class="form-check-input" type="checkbox" role="switch" />
-                    </div>
-                    <div class="col-auto form-check form-switch" >
-                        <label for="submission-online_url" class="form-label">Website URL</label>
-                        <input id="submission-online_url" class="form-check-input" type="checkbox" role="switch" />
-                    </div>
-                    <div class="col-auto form-check form-switch" >
-                        <label for="submission-media_recording" class="form-label">Media recording</label>
-                        <input id="submission-media_recording" class="form-check-input" type="checkbox" role="switch" />
+                    <div id="submission-types">
+                        <h5>Submission Types</h5>
+                        <div class="col-auto form-check form-switch" >
+                            <label for="submission-none" class="form-label">No Submission</label>
+                            <input id="submission-none" class="form-check-input" type="checkbox" role="switch" />
+                        </div>
+                        <div class="col-auto form-check form-switch" >
+                            <label for="submission-on_paper" class="form-label">On Paper</label>
+                            <input id="submission-on_paper" class="form-check-input" type="checkbox" role="switch" />
+                        </div>
+                        <div class="col-auto form-check form-switch" >
+                            <label for="submission-online_upload" class="form-label">File Upload</label>
+                            <input id="submission-online_upload" class="form-check-input" type="checkbox" role="switch" checked/>
+                        </div>
+                        <div class="col-auto form-check form-switch" >
+                            <label for="submission-online_text_entry" class="form-label">Text Entry</label>
+                            <input id="submission-online_text_entry" class="form-check-input" type="checkbox" role="switch" />
+                        </div>
+                        <div class="col-auto form-check form-switch" >
+                            <label for="submission-online_url" class="form-label">Website URL</label>
+                            <input id="submission-online_url" class="form-check-input" type="checkbox" role="switch" />
+                        </div>
+                        <div class="col-auto form-check form-switch" >
+                            <label for="submission-media_recording" class="form-label">Media recording</label>
+                            <input id="submission-media_recording" class="form-check-input" type="checkbox" role="switch" />
+                        </div>
                     </div>
                 </div>
+                <div class="w-100"></div>
+                <div class="col-auto">
+                    <button id="action-btn" class="btn btn-primary mt-3">Create</button>
+                </div>
             </div>
-            <div class="w-100"></div>
-            <div class="col-auto">
-                <button id="action-btn" class="btn btn-primary mt-3">Create</button>
+            <div hidden id="progress-div">
+                <p id="progress-info"></p>
+                <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                    
+                    <div class="progress-bar" style="width: 0%"></div>
+                </div>
             </div>
-        </div>
-        <div hidden id="progress-div">
-            <p id="progress-info"></p>
-            <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-                
-                <div class="progress-bar" style="width: 0%"></div>
+            <div id="response-container" class="mt-3">
             </div>
-        </div>
-        <div id="response-container" class="mt-3">
-        </div>
-    `;
+        `;
+        eContent.append(assignmentCreatorForm);
+    }
+    assignmentCreatorForm.hidden = false;
 
-    eContent.append(eForm);
-
-    const submissionTypes = eForm.querySelector('#submission-types');
+    const submissionTypes = assignmentCreatorForm.querySelector('#submission-types');
 
     function uncheckAllSubmissions() {
         submissionTypes.querySelector('#submission-none').checked = false;
@@ -169,7 +175,7 @@ function assignmentCreator() {
     const courseID = document.querySelector('#course-id');
     checkCourseID(courseID, eContent);
 
-    const createBtn = eForm.querySelector('#action-btn');
+    const createBtn = assignmentCreatorForm.querySelector('#action-btn');
     createBtn.addEventListener('click', async function (e) {
         e.stopPropagation();
         e.preventDefault();
@@ -306,67 +312,81 @@ function assignmentCreator() {
     });
 }
 
-function noSubmissionAssignments() {
+function noSubmissionAssignments(e) {
+    hideEndpoints(e);
     console.log('renderer > noSubmissionAssignments');
+
 
     let assignments = [];
 
     const eContent = document.querySelector('#endpoint-content');
-    eContent.innerHTML = `
-        <div>
-            <h3>Delete Assignments With No Submissions</h3>
-        </div>
-    `;
+    let noSubmissionAssignmentsForm = eContent.querySelector('#no-submission-assignments-form');
 
-    const eForm = document.createElement('form');
+    if (!noSubmissionAssignmentsForm) {
+        noSubmissionAssignmentsForm = document.createElement('form');
+        noSubmissionAssignmentsForm.id = 'no-submission-assignments-form';
 
-    eForm.innerHTML = `
-        <div class="row align-items-center">
-            <div class="col-auto">
-                <label class="form-label">Course</label>
-            </div>
-            <div class="w-100"></div>
-            <div class="col-2">
-                <input id="course-id" type="text" class="form-control" aria-describedby="input-checker" />
-            </div>
-            <div class="col-auto" >
-                <span id="input-checker" class="form-text" style="display: none;">Must only contain numbers</span>
-            </div>
-            <div class="w-100"></div> 
-            <div class="col-auto form-check form-switch mt-3 ms-3">
-                <input id="graded-submissions" class="form-check-input" type="checkbox" role="switch" />
-                <label for="graded-submissions" class="form-check-label">Delete assignments with grades</label>
-                    <div id="graded-help" class="form-text">
-                        (otherwise this will check for assignments with no submissions <em>AND</em> no grades)
-                    </div>
-            </div>
-            <div class="col-auto">
+        // eContent.innerHTML = `
+        //     <div>
+        //         <h3>Delete Assignments With No Submissions</h3>
+        //     </div>
+        // `;
 
+        // const eForm = document.createElement('form');
+
+        noSubmissionAssignmentsForm.innerHTML = `
+            <div>
+                <h3>Delete Assignments With No Submissions</h3>
             </div>
-            <div class="w-100"></div> 
-            <div class="col-auto">
-                <button id="action-btn" class="btn btn-primary mt-3">Check</button>
+            <div class="row align-items-center">
+                <div class="col-auto">
+                    <label class="form-label">Course</label>
+                </div>
+                <div class="w-100"></div>
+                <div class="col-2">
+                    <input id="course-id" type="text" class="form-control" aria-describedby="input-checker" />
+                </div>
+                <div class="col-auto" >
+                    <span id="input-checker" class="form-text" style="display: none;">Must only contain numbers</span>
+                </div>
+                <div class="w-100"></div> 
+                <div class="col-auto form-check form-switch mt-3 ms-3">
+                    <input id="graded-submissions" class="form-check-input" type="checkbox" role="switch" />
+                    <label for="graded-submissions" class="form-check-label">Delete assignments with grades</label>
+                        <div id="graded-help" class="form-text">
+                            (otherwise this will check for assignments with no submissions <em>AND</em> no grades)
+                        </div>
+                </div>
+                <div class="col-auto">
+    
+                </div>
+                <div class="w-100"></div> 
+                <div class="col-auto">
+                    <button id="action-btn" class="btn btn-primary mt-3">Check</button>
+                </div>
             </div>
-        </div>
-        <div hidden id="progress-div">
-            <p id="progress-info"></p>
-            <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-
-                <div class="progress-bar" style="width: 0%"></div>
+            <div hidden id="progress-div">
+                <p id="progress-info"></p>
+                <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+    
+                    <div class="progress-bar" style="width: 0%"></div>
+                </div>
             </div>
-        </div>
-        <div id="response-container" class="mt-5">
-        </div>
-    `;
+            <div id="response-container" class="mt-5">
+            </div>
+        `;
 
 
 
-    eContent.append(eForm);
+        eContent.append(noSubmissionAssignmentsForm);
+    }
+    noSubmissionAssignmentsForm.hidden = false;
+
 
     const courseID = document.querySelector('#course-id');
     checkCourseID(courseID, eContent);
 
-    const checkBtn = eForm.querySelector('#action-btn');
+    const checkBtn = noSubmissionAssignmentsForm.querySelector('#action-btn');
     checkBtn.addEventListener('click', async function (e) {
         e.stopPropagation();
         e.preventDefault();
@@ -520,52 +540,63 @@ function noSubmissionAssignments() {
     });
 }
 
-function unpublishedAssignments() {
+function unpublishedAssignments(e) {
+    hideEndpoints(e)
     let assignments = [];
 
     const eContent = document.querySelector('#endpoint-content');
-    eContent.innerHTML = `
-        <div>
-            <h3>Delete All Unpublished Assignments</h3>
-        </div>
-    `;
+    let deleteUnpublishedAssignmentsForm = eContent.querySelector('#delete-upublished-assignments-form');
 
-    const eForm = document.createElement('form');
+    if (!deleteUnpublishedAssignmentsForm) {
+        deleteUnpublishedAssignmentsForm = document.createElement('form');
+        deleteUnpublishedAssignmentsForm.id = 'delete-upublished-assignments-form';
 
-    eForm.innerHTML = `
-        <div class="row align-items-center">
-            <div class="col-auto">
-                <label class="form-label">Course</label>
-            </div>
-            <div class="w-100"></div>
-            <div class="col-2">
-                <input id="course-id" type="text" class="form-control" aria-describedby="input-checker" />
-            </div>
-            <div class="col-auto" >
-                <span id="input-checker" class="form-text" style="display: none;">Must only contain numbers</span>
-            </div>
-            <div class="w-100"></div> 
-            <div class="col-auto">
-                <button id="action-btn" class="btn btn-primary mt-3">Check</button>
-            </div>
-        </div>
-        <div hidden id="progress-div">
-            <p id="progress-info"></p>
-            <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-                <div class="progress-bar" style="width: 0%"></div>
-            </div>
-        </div>
-        <div id="response-container" class="mt-3">
-        </div>
-    `;
+        // eContent.innerHTML = `
+        //     <div>
+        //         <h3>Delete All Unpublished Assignments</h3>
+        //     </div>
+        // `;
 
-    eContent.append(eForm);
+        // const eForm = document.createElement('form');
 
+        deleteUnpublishedAssignmentsForm.innerHTML = `
+            <div>
+                <h3>Delete All Unpublished Assignments</h3>
+            </div>
+            <div class="row align-items-center">
+                <div class="col-auto">
+                    <label class="form-label">Course</label>
+                </div>
+                <div class="w-100"></div>
+                <div class="col-2">
+                    <input id="course-id" type="text" class="form-control" aria-describedby="input-checker" />
+                </div>
+                <div class="col-auto" >
+                    <span id="input-checker" class="form-text" style="display: none;">Must only contain numbers</span>
+                </div>
+                <div class="w-100"></div> 
+                <div class="col-auto">
+                    <button id="action-btn" class="btn btn-primary mt-3">Check</button>
+                </div>
+            </div>
+            <div hidden id="progress-div">
+                <p id="progress-info"></p>
+                <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar" style="width: 0%"></div>
+                </div>
+            </div>
+            <div id="response-container" class="mt-3">
+            </div>
+        `;
+
+        eContent.append(deleteUnpublishedAssignmentsForm);
+    }
+    deleteUnpublishedAssignmentsForm.hidden = false;
 
     const courseID = document.querySelector('#course-id');
     checkCourseID(courseID, eContent);
 
-    const checkBtn = eForm.querySelector('#action-btn');
+    const checkBtn = deleteUnpublishedAssignmentsForm.querySelector('#action-btn');
     checkBtn.addEventListener('click', async function (e) {
         e.stopPropagation();
         e.preventDefault();
@@ -798,57 +829,66 @@ function unpublishedAssignments() {
     });
 }
 
-function nonModuleAssignments() {
+function nonModuleAssignments(e) {
+    hideEndpoints(e)
     let assignments = [];
 
     const eContent = document.querySelector('#endpoint-content');
+    let deleteAssignmentsNotInModulesForm = eContent.querySelector('#delete-assignments-not-in-modules-form');
     // setHeader('Delete All Assignments Not in a Module', eContent);
     // createForm('deleteNonModuleAssignments', eContent);
 
-    eContent.innerHTML = `
-        <div>
-            <h3>Delete All Assignments Not in a Module</h3>
-        </div>
-    `;
+    if (!deleteAssignmentsNotInModulesForm) {
+        deleteAssignmentsNotInModulesForm = document.createElement('form');
+        deleteAssignmentsNotInModulesForm.id = 'delete-assignments-not-in-modules-form';
+        // eContent.innerHTML = `
+        //     <div>
+        //         <h3>Delete All Assignments Not in a Module</h3>
+        //     </div>
+        // `;
 
-    const eForm = document.createElement('form');
+        // const eForm = document.createElement('form');
 
-    eForm.innerHTML = `
-        <div class="row align-items-center">
-            <div class="col-auto">
-                <label class="form-label">Course</label>
+        deleteAssignmentsNotInModulesForm.innerHTML = `
+            <div>
+                <h3>Delete All Assignments Not in a Module</h3>
             </div>
-            <div class="w-100"></div>
-            <div class="col-2">
-                <input id="course" type="text" class="form-control" aria-describedby="input-checker" />
+            <div class="row align-items-center">
+                <div class="col-auto">
+                    <label class="form-label">Course</label>
+                </div>
+                <div class="w-100"></div>
+                <div class="col-2">
+                    <input id="course" type="text" class="form-control" aria-describedby="input-checker" />
+                </div>
+                <div class="col-auto" >
+                    <span id="input-checker" class="form-text" style="display: none;">Must only contain numbers</span>
+                </div>
+                <div class="w-100"></div>
+                <div class="col-auto">
+                    <button id="action-btn" class="btn btn-primary mt-3">Check</button>
+                </div>
             </div>
-            <div class="col-auto" >
-                <span id="input-checker" class="form-text" style="display: none;">Must only contain numbers</span>
+            <div hidden id="progress-div">
+                <p id="progress-info"></p>
+                <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+    
+                    <div class="progress-bar" style="width: 0%"></div>
+                </div>
             </div>
-            <div class="w-100"></div>
-            <div class="col-auto">
-                <button id="action-btn" class="btn btn-primary mt-3">Check</button>
+            <div id="response-container" class="mt-5">
             </div>
-        </div>
-        <div hidden id="progress-div">
-            <p id="progress-info"></p>
-            <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+        `;
 
-                <div class="progress-bar" style="width: 0%"></div>
-            </div>
-        </div>
-        <div id="response-container" class="mt-5">
-        </div>
-    `;
-
-    eContent.append(eForm);
-
+        eContent.append(deleteAssignmentsNotInModulesForm);
+    }
+    deleteAssignmentsNotInModulesForm.hidden = false;
     //checks for valid input in the course id field
 
     const courseID = eContent.querySelector('#course');
     checkCourseID(courseID, eContent);
 
-    const checkBtn = eForm.querySelector('#action-btn');
+    const checkBtn = deleteAssignmentsNotInModulesForm.querySelector('#action-btn');
     checkBtn.addEventListener('click', async function (e) {
         e.stopPropagation();
         e.preventDefault();
@@ -968,51 +1008,62 @@ function nonModuleAssignments() {
     })
 }
 
-function moveAssignmentsToSingleGroup() {
+function moveAssignmentsToSingleGroup(e) {
+    hideEndpoints(e)
     console.log('renderer > moveAssignmentsToSingleGroup');
 
     // create form
     const eContent = document.querySelector('#endpoint-content');
-    eContent.innerHTML = `
-        <div>
-            <h3>Move Assignments to a Single Group</h3>
-        </div>
-    `;
-    // setHeader('Move Assignments to Single Group', eContent);
-    // createForm('moveAssignmentsToSingleGroup', eContent);
+    let moveAssignmentsForm = eContent.querySelector('#move-assignments');
 
-    // find someway to generate the form
+    if (!moveAssignmentsForm) {
+        moveAssignmentsForm = document.createElement('form');
+        moveAssignmentsForm.id = 'move-assignments';
+        // eContent.innerHTML = `
+        //     <div>
+        //         <h3>Move Assignments to a Single Group</h3>
+        //     </div>
+        // `;
+        // // setHeader('Move Assignments to Single Group', eContent);
+        // // createForm('moveAssignmentsToSingleGroup', eContent);
 
-    const eForm = document.createElement('form');
-    eForm.innerHTML = `
-        <div class="row align-items-center">
-            <div class="col-auto">
-                <label class="form-label">Course</label>
-            </div>
-            <div class="w-100"></div>
-            <div class="col-2">
-                <input id="course" type="text" class="form-control" aria-describedby="input-checker" />
-            </div>
-            <div class="col-auto" >
-                <span id="input-checker" class="form-text" style="display: none;">Must only contain numbers</span>
-            </div>
-            <div class="w-100"></div>
-            <div class="col-auto">
-                <button id="action-btn" class="btn btn-primary mt-3">Check</button>
-            </div>
-        </div>
-        <div hidden id="progress-div">
-            <p id="progress-info"></p>
-            <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+        // // find someway to generate the form
 
-                <div class="progress-bar" style="width: 0%"></div>
+        // const eForm = document.createElement('form');
+        moveAssignmentsForm.innerHTML = `
+            <div>
+                <h3>Move Assignments to a Single Group</h3>
             </div>
-        </div>
-        <div id="response-container" class="mt-5">
-        </div>
-    `;
+            <div class="row align-items-center">
+                <div class="col-auto">
+                    <label class="form-label">Course</label>
+                </div>
+                <div class="w-100"></div>
+                <div class="col-2">
+                    <input id="course" type="text" class="form-control" aria-describedby="input-checker" />
+                </div>
+                <div class="col-auto" >
+                    <span id="input-checker" class="form-text" style="display: none;">Must only contain numbers</span>
+                </div>
+                <div class="w-100"></div>
+                <div class="col-auto">
+                    <button id="action-btn" class="btn btn-primary mt-3">Check</button>
+                </div>
+            </div>
+            <div hidden id="progress-div">
+                <p id="progress-info"></p>
+                <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+    
+                    <div class="progress-bar" style="width: 0%"></div>
+                </div>
+            </div>
+            <div id="response-container" class="mt-5">
+            </div>
+        `;
 
-    eContent.append(eForm);
+        eContent.append(moveAssignmentsForm);
+    }
+    moveAssignmentsForm.hidden = false;
 
     // Objectives:
     // 1. Get inputs
@@ -1023,7 +1074,7 @@ function moveAssignmentsToSingleGroup() {
     const courseID = document.querySelector('#course');
     checkCourseID(courseID, eContent);
 
-    const checkBtn = eForm.querySelector('#action-btn');
+    const checkBtn = moveAssignmentsForm.querySelector('#action-btn');
     checkBtn.addEventListener('click', async function (e) {
         e.stopPropagation();
         e.preventDefault();

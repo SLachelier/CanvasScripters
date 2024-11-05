@@ -6,56 +6,69 @@
 function assignmentGroupTemplate(e) {
     switch (e.target.id) {
         case 'create-assignment-groups':
-            assignmentGroupCreator();
+            assignmentGroupCreator(e);
             break;
         case 'delete-empty-assignment-groups':
-            emptyAssignmentGroups();
+            emptyAssignmentGroups(e);
             break;
         default:
             break;
     }
 }
 
-function emptyAssignmentGroups() {
+function emptyAssignmentGroups(e) {
+    hideEndpoints(e)
     console.log('emptyAssignmentGroups');
 
     const eContent = document.querySelector('#endpoint-content');
-    eContent.innerHTML = `
-        <div>
-            <h3>Delete Empty Assignment Groups</h3>
-        </div>
-    `;
+    let deleteEmptyAssignmentGroupsForm = eContent.querySelector('#delete-empty-assignment-group-form');
 
-    const eForm = document.createElement('form');
+    if (!deleteEmptyAssignmentGroupsForm) {
+        deleteEmptyAssignmentGroupsForm = document.createElement('form');
+        deleteEmptyAssignmentGroupsForm.id = 'delete-empty-assignment-group-form';
 
-    eForm.innerHTML = `
-        <div class="row align-items-center">
-            <div class="col-auto">
-                <label class="form-label">Course</label>
-            </div>
-            <div class="w-100"></div>
-            <div class="col-2">
-                <input id="course-id" type="text" class="form-control" aria-describedby="input-checker" />
-            </div>
-            <div class="col-auto" >
-                <span id="input-checker" class="form-text" style="display: none;">Must only contain numbers</span>
-            </div>
-            <div class="w-100"></div>
-            <div class="col-auto">
-                <button id="action-btn" class="btn btn-primary mt-3">Check</button>
-            </div>
-        </div>
-        <div hidden id="progress-div">
-            <p id="progress-info"></p>
-            <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-                <div class="progress-bar" style="width: 0%"></div>
-            </div>
-        </div>
-        <div id="response-container" class="mt-5">
-        </div>
-    `;
 
-    eContent.append(eForm);
+        // eContent.innerHTML = `
+        //     <div>
+        //         <h3>Delete Empty Assignment Groups</h3>
+        //     </div>
+        // `;
+
+        // const eForm = document.createElement('form');
+
+        deleteEmptyAssignmentGroupsForm.innerHTML = `
+            <div>
+                <h3>Delete Empty Assignment Groups</h3>
+            </div>
+            <div class="row align-items-center">
+                <div class="col-auto">
+                    <label class="form-label">Course</label>
+                </div>
+                <div class="w-100"></div>
+                <div class="col-2">
+                    <input id="course-id" type="text" class="form-control" aria-describedby="input-checker" />
+                </div>
+                <div class="col-auto" >
+                    <span id="input-checker" class="form-text" style="display: none;">Must only contain numbers</span>
+                </div>
+                <div class="w-100"></div>
+                <div class="col-auto">
+                    <button id="action-btn" class="btn btn-primary mt-3">Check</button>
+                </div>
+            </div>
+            <div hidden id="progress-div">
+                <p id="progress-info"></p>
+                <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar" style="width: 0%"></div>
+                </div>
+            </div>
+            <div id="response-container" class="mt-5">
+            </div>
+        `;
+
+        eContent.append(deleteEmptyAssignmentGroupsForm);
+    }
+    deleteEmptyAssignmentGroupsForm.hidden = false;
 
     const cID = document.querySelector('#course-id');
     checkCourseID(cID, eContent);
@@ -65,7 +78,7 @@ function emptyAssignmentGroups() {
     // eResponse.classList.add('mt-5');
     // eContent.append(eResponse);
 
-    const checkBtn = eForm.querySelector('#action-btn');
+    const checkBtn = deleteEmptyAssignmentGroupsForm.querySelector('#action-btn');
     checkBtn.addEventListener('click', async function (e) {
         e.stopPropagation();
         e.preventDefault();
@@ -192,47 +205,60 @@ function emptyAssignmentGroups() {
     })
 }
 
-function assignmentGroupCreator() {
+function assignmentGroupCreator(e) {
+    hideEndpoints(e);
     let emptyGroups = [];
 
     const eContent = document.querySelector('#endpoint-content');
-    eContent.innerHTML = `
-        <div>
-            <h3>Create Assignment Groups</h3>
-        </div>
-    `;
+    let createAssignmentGroupForm = eContent.querySelector('#create-assignment-group-form');
 
-    const eForm = document.createElement('form');
+    if (!createAssignmentGroupForm) {
+        createAssignmentGroupForm = document.createElement('form');
+        createAssignmentGroupForm.id = 'create-assignment-group-form';
 
-    eForm.innerHTML = `
-        <div class="row align-items-center">
-            <div class="col-2">
-                <label class="form-label">Course</label>
-                <input id="course-id" type="text" class="form-control" aria-describedby="input-checker" />
-            </div>
-            <div class="col-auto" >
-                <span id="input-checker" class="form-text" style="display: none;">Must only contain numbers</span>
-            </div>
-            <div class="col-2">
-                <label class="form-label">How many</label>
-                <input id="assignment-group-number" type="text" class="form-control" value="1">
-            </div>
-            <div class="w-100"></div>
-            <div class="col-auto">
-                <button id="action-btn" class="btn btn-primary mt-3">create</button>
-            </div>
-        </div>
-        <div hidden id="progress-div">
-            <p id="progress-info"></p>
-            <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-                <div class="progress-bar" style="width: 0%"></div>
-            </div>
-        </div>
-        <div id="response-container" class="mt-5">
-        </div>
-    `;
 
-    eContent.append(eForm);
+        // eContent.innerHTML = `
+        //     <div>
+        //         <h3>Create Assignment Groups</h3>
+        //     </div>
+        // `;
+
+        // const eForm = document.createElement('form');
+
+        createAssignmentGroupForm.innerHTML = `
+            <div>
+                <h3>Create Assignment Groups</h3>
+            </div>
+            <div class="row align-items-center">
+                <div class="col-2">
+                    <label class="form-label">Course</label>
+                    <input id="course-id" type="text" class="form-control" aria-describedby="input-checker" />
+                </div>
+                <div class="col-auto" >
+                    <span id="input-checker" class="form-text" style="display: none;">Must only contain numbers</span>
+                </div>
+                <div class="col-2">
+                    <label class="form-label">How many</label>
+                    <input id="assignment-group-number" type="text" class="form-control" value="1">
+                </div>
+                <div class="w-100"></div>
+                <div class="col-auto">
+                    <button id="action-btn" class="btn btn-primary mt-3">create</button>
+                </div>
+            </div>
+            <div hidden id="progress-div">
+                <p id="progress-info"></p>
+                <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar" style="width: 0%"></div>
+                </div>
+            </div>
+            <div id="response-container" class="mt-5">
+            </div>
+        `;
+
+        eContent.append(createAssignmentGroupForm);
+    }
+    createAssignmentGroupForm.hidden = false;
 
     // validate course id
     const cID = eContent.querySelector('#course-id');

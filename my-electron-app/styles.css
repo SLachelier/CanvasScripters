@@ -2,6 +2,19 @@
     width: 575px;
 }
 
+body {
+    padding-top: 110px;
+}
+
+.fixed-top {
+    background-color: white;
+}
+
+.scrollable {
+    height: 80vh;
+    overflow: auto;
+}
+
 .custom-border-bottom {
     border-bottom-width: 3px;
     border-bottom-style: solid;

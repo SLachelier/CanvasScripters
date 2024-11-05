@@ -26,69 +26,81 @@ async function commChannelTemplate(e) {
 }
 
 function checkComm(e) {
+    hideEndpoints(e);
 
     // const eHeader = document.createElement('div');
     // eHeader.innerHTML = `<h3>${e.target.id}</h3>`;
     const eContent = document.querySelector('#endpoint-content');
-    // eContent.append(eHeader);
-    eContent.innerHTML = `
-        <div>
-            <h3>Check suppression and bounce list</h3>
-        </div>
-    `;
+    let checkSuppressionListForm = eContent.querySelector('#check-suppressionlist-form');
 
-    const eForm = document.createElement('form');
-    eForm.innerHTML = `
-            <div class="row">
-                <div class="mb-3">
-                    <div class="col-auto">
-                        <label for="region" class="form-label">Region: </label>
+    if (!checkSuppressionListForm) {
+        checkSuppressionListForm = document.createElement('form');
+        checkSuppressionListForm.id = 'check-suppressionlist-form';
+
+        // eContent.append(eHeader);
+        // eContent.innerHTML = `
+        //     <div>
+        //         <h3>Check suppression and bounce list</h3>
+        //     </div>
+        // `;
+
+        // const eForm = document.createElement('form');
+        checkSuppressionListForm.innerHTML = `
+            <div>
+                <h3>Check suppression and bounce list</h3>
+            </div>
+                <div class="row">
+                    <div class="mb-3">
+                        <div class="col-auto">
+                            <label for="region" class="form-label">Region: </label>
+                        </div>
+                        <div class="col-2">
+                            <select id="region" class="form-select" aria-label="Region info">
+                                <option value="iad_pdx" selected>IAD/PDX</option>
+                                <option value="dub_fra">DUB/FRA</option>
+                                <option value="syd_sin">SYD/SIN</option>
+                                <option value="yul" selected>YUL</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="col-2">
-                        <select id="region" class="form-select" aria-label="Region info">
-                            <option value="iad_pdx" selected>IAD/PDX</option>
-                            <option value="dub_fra">DUB/FRA</option>
-                            <option value="syd_sin">SYD/SIN</option>
-                            <option value="yul" selected>YUL</option>
-                        </select>
+                    <div id="email-options">
+                        <div class="form-check form-switch">
+                            <label class="form-label" for="single-email-chkbx">Single Email</label>
+                            <input id="single-email-chkbx" type="checkbox" class="form-check-input" role="switch">
+                        </div>
+                        <div class="form-check form-switch">
+                            <label class="form-label" for="domain-email-chkbx">Domain</label>
+                            <input id="domain-email-chkbx" type="checkbox" class="form-check-input" role="switch">
+                        </div>
+                    </div>
+                    <div class="">
+                        <div class="col-auto">
+                            <label id="email-label" for="email" class="form-label">Email</label>
+                        </div>
+                        <div class="w-100"></div>
+                        <div class="col-5">
+                            <input disabled type="text" id="email" class="form-control" aria-describedby="email-form-text">
+                        </div>
+                        <div class="form-text" id="email-form-text">
+                            Enter the full email address you want to check
+                        </div>
                     </div>
                 </div>
-                <div id="email-options">
-                    <div class="form-check form-switch">
-                        <label class="form-label" for="single-email-chkbx">Single Email</label>
-                        <input id="single-email-chkbx" type="checkbox" class="form-check-input" role="switch">
-                    </div>
-                    <div class="form-check form-switch">
-                        <label class="form-label" for="domain-email-chkbx">Domain</label>
-                        <input id="domain-email-chkbx" type="checkbox" class="form-check-input" role="switch">
-                    </div>
-                </div>
-                <div class="">
-                    <div class="col-auto">
-                        <label id="email-label" for="email" class="form-label">Email</label>
-                    </div>
-                    <div class="w-100"></div>
-                    <div class="col-5">
-                        <input disabled type="text" id="email" class="form-control" aria-describedby="email-form-text">
-                    </div>
-                    <div class="form-text" id="email-form-text">
-                        Enter the full email address you want to check
+            <button type="button" class="btn btn-primary mt-3" id="email-check" disabled>Check</button>
+            <div id="progress-div" hidden>
+                <div id="loading-wheel">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
                     </div>
                 </div>
             </div>
-        <button type="button" class="btn btn-primary mt-3" id="email-check" disabled>Check</button>
-        <div id="progress-div" hidden>
-            <div id="loading-wheel">
-                <div class="spinner-border" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
+            <div id="response-container" class="mt-5">
             </div>
-        </div>
-        <div id="response-container" class="mt-5">
-        </div>
-        `
+            `
 
-    eContent.append(eForm);
+        eContent.append(checkSuppressionListForm);
+    }
+    checkSuppressionListForm.hidden = false;
 
     const emailInput = eContent.querySelector('#email');
     emailInput.addEventListener('input', (e) => {
@@ -226,13 +238,16 @@ function resetComm(e) {
     let resetCommForm = eContent.querySelector('#reset-comm-form');
 
     if (!resetCommForm) {
-        const resetCommHeader = document.createElement('div');
-        resetCommHeader.id = 'reset-comm-header';
-        resetCommHeader.innerHTML = `<h3>Reset Communication Channels</h3>`;
+        // const resetCommHeader = document.createElement('div');
+        // resetCommHeader.id = 'reset-comm-header';
+        // resetCommHeader.innerHTML = `<h3>Reset Communication Channels</h3>`;
 
         resetCommForm = document.createElement('form');
         resetCommForm.id = 'reset-comm-form';
         resetCommForm.innerHTML = `
+        <div>
+            <h3>Reset Communication Channels</h3>
+        </div>
         <div>
             <div class="col-2">
                 <select id="region" class="form-select" aria-label="Region info">
@@ -272,7 +287,7 @@ function resetComm(e) {
         <div id="reset-upload-comm-response-container" class="mt-3" hidden></div>
         `;
 
-        eContent.append(resetCommHeader, resetCommForm);
+        eContent.append(resetCommForm);
     }
     resetCommForm.hidden = false;
 
@@ -479,59 +494,72 @@ function resetComm(e) {
 }
 
 function unconfirmed(e) {
+    hideEndpoints(e);
+
     const eContent = document.querySelector('#endpoint-content');
-    // eContent.append(eHeader);
-    eContent.innerHTML = `
-        <div>
-            <h3>Unconfirmed emails</h3>
-        </div>
-    `;
+    let unconfirmedEmailForm = eContent.querySelector('#unconfirmed-emails-form');
 
-    const eForm = document.createElement('form');
-    eForm.innerHTML = `
-        <div id="switches">
-            <div class="form-check form-switch">
-                <label class="form-check-label" for="uncofirmed-email-switch">Check for unconfirmed emails</label>
-                <input class="form-check-input" type="checkbox" role="switch" id="unconfirmed-email-switch">
-                <div id="email-pattern-div" hidden>
-                    <input id="unconfirmed-email-pattern" type="text" class="form-control" placeholder="email.domain.edu" aria-describedby="unconfirmed-pattern-description">
-                    <div id="email-warning" style="color: red;" class="form-text" hidden>***Must enter a pattern***</div>
-                    <span id="unconfirmed-pattern-description" class="form-text">Email domain pattern to search for unconfirmed emails (wildcards accepted *pattern*edu)</span>
-                </div>
-            </div>
-            <div class="form-check form-switch">
-                <label class="form-check-label" for="confirm-email-switch">Upload file of emails to confirm</label>
-                <input class="form-check-input" type="checkbox" role="switch" id="upload-email-switch" aria-describedby="confirm-file-description">
-                <div id="confirm-file-description" class="form-text" hidden>Must be a simple text file only containing a list of emails. Emails may be comma separated or on individual lines</div>
-            </div>
-            <div class="form-check form-switch">
-                <label class="form-check-label" for="confirm-email-list-switch">Input list of emails to confirm</label>
-                <input class="form-check-input" type="checkbox" role="switch" id="confirm-email-list-switch" aria-describedby="confirm-email-list-desc">
-                <div id="confirm-email-list-box" hidden>
-                    <textarea class="form-control" id="email-list-box" rows="3" placeholder="example1@example.com,example2@example.com, etc."></textarea>
-                </div>
-            </div>
-        </div>
-        <button type="button" class="btn btn-primary mt-3" id="unconfirmed-check-btn" disabled>Check</button>
-        <button type="button" class="btn btn-primary mt-3" id="upload-email-btn" hidden disabled>Upload</button>
-        <button type="button" class="btn btn-primary mt-3" id="confirm-email-btn" hidden disabled>Confirm</button>
+    if (!unconfirmedEmailForm) {
+        unconfirmedEmailForm = document.createElement('form');
+        unconfirmedEmailForm.id = 'unconfirmed-emails-form';
 
-        <div hidden id="progress-div">
-            <p id="progress-info"></p>
-            <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-                <div class="progress-bar" style="width: 0%"></div>
+        // eContent.append(eHeader);
+        // eContent.innerHTML = `
+        //     <div>
+        //         <h3>Unconfirmed emails</h3>
+        //     </div>
+        // `;
+
+        // const eForm = document.createElement('form');
+        unconfirmedEmailForm.innerHTML = `
+            <div>
+                <h3>Unconfirmed emails</h3>
             </div>
-        </div>
-        <div id="response-container" class="mt-5">
-            <div id="loading-wheel" hidden>
-                <div class="spinner-border" role="status">
-                    <span class="visually-hidden">Loading...</span>
+            <div id="switches">
+                <div class="form-check form-switch">
+                    <label class="form-check-label" for="uncofirmed-email-switch">Check for unconfirmed emails</label>
+                    <input class="form-check-input" type="checkbox" role="switch" id="unconfirmed-email-switch">
+                    <div id="email-pattern-div" hidden>
+                        <input id="unconfirmed-email-pattern" type="text" class="form-control" placeholder="email.domain.edu" aria-describedby="unconfirmed-pattern-description">
+                        <div id="email-warning" style="color: red;" class="form-text" hidden>***Must enter a pattern***</div>
+                        <span id="unconfirmed-pattern-description" class="form-text">Email domain pattern to search for unconfirmed emails (wildcards accepted *pattern*edu)</span>
+                    </div>
+                </div>
+                <div class="form-check form-switch">
+                    <label class="form-check-label" for="confirm-email-switch">Upload file of emails to confirm</label>
+                    <input class="form-check-input" type="checkbox" role="switch" id="upload-email-switch" aria-describedby="confirm-file-description">
+                    <div id="confirm-file-description" class="form-text" hidden>Must be a simple text file only containing a list of emails. Emails may be comma separated or on individual lines</div>
+                </div>
+                <div class="form-check form-switch">
+                    <label class="form-check-label" for="confirm-email-list-switch">Input list of emails to confirm</label>
+                    <input class="form-check-input" type="checkbox" role="switch" id="confirm-email-list-switch" aria-describedby="confirm-email-list-desc">
+                    <div id="confirm-email-list-box" hidden>
+                        <textarea class="form-control" id="email-list-box" rows="3" placeholder="example1@example.com,example2@example.com, etc."></textarea>
+                    </div>
                 </div>
             </div>
-            <div id="response"></div>
-        </div>
-        `
-    eContent.append(eForm);
+            <button type="button" class="btn btn-primary mt-3" id="unconfirmed-check-btn" disabled>Check</button>
+            <button type="button" class="btn btn-primary mt-3" id="upload-email-btn" hidden disabled>Upload</button>
+            <button type="button" class="btn btn-primary mt-3" id="confirm-email-btn" hidden disabled>Confirm</button>
+    
+            <div hidden id="progress-div">
+                <p id="progress-info"></p>
+                <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar" style="width: 0%"></div>
+                </div>
+            </div>
+            <div id="response-container" class="mt-5">
+                <div id="loading-wheel" hidden>
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+                <div id="response"></div>
+            </div>
+            `
+        eContent.append(unconfirmedEmailForm);
+    }
+    unconfirmedEmailForm.hidden = false;
 
     const switchListener = eContent.querySelector('#switches');
     switchListener.addEventListener('change', (e) => {
