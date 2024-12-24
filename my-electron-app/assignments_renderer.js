@@ -391,7 +391,7 @@ function noSubmissionAssignments(e) {
         e.stopPropagation();
         e.preventDefault();
 
-        const gradedSubmissions = eForm.querySelector('#graded-submissions').checked;
+        const gradedSubmissions = noSubmissionAssignmentsForm.querySelector('#graded-submissions').checked;
         console.log(gradedSubmissions);
 
         checkBtn.disabled = true;
