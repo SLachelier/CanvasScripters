@@ -2,6 +2,7 @@
 // const { instance, getMyRegion } = require('./Canvas/config');
 
 const axios = require('axios');
+const { getNextPage } = require('./pagination');
 // add utilities here
 
 async function createRequester(method, url, params, num, endpoint) {
@@ -268,6 +269,13 @@ async function errorCheck(request) {
                 request: error.config.url
             }
             throw newError;
+        } else if (error.response?.data?.errors?.sis_source_id[0]) {
+            newError = {
+                status: error.response.status,
+                message: error.response.data.errors.sis_source_id[0].message,
+                request: error.config.url
+            };
+            throw newError;
         } else if (error.response?.status) {
             const eStatus = error.response.status.toString();
             switch (eStatus) {
@@ -305,6 +313,38 @@ async function errorCheck(request) {
     }
 }
 
+async function getAPIData(data) {
+    const apiContent = [];
+
+    const axiosConfig = {
+        method: 'GET',
+        url: data.url,
+        headers: {
+            'Authorization': `Bearer ${data.token}`
+        }
+    }
+
+    try {
+        let nextPage = data.url;
+        while (nextPage) {
+            const request = async () => {
+                return await axios(axiosConfig);
+            }
+            const response = await errorCheck(request);
+
+            if (response.headers.get('link')) {
+                nextPage = getNextPage(response.headers.get('link'));
+            } else {
+                nextPage = false;
+            }
+            apiContent.push(...response.data)
+        }
+        return apiContent;
+    } catch (error) {
+        throw error;
+    }
+}
+
 async function getRegion() {
     const response = await axios({
         method: "GET",
@@ -322,5 +362,5 @@ async function getRegion() {
 }
 
 module.exports = {
-    createRequester, deleteRequester, waitFunc, getRegion, errorCheck
+    createRequester, deleteRequester, waitFunc, getRegion, errorCheck, getAPIData
 };
