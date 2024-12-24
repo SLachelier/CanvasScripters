@@ -160,7 +160,7 @@ function checkComm(e) {
         const domain = document.querySelector('#domain').value.trim();
         const apiToken = document.querySelector('#token').value.trim();
         const region = eContent.querySelector('#region').value;
-        const email = eContent.querySelector('#email').value.trim();
+        const email = eContent.querySelector('#email').value.trim().toLowerCase();
         const responseContainer = eContent.querySelector('#response-container');
         const progresDiv = eContent.querySelector('#progress-div');
         const progressBar = eContent.querySelector('.progress-bar');
