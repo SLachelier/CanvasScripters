@@ -47,7 +47,7 @@ async function awsCheck(domain, token, email) {
         }
 
         const response = await errorCheck(request);
-        return response;
+        return !!response.data?.suppressed;
     } catch (error) {
         if (error.status.match(/404/)) {
             return false;
