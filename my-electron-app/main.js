@@ -962,7 +962,7 @@ app.whenReady().then(() => {
         return courses;
     })
 
-    ipcMain.handle('csv:sendToCSV', () => {
+    ipcMain.handle('csv:sendToCSV', async (event, data) => {
         sendToCSV(data);
     });
 
