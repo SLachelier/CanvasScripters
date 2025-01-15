@@ -209,6 +209,7 @@ function checkComm(e) {
                 responseContainer.innerHTML += 'Done.';
             } catch (error) {
                 errorHandler(error, responseContainer);
+                hasError = true;
             } finally {
                 checkBtn.disabled = false;
                 progresDiv.hidden = true;
@@ -223,7 +224,7 @@ function checkComm(e) {
 
                     window.csv.sendToText();
                 });
-            } else {
+            } else if (!hasError) {
                 responseContainer.innerHTML += `<p>Didn't find any emails matching the specified pattern.</p>`;
             }
         }

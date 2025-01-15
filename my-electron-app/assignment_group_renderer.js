@@ -71,7 +71,12 @@ function emptyAssignmentGroups(e) {
     deleteEmptyAssignmentGroupsForm.hidden = false;
 
     const cID = document.querySelector('#course-id');
-    checkCourseID(cID, eContent);
+    cID.addEventListener('change', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        checkCourseID(cID, eContent);
+    })
 
     // const eResponse = document.createElement('div');
     // eResponse.id = "response-container";

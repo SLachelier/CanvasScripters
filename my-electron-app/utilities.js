@@ -269,7 +269,14 @@ async function errorCheck(request) {
                 request: error.config.url
             }
             throw newError;
-        } else if (error.response?.data?.errors?.sis_source_id[0]) {
+        } else if (error.code === 'ECONNRESET') {
+            newError = {
+                status: '',
+                message: `${error.code}: ${error.message} - Check to make sure you're not connected to a VPN`,
+                request: error.config.url
+            }
+            throw newError;
+        } else if (error.response?.data?.errors?.sis_source_id?.[0]) {
             newError = {
                 status: error.response.status,
                 message: error.response.data.errors.sis_source_id[0].message,
@@ -361,6 +368,10 @@ async function getRegion() {
     return getMyRegion(region);
 }
 
+function getUTCTime(date) {
+    return `${date.getUTCFullYear()}-${date.getUTCMonth() + 1}-${date.getUTCDate()}T${this.getTimeZoneOffset()}:00:00.00Z`;
+}
+
 module.exports = {
-    createRequester, deleteRequester, waitFunc, getRegion, errorCheck, getAPIData
+    createRequester, deleteRequester, waitFunc, getRegion, errorCheck, getAPIData, getUTCTime
 };

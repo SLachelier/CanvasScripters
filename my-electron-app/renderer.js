@@ -79,6 +79,12 @@ endpointSelect.addEventListener('click', (e) => {
         case 'course-endpoints':
             courseTemplate(e);
             break;
+        case 'quiz-endpoints':
+            quizTemplate(e);
+            break;
+        case 'module-endpoints':
+            moduleTemplate(e);
+            break;
         default:
             break;
     }
@@ -161,18 +167,42 @@ function assignmentCourse(eContent) {
 // check if the course ID is a number
 function checkCourseID(courseID, eContent) {
     if (courseID != null) {
-        courseID.addEventListener('input', (e) => {
-            const courseChecker = eContent.querySelector(`#input-checker`);
-            if (!isNaN(Number(courseID.value)) || courseID.value === '') {
-                courseChecker.style.display = 'none';
-                eContent.querySelector('#action-btn').disabled = false;
-            } else {
-                courseChecker.style.display = 'inline';
-                eContent.querySelector('#action-btn').disabled = true;
-            }
-        });
+
+        const courseChecker = eContent.querySelector(`#input-checker`);
+        const trimmedValue = courseID.value.trim();
+        if (trimmedValue === '') {
+            courseChecker.style.display = 'none';
+            eContent.querySelector('button').disabled = true;
+        } else if (!isNaN(Number(trimmedValue))) {
+            courseChecker.style.display = 'none';
+            eContent.querySelector('button').disabled = false;
+        } else {
+            courseChecker.style.display = 'inline';
+            eContent.querySelector('button').disabled = true;
+        }
     }
 }
+
+// function checkInputs(num, date) {
+//     for (let arg of args) {
+//         switch (typeof(arg)) {
+//             case 'number':
+//                 check
+//                 break;
+
+//             default:
+//                 break;
+//         }
+//     }
+// }
+
+// function checkInt(value) {
+
+// }
+
+// function checkDate(value) {
+
+// }
 
 function validateInput(value, errorText) {
     let valid = false;

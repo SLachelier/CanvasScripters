@@ -26,6 +26,8 @@ const {
     associateCourses,
     syncBPCourses
 } = require('./courses');
+const quizzes = require('./quizzes');
+const modules = require('./modules');
 
 let mainWindow;
 let suppressedEmails = [];
@@ -258,8 +260,14 @@ app.whenReady().then(() => {
         }
 
         let requests = [];
-        for (let assignment of data.assignments) {
-            requests.push(() => request({ endpoint: data.url, token: data.token, id: assignment.id }));
+        for (let i = 0; i < data.assignments.length; i++) {
+            const requestData = {
+                domain: data.domain,
+                token: data.token,
+                course_id: data.course_id,
+                id: data.assignments[i].id
+            };
+            requests.push({ id: i + 1, request: () => request(requestData) });
         }
 
         const batchResponse = await batchHandler(requests);
@@ -351,14 +359,6 @@ app.whenReady().then(() => {
 
     });
 
-    // ipcMain.handle('axios:deleteNoSubmissionAssignments', async (event, data) => {
-    //     console.log('main.js > axios:deleteNoSubmissionAssignments');
-
-    //     const result = await assignments.deleteNoSubmissionAssignments(data.domain, data.course, data.token, data.assignments);
-
-    //     return result;
-    // });
-
     ipcMain.handle('axios:getUnpublishedAssignments', async (event, data) => {
         console.log('main.js > axios:getUnpublishedAssignments');
 
@@ -382,6 +382,24 @@ app.whenReady().then(() => {
         }
     });
 
+    ipcMain.handle('axios:getOldAssignments', async (event, data) => {
+        console.log('main.js > axios:getOldAssignments');
+
+        try {
+            const response = await assignments.getOldAssignmentsGraphQL(data);
+            return response;
+        } catch (error) {
+            throw error.message
+        }
+    })
+
+    ipcMain.handle('axios:deleteOldAssignments', async (event, data) => {
+        console.log('main.js > axios:deleteOldAssignments');
+
+        console.log('The data in main: ', data);
+        return;
+    });
+    
     ipcMain.handle('axios:getAssignmentsToMove', async (event, data) => {
         console.log('main.js > axios:getAssignmentsToMove');
 
@@ -724,7 +742,7 @@ app.whenReady().then(() => {
 
         const request = async (requestD) => {
             try {
-                const response = associateCoruses(requestD);
+                const response = await associateCourses(requestD);
                 return response;
             } catch (error) {
                 throw error;
@@ -836,6 +854,8 @@ app.whenReady().then(() => {
 
             const totalRequests = emails.length;
             let completedRequests = 0;
+            let successful = [];
+            let failed = [];
 
             const updateProgress = () => {
                 completedRequests++;
@@ -845,8 +865,17 @@ app.whenReady().then(() => {
             const request = async (requestData) => {
                 try {
                     const response = await resetEmail(requestData);
+                    successful.push({
+                        id: requestData.id,
+                        status: 'fulfilled',
+                        value: response
+                    });
                     return response;
                 } catch (error) {
+                    failed.push({
+                        id: requestData.id,
+                        reason: error.message
+                    })
                     throw error;
                 } finally {
                     updateProgress();
@@ -861,26 +890,111 @@ app.whenReady().then(() => {
                     region: data.region,
                     email: emails[i],
                 };
-                requests.push({ id: i + 1, request: () => request(requestData) });
+                requests.push({ id: i + 1, request_response: await request(requestData) });
             }
-            // emails.forEach((email) => {
-            //     const requestData = {
-            //         domain: data.domain,
-            //         token: data.token,
-            //         region: data.region,
-            //         email: email
-            //     };
-            //     requests.push(() => request(requestData));
-            // })
 
-            const batchResponse = await batchHandler(requests);
+
+            
+            // const batchResponse = await batchHandler(requests);
             console.log('Finished processing emails.');
-            return batchResponse;
+            return {successful,failed};
         } else {
             throw new Error('Cancelled');
         }
     });
 
+    ipcMain.handle('axios:createQuiz', async (event, data) => {
+        console.log('main.js > axios:createQuiz');
+
+        console.log('The data: ', data);
+        
+        const totalRequests = data.num_quizzes;
+        let completedRequests = 0;
+
+        const updateProgress = () => {
+            completedRequests++;
+            mainWindow.webContents.send('update-progress', (completedRequests / totalRequests) * 100);
+        };
+
+        const request = async (requestData) => {
+            try {
+                return await quizzes.createQuiz(requestData)
+            } catch (error) {
+                throw error;
+            } finally {
+                updateProgress();
+            }
+        };
+
+        const requests = [];
+        for (let i = 0; i < totalRequests; i++){
+            const requestData = {
+                domain: data.domain,
+                token: data.token,
+                course_id: data.course_id,
+                quiz_type: data.quiz_type,
+                publish: data.publish,
+                num_quizzes: data.num_quizzes,
+                quiz_title: `Quiz ${i + 1}`
+            };
+            requests.push({ id: i + 1, request: () => request(requestData) })
+        }
+
+        const batchResponse = await batchHandler(requests);
+        return batchResponse;
+    })
+    
+    ipcMain.handle('axios:getModules', async (event, data) => {
+        console.log('main.js > axios:getModules');
+
+        try{
+            const courseModules = await modules.getModules(data);
+            return courseModules;
+        } catch (error) {
+            throw error;
+        }
+    });
+
+    ipcMain.handle('axios:deleteModules', async (event, data) => {
+        console.log('main.js > axios:deleteModules');
+        
+        let completedRequests = 0;
+        let totalRequests = data.number;
+
+        const updateProgress = () => {
+            completedRequests++;
+            mainWindow.webContents.send('update-progress', (completedRequests / totalRequests) * 100);
+        }
+
+        const request = async (data) => {
+            try {
+                // const response = await window.axios.deleteTheThings(messageData);
+                const response = await modules.deleteModule(data);
+                return response;
+            } catch (error) {
+                console.error('Error: ', error);
+                throw error;
+            } finally {
+                updateProgress();
+            }
+        }
+
+        let requests = [];
+        for (let i = 0; i < data.number; i++) {
+            const requestData = {
+                domain: data.domain,
+                token: data.token,
+                course_id: data.course_id,
+                module_id: data.module_ids[i].id
+            };
+            requests.push({ id: i + 1, request: () => request(requestData) });
+        }
+
+        const batchResponse = await batchHandler(requests);
+        console.log('Finished deleting assignments.');
+        return batchResponse;
+    })
+    
     ipcMain.handle('fileUpload:confirmEmails', async (event, data) => {
 
         let emails = [];
@@ -1227,7 +1341,7 @@ function convertToPageViewsCsv(data) {
 
 async function batchHandler(requests, batchSize = 35, timeDelay = 2000) {
     let myRequests = requests
-    const successful = [];
+    let successful = [];
     let failed = [];
     let counter = 0;
 

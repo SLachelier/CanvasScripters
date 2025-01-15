@@ -77,6 +77,16 @@ contextBridge.exposeInMainWorld('axios', {
 
         return await ipcRenderer.invoke('axios:getNonModuleAssignments', data);
     },
+    getOldAssignments: async (data) => {
+        console.log('preload > getOldAssignments')
+
+        return await ipcRenderer.invoke('axios:getOldAssignments', data);
+    },
+    deleteOldAssignments: async (data) => {
+        console.log('preload > deleteOldAssignments');
+
+        return await ipcRenderer.invoke('axios:deleteOldAssignments', data);
+    },
     getAssignmentsToMove: async (data) => {
         console.log('preload > getAssignmentsToMove');
 
@@ -151,6 +161,21 @@ contextBridge.exposeInMainWorld('axios', {
         console.log('preload.js > associateCourses');
 
         return await ipcRenderer.invoke('axios:associateCourses', data);
+    },
+    createQuiz: async (data) => {
+        console.log('preload.js > createQuiz');
+
+        return await ipcRenderer.invoke('axios:createQuiz', data)
+    },
+    getModules: async (data) => {
+        console.log('preload.js > getModules');
+
+        return await ipcRenderer.invoke('axios:getModules', data);
+    },
+    deleteModules: async (data) => {
+        console.log('preload.js > deleteModules');
+
+        return await ipcRenderer.invoke('axios:deleteModules', data);
     }
 });
 

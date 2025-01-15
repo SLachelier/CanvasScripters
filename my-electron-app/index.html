@@ -17,6 +17,8 @@
     <script src="./conversations_renderer.js" defer></script>
     <script src="./commchannels_renderer.js" defer></script>
     <script src="./courses_renderer.js" defer></script>
+    <script src="./quizzes_renderer.js" defer></script>
+    <script src="./modules_renderer.js" defer></script>
     <script src="./renderer.js" defer></script>
 </head>
 
@@ -37,7 +39,7 @@
                 <div class="col">
                     <div class="form-floating mt-2 mb-3">
                         <input type=" text" class="form-control" placeholder="Token" id="token"
-                            value="17~vKGMG9RGref3DmKntKB6kP2hRr2UxxFmVWyW3L7M7BynL6TVKzNhN2CvZ4RhaHa9">
+                            value="17~Zu2vfXwGJAzaXFyrZPJAytT3cZ3nJAJ8BxZrPcABNChP2eKeVV2BG8JWyAHGHKT4">
                         <label for="token">Token</label>
                     </div>
 
@@ -97,6 +99,10 @@
                                     <button id="delete-nonmodule-assignments"
                                         class="list-group-item list-group-item-action border-start-0 border-end-0">
                                         Delete Assignments not in Modules
+                                    </button>
+                                    <button id="delete-old-assignments"
+                                        class="list-group-item list-group-item-action border-start-0 border-end-0">
+                                        Delete old (passed a certain due date) Assignments
                                     </button>
                                     <button id="move-assignments"
                                         class="list-group-item list-group-item-action border-start-0 border-end-0">
@@ -225,6 +231,46 @@
                                     <button id="create-associated-courses"
                                         class="list-group-item list-group-item-action border-start-0 border-end-0">
                                         Create Associated Courses
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#quizzes" aria-expanded="false" aria-controls="quizzes">
+                                Quizzes
+                            </button>
+                        </h2>
+                        <div id="quizzes" class="accordion-collapse collapse">
+                            <div class="accordion-body">
+                                <div id="quiz-endpoints" class="list-group">
+                                    <button id="create-classic-quiz"
+                                        class="list-group-item list-group-item-action border-start-0 border-end-0">
+                                        Create Classic Quiz
+                                    </button>
+                                    <button id="create-new-quiz"
+                                        class="list-group-item list-group-item-action border-start-0 border-end-0">
+                                        Create New Quiz
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#modules" aria-expanded="false" aria-controls="modules">
+                                Modules
+                            </button>
+                        </h2>
+                        <div id="modules" class="accordion-collapse collapse">
+                            <div class="accordion-body">
+                                <div id="module-endpoints" class="list-group">
+                                    <button id="delete-modules"
+                                        class="list-group-item list-group-item-action border-start-0 border-end-0">
+                                        Delete Module
                                     </button>
                                 </div>
                             </div>

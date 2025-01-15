@@ -340,7 +340,7 @@ async function createSupportCourse(e) {
                         </div>
                     </div>
                 </div>
-            <button type="button" class="btn btn-primary mt-3" id="createBtn">Create</button>
+            <button type="button" class="btn btn-primary mt-3" id="create-course-btn">Create</button>
             <div id='response-container'></div>`
 
         eContent.append(createSupportCourseForm);
@@ -473,7 +473,7 @@ async function createSupportCourse(e) {
     //     }
     // }
 
-    const createBtn = eContent.querySelector('button');
+    const createBtn = eContent.querySelector('#create-course-btn');
     createBtn.addEventListener('click', async (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -587,21 +587,20 @@ async function createSupportCourse(e) {
             responseContainer.innerHTML = 'Creating course....';
             const response = await window.axios.createSupportCourse(data);
             responseContainer.innerHTML += `Done.<p>Course ID: <a id="course-link" href="https://${domain}/courses/${response.course_id}" target="_blank">${response.course_id}`;
+            const courseLink = responseContainer.querySelector('#course-link');
+            courseLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                console.log('Inside courseLink click listener');
+                console.log('The target is ', e.target.href);
+                window.shell.openExternal(e.target.href);
+            })
         } catch (error) {
             console.log('Error: ', error);
         } finally {
             createBtn.disabled = false;
         }
-
-        const courseLink = responseContainer.querySelector('#course-link');
-        courseLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-
-            console.log('Inside courseLink click listener');
-            console.log('The target is ', e.target.href);
-            window.shell.openExternal(e.target.href);
-        })
 
     });
 }

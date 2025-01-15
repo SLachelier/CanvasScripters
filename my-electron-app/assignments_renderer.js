@@ -12,12 +12,6 @@ function assignmentTemplate(e) {
         case 'create-assignments':
             assignmentCreator(e);
             break;
-        case 'create-assignment-groups':
-            assignmentGroupCreator(e);
-            break;
-        case 'delete-empty-assignment-groups':
-            emptyAssignmentGroups(e);
-            break;
         case 'delete-nosubmission-assignments':
             noSubmissionAssignments(e);
             break;
@@ -26,6 +20,9 @@ function assignmentTemplate(e) {
             break;
         case 'delete-nonmodule-assignments':
             nonModuleAssignments(e);
+            break;
+        case 'delete-old-assignments':
+            deleteOldAssignments(e);
             break;
         case 'move-assignments':
             moveAssignmentsToSingleGroup(e);
@@ -353,9 +350,9 @@ function noSubmissionAssignments(e) {
                 <div class="col-auto form-check form-switch mt-3 ms-3">
                     <input id="graded-submissions" class="form-check-input" type="checkbox" role="switch" />
                     <label for="graded-submissions" class="form-check-label">Delete assignments with grades</label>
-                        <div id="graded-help" class="form-text">
-                            (otherwise this will check for assignments with no submissions <em>AND</em> no grades)
-                        </div>
+                    <div id="graded-help" class="form-text">
+                        (otherwise this will check for assignments with no submissions <em>AND</em> no grades)
+                    </div>
                 </div>
                 <div class="col-auto">
     
@@ -384,7 +381,12 @@ function noSubmissionAssignments(e) {
 
 
     const courseID = document.querySelector('#course-id');
-    checkCourseID(courseID, eContent);
+    courseID.addEventListener('change', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        checkCourseID(courseID, eContent);
+    })
 
     const checkBtn = noSubmissionAssignmentsForm.querySelector('#action-btn');
     checkBtn.addEventListener('click', async function (e) {
@@ -1006,6 +1008,224 @@ function nonModuleAssignments(e) {
             });
         }
     })
+}
+
+function deleteOldAssignments(e) {
+    hideEndpoints(e)
+    console.log('renderer > deleteOldAssignments');
+
+    const eContent = document.querySelector('#endpoint-content');
+    let deleteOldAssignmentsForm = eContent.querySelector('#delete-old-assignments-form');
+
+    if (!deleteOldAssignmentsForm) {
+        deleteOldAssignmentsForm = document.createElement('form');
+        deleteOldAssignmentsForm.id = 'create-module-delete-form';
+        deleteOldAssignmentsForm.innerHTML = `
+            <div>
+                <h3>Delete Old Assignments</h3>
+            </div>
+            <div class="row align-items-center">
+                <div class="col-auto">
+                    <label class="form-label">Course</label>
+                </div>
+                <div class="w-100"></div>
+                <div class="col-2">
+                    <input id="course-id" type="text" class="form-control" aria-describedby="input-checker" />
+                </div>
+                <div class="col-auto" >
+                    <span id="input-checker" class="form-text" style="display: none;">Must only contain numbers</span>
+                </div>
+                <div class="w-100"></div>
+                <div class="col-auto mt-3" >
+                    <label class="form-label">Delete assignments with a due date on or before this date</label>
+                </di>
+                <div class="col-4">
+                    <input class="form-control" id="due-date-input" type="date">
+                </div>
+                <div class="col-auto">
+                    <button id="check-old-assignments-btn" class="btn btn-primary mt-3" disabled>Check</button>
+                </div>
+            </div>
+            <div hidden id="progress-div">
+                <p id="progress-info"></p>
+                <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar" style="width: 0%"></div>
+                </div>
+            </div>
+            <div id="response-container" class="mt-3">
+            </div>
+        `;
+
+        eContent.append(deleteOldAssignmentsForm);
+    }
+    deleteOldAssignmentsForm.hidden = false;
+
+    const courseID = deleteOldAssignmentsForm.querySelector('#course-id');
+    const dueDate = deleteOldAssignmentsForm.querySelector('#due-date-input');
+
+    courseID.addEventListener('change', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        checkCourseID(courseID, deleteOldAssignmentsForm);
+    });
+
+    const deleteOldAssignmentsBtn = deleteOldAssignmentsForm.querySelector('button');
+    deleteOldAssignmentsBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        deleteOldAssignmentsBtn.disabled = true;
+
+        const responseContainer = eContent.querySelector('#response-container');
+        const progressDiv = eContent.querySelector('#progress-div');
+        const progressBar = progressDiv.querySelector('.progress-bar');
+        const progressInfo = eContent.querySelector('#progress-info');
+
+        if (dueDate.value !== '') {
+
+            const domain = document.querySelector('#domain').value.trim();
+            const token = document.querySelector('#token').value.trim();
+            const course_id = courseID.value.trim();
+            const due_Date = deleteOldAssignmentsForm.querySelector('#due-date-input').value;
+
+            // clean environment
+            responseContainer.innerHTML = '';
+            progressDiv.hidden = false;
+            progressBar.parentElement.hidden = true;
+            progressBar.style.width = '0%';
+            progressInfo.innerHTML = 'Checking...';
+
+            const requestData = {
+                domain,
+                token,
+                course_id,
+                due_Date
+            };
+            console.log('The data is ', requestData);
+
+            let assignments = [];
+            let hasError = false;
+
+            try {
+                assignments = await window.axios.getOldAssignments(requestData);
+            } catch (error) {
+                hasError = true;
+                errorHandler(error, progressInfo);
+            } finally {
+                deleteOldAssignmentsBtn.disabled = false;
+            }
+
+            if (!hasError) {
+                progressInfo.innerHTML = '';
+                if (assignments.length < 1) {
+                    responseContainer.innerHTML = `
+                        <div>
+                            <div class="row align-items-center">
+                                <div id="response-details" class="col-auto">
+                                    <span>Didn't find any assignments due at or before the current selected date.</span>
+                                </div>
+                            </div>
+                        </div>`
+                } else {
+                    console.log('found old assignments', assignments.length);
+
+                    //const eContent = document.querySelector('#endpoint-content');
+                    responseContainer.innerHTML = `
+                    <div>
+                        <div class="row align-items-center">
+                            <div id="response-details" class="col-auto">
+                                <span>Found ${assignments.length} old assignments.</span>
+                            </div>
+    
+                            <div class="w-100"></div>
+    
+                            <div class="col-2">
+                                <button id="remove-btn" type="button" class="btn btn-danger">Remove</button>
+                            </div>
+                            <div class="col-2">
+                                <button id="cancel-btn" type="button" class="btn btn-secondary">Cancel</button>
+                            </div>
+                        </div>
+                    </div>    
+                    `;
+
+                    const responseDetails = responseContainer.querySelector('#response-details');
+
+                    const cancelBtn = document.querySelector('#cancel-btn');
+                    cancelBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+
+                        courseID.value = '';
+                        responseContainer.innerHTML = '';
+                        deleteOldAssignmentsBtn.disabled = false;
+                        //clearData(courseID, responseContent);
+                    });
+
+                    const removeBtn = document.querySelector('#remove-btn');
+                    removeBtn.addEventListener('click', async (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+
+                        console.log('inside remove');
+
+                        // responseDetails.innerHTML = `Removing ${assignments.length} assignments...`;
+                        responseDetails.innerHTML = ``;
+                        progressInfo.innerHTML = `Deleting ${assignments.length} assignments...`;
+                        progressBar.style.width = '0%';
+                        progressBar.parentElement.hidden = false;
+
+
+                        // remapping to only include the id from the graphql response
+                        const assignmentIDs = assignments.map((assignment) => {
+                            return {
+                                id: assignment._id
+                            };
+                        });
+
+                        const messageData = {
+                            domain,
+                            token,
+                            course_id,
+                            number: assignmentIDs.length,
+                            assignments: assignmentIDs
+                        }
+
+                        // const successful = [];
+                        // const failed = [];
+
+
+                        window.progressAPI.onUpdateProgress((progress) => {
+                            progressBar.style.width = `${progress}%`;
+                        });
+
+                        try {
+                            const deleteOldAssignments = await window.axios.deleteAssignments(messageData);
+                            if (deleteOldAssignments.successful.length > 0) {
+                                progressInfo.innerHTML = `Successfully removed ${deleteOldAssignments.successful.length} assignments.`;
+                            }
+                            if (deleteOldAssignments.failed.length > 0) {
+                                progressInfo.innerHTML = `Failed to remove ${deleteOldAssignments.failed.length} assignments.`;
+                            }
+                        } catch (error) {
+                            errorHandler(error, progressInfo);
+                        } finally {
+                            deleteOldAssignmentsBtn.disabled = false;
+                        }
+                    })
+                }
+            }
+        } else {
+            responseContainer.innerHTML = '';
+            progressDiv.hidden = false;
+            progressBar.parentElement.hidden = true;
+            progressBar.style.width = '0%';
+            progressInfo.innerHTML = '<span style="color: red;">Enter a valid due date</span>';
+
+            deleteOldAssignmentsBtn.disabled = false;
+        }
+
+    });
 }
 
 function moveAssignmentsToSingleGroup(e) {

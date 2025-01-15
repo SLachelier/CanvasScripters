@@ -151,7 +151,7 @@ async function createAssignments(data) {
 
 async function deleteAssignments(data) {
     console.log('Deleting assignment ', data.id);
-    const url = `${data.endpoint}/${data.id}`;
+    const url = `https://${data.domain}/api/v1/courses/${data.course_id}/assignments/${data.id}`;
 
     try {
         const request = async () => {
@@ -227,6 +227,74 @@ async function getAssignments(domain, courseID, token) {
     }
 
     return assignmentList;
+}
+
+async function getOldAssignmentsGraphQL(data) {
+    let url = `https://${data.domain}/api/graphql`;
+
+    const query = `
+        query MyQuery($courseID: ID, $nextPage: String) {
+            course(id: $courseID) {
+                assignmentsConnection(after: $nextPage, first: 200) {
+                    nodes {
+                        dueAt
+                        _id
+                    }
+                    pageInfo {
+                        hasNextPage
+                        endCursor
+                    }
+                }
+            }
+        }`;
+
+    const variables = {
+        "courseID": data.course_id,
+        "nextPage": ""
+    };
+
+    const axiosConfig = {
+        method: 'post',
+        url: url,
+        headers: {
+            'Authorization': `Bearer ${data.token}`
+        },
+        data: {
+            query: query,
+            variables: variables
+        }
+    };
+
+    const assignments = [];
+    let nextPage = true;
+    while (nextPage) {
+        try {
+            const request = async () => {
+                return await axios(axiosConfig);
+            };
+
+            const response = await errorCheck(request);
+            assignments.push(...response.data.data.course.assignmentsConnection.nodes);
+            if (response.data.data.course.assignmentsConnection.pageInfo.hasNextPage) {
+                variables.nextPage = response.data.data.course.assignmentsConnection.pageInfo.endCursor;
+            } else {
+                nextPage = false;
+            }
+        } catch (error) {
+            throw error
+        }
+    }
+    const filteredAssignments = assignments.filter(assignment => {
+        if (assignment.dueAt) {
+            const date1 = new Date(data.due_Date);
+            const date2 = new Date(assignment.dueAt.split('T')[0]);
+
+            if (date2.getTime() <= date1.getTime()) {
+                return assignment;
+            }
+        }
+    });
+    return filteredAssignments;
 }
 
 async function getNoSubmissionAssignments(domain, courseID, token, graded) {
@@ -737,5 +805,5 @@ async function getNonModuleAssignments(domain, courseID, token) {
 // }) ();
 
 module.exports = {
-    createAssignments, deleteAssignments, getAssignments, getNoSubmissionAssignments, getUnpublishedAssignments, deleteNoSubmissionAssignments, getNonModuleAssignments, getAssignmentsToMove, moveAssignmentToGroup
+    createAssignments, deleteAssignments, getAssignments, getNoSubmissionAssignments, getUnpublishedAssignments, deleteNoSubmissionAssignments, getNonModuleAssignments, getAssignmentsToMove, moveAssignmentToGroup, getOldAssignmentsGraphQL
 }
