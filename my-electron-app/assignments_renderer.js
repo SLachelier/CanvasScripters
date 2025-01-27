@@ -170,7 +170,12 @@ function assignmentCreator(e) {
     });
 
     const courseID = document.querySelector('#course-id');
-    checkCourseID(courseID, eContent);
+    courseID.addEventListener('change', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        checkCourseID(courseID, eContent);
+    })
 
     const createBtn = assignmentCreatorForm.querySelector('#action-btn');
     createBtn.addEventListener('click', async function (e) {

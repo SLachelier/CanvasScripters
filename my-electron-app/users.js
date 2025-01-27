@@ -132,7 +132,6 @@ function generateRandomUser() {
         },
         pseudonym: {
             unique_id: firstName + lastName + Math.floor(Math.random() * 1000),
-            password: 12341234,
             send_confirmation: false
         },
         communication_channel: {
@@ -168,7 +167,6 @@ async function addStudents(data) {
             },
             pseudonym: {
                 unique_id: theUser.login_id,
-                password: theUser.password,
                 send_confirmation: false
             }
         }
@@ -189,7 +187,6 @@ async function addTeachers(data) {
             },
             pseudonym: {
                 unique_id: theUser.login_id,
-                password: theUser.password,
                 send_confirmation: false
             }
         }

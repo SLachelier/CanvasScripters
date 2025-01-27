@@ -598,6 +598,7 @@ async function createSupportCourse(e) {
             })
         } catch (error) {
             console.log('Error: ', error);
+            errorHandler(error, responseContainer);
         } finally {
             createBtn.disabled = false;
         }

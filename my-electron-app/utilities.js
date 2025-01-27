@@ -289,7 +289,8 @@ async function errorCheck(request) {
                 case '401':
                 case '404':
                     newError = {
-                        status: `${error.response.status} - ${error.response.statusText}`,
+                        status: error.response.status,
+                        statusText: error.response.statusText,
                         message: error.message,
                         request: error.config.url
                     }

@@ -143,7 +143,7 @@ async function checkCommDomain(data) {
         } catch (error) {
             if (error.message.includes('ECONNRESET')) {
                 throw new Error(error.message);
-            } else if (response && response.status === 502) {
+            } else if (error.status === 502) {
                 if (retryCounter > 3) {
                     console.log('Retry has failed more than 4 times. Returning found emails and exiting.');
                     throw new Error('Retry has failed more than 4 times. Returning found emails and exiting.');

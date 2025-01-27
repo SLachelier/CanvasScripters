@@ -43,7 +43,7 @@ const createWindow = () => {
         }
     })
 
-    // mainWindow.webContents.openDevTools();
+    mainWindow.webContents.openDevTools();
     mainWindow.loadFile('index.html');
 }
 
@@ -226,12 +226,10 @@ app.whenReady().then(() => {
 
         let requests = [];
         for (let i = 0; i < data.number; i++) {
-            requests.push(() => request(data));
+            requests.push({ id: i + 1, request: () => request(data) });
         }
 
         const batchResponse = await batchHandler(requests);
-
-
         return batchResponse;
     });
 
@@ -565,7 +563,7 @@ app.whenReady().then(() => {
         try {
             response = await createSupportCourse(data);
         } catch (error) {
-            throw error;
+            throw `${error.message}`;
         }
 
         data.course_id = response.id;
@@ -1343,12 +1341,13 @@ async function batchHandler(requests, batchSize = 35, timeDelay = 2000) {
     let myRequests = requests
     let successful = [];
     let failed = [];
+    let retryRequests = [];
     let counter = 0;
 
     const processBatchRequests = async (myRequests) => {
         console.log('Inside processBatchRequests');
 
-        failed = []; // zeroing out failed requests
+        retryRequests = []; // zeroing out failed requests
         // const results = [];
         for (let i = 0; i < myRequests.length; i += batchSize) {
             const batch = myRequests.slice(i, i + batchSize);
@@ -1374,23 +1373,29 @@ async function batchHandler(requests, batchSize = 35, timeDelay = 2000) {
         function handleError(error, request) {
             return {
                 id: request.id,
-                reason: error.message
+                reason: error.message,
+                status: error.status
             };
         }
     }
     
+    const filterStatus = [
+        404, 401, 422
+    ];
+
     do {
-        if (failed.length > 0) {
-            const retryRequests = failed.filter(request => !request.reason.includes('404') && !request.reason.includes('401') && !request.reason.includes('422')); // don't retry for 401, 404 or 422 errors
+        if (retryRequests.length > 0) {
             myRequests = requests.filter(request => retryRequests.some(r => r.id === request.id)); // find the request data to process the failed requests
             counter++;
             await waitFunc(timeDelay); // wait for the time delay before attempting a retry
             await processBatchRequests(myRequests);
+            retryRequests = failed.filter(request => !filterStatus.includes(request.status)); // don't retry for 401, 404 or 422 errors
         } else {
             await processBatchRequests(myRequests); 
+            retryRequests = failed.filter(request => !filterStatus.includes(request.status)); // don't retry for 401, 404 or 422 errors
         }
     }
-    while (counter < 3 && failed.length > 0) // loop through if there are failed requests until the counter is ove 3
+    while (counter < 3 && retryRequests.length > 0) // loop through if there are failed requests until the counter is ove 3
 
     return {successful, failed};
 }

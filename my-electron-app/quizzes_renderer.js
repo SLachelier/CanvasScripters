@@ -137,7 +137,16 @@ async function createQuiz(e) {
         const course_id = courseID.value.trim();
         const quiz_type = createQuizForm.querySelector('#quiz-type').value;
         const publish = createQuizForm.querySelector('#quiz-publish').checked;
+        const numerical_question = createQuizForm.querySelector('#numerical_question').checked;
+        const multiple_dropdowns_question = createQuizForm.querySelector('#multiple_dropdowns_question').checked;
+        const multiple_choice_question = createQuizForm.querySelector('#multiple_choice_question').checked;
+        const multiple_answers_question = createQuizForm.querySelector('#multiple_answers_question').checked;
+        const matching_question = createQuizForm.querySelector('#matching_question').checked;
+        const fill_in_multiple_blanks_question = createQuizForm.querySelector('#fill_in_multiple_blanks_question').checked;
+        const file_upload_question = createQuizForm.querySelector('#file_upload_question').checked;
+        const essay_question = createQuizForm.querySelector('#essay_question').checked;
         const num_quizzes = numOfQuizzes.value.trim();
+
 
         const data = {
             domain,
@@ -145,6 +154,14 @@ async function createQuiz(e) {
             course_id,
             quiz_type,
             publish,
+            essay_question,
+            file_upload_question,
+            fill_in_multiple_blanks_question,
+            matching_question,
+            multiple_answers_question,
+            multiple_choice_question,
+            multiple_dropdowns_question,
+            numerical_question,
             num_quizzes
         };
 
