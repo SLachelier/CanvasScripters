@@ -232,19 +232,19 @@ async function awsReset(data) {
             error: null
         };
     } catch (error) {
-        if (error.status.includes('404')) {
+        if (error.status === 404) {
             return {
                 status: '404',
                 reset: 0,
                 error: null
             };
-        } else if (error.status.includes('401')) {
+        } else if (error.status === 401) {
             return {
                 status: '401',
                 reset: 0,
                 error: null
             };
-        } else if (error.status.includes('422')) {
+        } else if (error.status === 422) {
             return {
                 status: '422',
                 reset: 0,
