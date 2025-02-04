@@ -932,6 +932,14 @@ app.whenReady().then(() => {
                 course_id: data.course_id,
                 quiz_type: data.quiz_type,
                 publish: data.publish,
+                essay_question: data.essay_question,
+                file_upload_question: data.file_upload_question,
+                fill_in_multiple_blanks_question: data.fill_in_multiple_blanks_question,
+                matching_question: data.matching_question,
+                multiple_answers_question: data.multiple_answers_question,
+                multiple_choice_question: data.multiple_choice_question,
+                multiple_dropdowns_question: data.multiple_dropdowns_question,
+                numerical_question: data.numerical_question,
                 num_quizzes: data.num_quizzes,
                 quiz_title: `Quiz ${i + 1}`
             };
@@ -939,6 +947,10 @@ app.whenReady().then(() => {
         }
 
         const batchResponse = await batchHandler(requests);
+        const quizIDs = batchResponse.successful.map(quiz => quiz.value.id);
+
+        // Use the created quiz ids to add questions
+        addQuizQuestions(quizIDs, data);
         return batchResponse;
     })
     
@@ -1144,6 +1156,10 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
 })
+
+async function addQuizQuestions(quizIDs, data) {
+    
+}
 
 async function enableBlueprint(data) {
     try {
