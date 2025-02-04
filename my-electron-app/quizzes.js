@@ -17,6 +17,7 @@ async function createQuiz(data) {
         data: {
             "quiz": {
                 "title": data.quiz_title,
+                "quiz_type": data.quiz_type,
                 "allowed_attempts": -1,
                 "published": data.publish
             }
