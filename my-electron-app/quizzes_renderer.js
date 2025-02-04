@@ -132,6 +132,8 @@ async function createQuiz(e) {
         e.preventDefault();
         e.stopPropagation();
 
+        const responseContainer = eContent.querySelector('#response-container');
+
         const domain = document.querySelector('#domain').value.trim();
         const token = document.querySelector('#token').value.trim();
         const course_id = courseID.value.trim();
@@ -147,6 +149,14 @@ async function createQuiz(e) {
         const essay_question = createQuizForm.querySelector('#essay_question').checked;
         const num_quizzes = numOfQuizzes.value.trim();
 
+        const progressDiv = eContent.querySelector('#progress-div');
+        const progressBar = progressDiv.querySelector('.progress-bar');
+        const progressInfo = eContent.querySelector('#progress-info');
+
+        // clean environment
+        progressDiv.hidden = false;
+        progressBar.style.width = '0%';
+        progressInfo.innerHTML = '';
 
         const data = {
             domain,
@@ -165,6 +175,21 @@ async function createQuiz(e) {
             num_quizzes
         };
 
-        const response = await window.axios.createQuiz(data);
+        try {
+            const createQuizzesResponse = await window.axios.createQuiz(data);
+            if (createQuizzesResponse.successful.length > 0) {
+                progressInfo.innerHTML = `Successfully created ${createQuizzesResponse.successful.length} quizzes.`;
+            }
+            if (createQuizzesResponse.failed.length > 0) {
+                progressInfo.innerHTML += `Failed to create ${createQuizzesResponse.failed.length} quizzes.`;
+                progressBar.parentElement.hidden = true;
+                errorHandler({ message: `${createQuizzesResponse.failed[0].reason}` }, progressInfo);
+            }
+        } catch (error) {
+            progressBar.parentElement.hidden = true;
+            errorHandler(error, progressInfo);
+        } finally {
+            createBtn.disabled = false;
+        }
     });
 }
