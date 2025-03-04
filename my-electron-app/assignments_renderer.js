@@ -128,14 +128,14 @@ function assignmentCreator(e) {
                     <button id="action-btn" class="btn btn-primary mt-3">Create</button>
                 </div>
             </div>
-            <div hidden id="progress-div">
-                <p id="progress-info"></p>
+            <div hidden id="assignment-creator-progress-div">
+                <p id="assignment-creator-progress-info"></p>
                 <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-                    
+
                     <div class="progress-bar" style="width: 0%"></div>
                 </div>
             </div>
-            <div id="response-container" class="mt-3">
+            <div id="assignment-creator-response-container" class="mt-3">
             </div>
         `;
         eContent.append(assignmentCreatorForm);
@@ -185,7 +185,7 @@ function assignmentCreator(e) {
         createBtn.disabled = true;
 
         // get values and inputs
-        const responseContainer = eContent.querySelector('#response-container');
+        const assigmentCreatorResponseContainer = assignmentCreatorForm.querySelector('#assignment-creator-response-container');
         const domain = document.querySelector('#domain');
         const apiToken = document.querySelector('#token');
         const checkedSubTypes = submissionTypes.querySelectorAll('input[type="checkbox"]:checked');
@@ -199,14 +199,14 @@ function assignmentCreator(e) {
         const anonymous = document.querySelector('#assignment-anonymous').checked;
         const gradeType = document.querySelector('#assignment-grade-type').value;
 
-        const progressDiv = eContent.querySelector('#progress-div');
-        const progressBar = progressDiv.querySelector('.progress-bar');
-        const progressInfo = eContent.querySelector('#progress-info');
+        const assignmentCreatorProgressDiv = document.querySelector('#assignment-creator-progress-div');
+        const assignmentCreatorProgressBar = assignmentCreatorProgressDiv.querySelector('.progress-bar');
+        const assignmentCreatorProgressInfo = document.querySelector('#assignment-creator-progress-info');
 
         // clean environment
-        progressDiv.hidden = false;
-        progressBar.style.width = '0%';
-        progressInfo.innerHTML = '';
+        assignmentCreatorProgressDiv.hidden = false;
+        assignmentCreatorProgressBar.style.width = '0%';
+        assignmentCreatorProgressInfo.innerHTML = '';
 
         // data to be used to create assignments
         const requestData = {
@@ -225,26 +225,26 @@ function assignmentCreator(e) {
 
 
         window.progressAPI.onUpdateProgress((progress) => {
-            progressBar.style.width = `${progress}%`;
+            assignmentCreatorProgressBar.style.width = `${progress}%`;
         });
 
         try {
             const createAssignmentResponse = await window.axios.createAssignments(requestData);
             if (createAssignmentResponse.successful.length > 0) {
-                progressInfo.innerHTML = `Successfully created ${createAssignmentResponse.successful.length} assignments.`;
+                assignmentCreatorProgressInfo.innerHTML = `Successfully created ${createAssignmentResponse.successful.length} assignments.`;
             }
             if (createAssignmentResponse.failed.length > 0) {
-                progressInfo.innerHTML += `Failed to create ${createAssignmentResponse.failed.length} assignments.`;
-                progressBar.parentElement.hidden = true;
-                errorHandler({ message: `${createAssignmentResponse.failed[0].reason}` }, progressInfo);
+                assignmentCreatorProgressInfo.innerHTML += `Failed to create ${createAssignmentResponse.failed.length} assignments.`;
+                assignmentCreatorProgressBar.parentElement.hidden = true;
+                errorHandler({ message: `${createAssignmentResponse.failed[0].reason}` }, assignmentCreatorProgressInfo);
                 // for (let failure of createAssignmentResponse.failed) {
                 //     errorHandler({ message: `${failure.reason}` }, progressInfo);
                 // }
                 // <span class='error'>${createAssignmentResponse.failed[0].reason}.</span>;
             }
         } catch (error) {
-            progressBar.parentElement.hidden = true;
-            errorHandler(error, progressInfo);
+            assignmentCreatorProgressBar.parentElement.hidden = true;
+            errorHandler(error, assignmentCreatorProgressInfo);
         } finally {
             createBtn.disabled = false;
         }
@@ -367,14 +367,14 @@ function noSubmissionAssignments(e) {
                     <button id="action-btn" class="btn btn-primary mt-3">Check</button>
                 </div>
             </div>
-            <div hidden id="progress-div">
-                <p id="progress-info"></p>
+            <div hidden id="nsa-progress-div">
+                <p id="nsa-progress-info"></p>
                 <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
     
                     <div class="progress-bar" style="width: 0%"></div>
                 </div>
             </div>
-            <div id="response-container" class="mt-5">
+            <div id="nsa-response-container" class="mt-5">
             </div>
         `;
 
@@ -404,36 +404,37 @@ function noSubmissionAssignments(e) {
         checkBtn.disabled = true;
         console.log('renderer > noSubmissionAssignments > check');
 
-        const responseContainer = eContent.querySelector('#response-container');
-        const domain = document.querySelector('#domain');
-        const apiToken = document.querySelector('#token');
-        const progressDiv = eContent.querySelector('#progress-div');
-        const progressBar = progressDiv.querySelector('.progress-bar');
-        const progressInfo = eContent.querySelector('#progress-info');
+        const nsaResponseContainer = document.querySelector('#nsa-response-container');
+        const domain = document.querySelector('#domain').value.trim();
+        const token = document.querySelector('#token').value.trim();
+        const course_id = courseID.value.trim();
+        const nsaProgressDiv = document.querySelector('#nsa-progress-div');
+        const nsaProgressBar = nsaProgressDiv.querySelector('.progress-bar');
+        const nsaProgressInfo = document.querySelector('#nsa-progress-info');
 
 
         // clean environment
-        responseContainer.innerHTML = '';
-        progressDiv.hidden = false;
-        progressBar.parentElement.hidden = true;
-        progressBar.style.width = '0%';
-        progressInfo.innerHTML = 'Checking...';
+        nsaResponseContainer.innerHTML = '';
+        nsaProgressDiv.hidden = false;
+        nsaProgressBar.parentElement.hidden = true;
+        nsaProgressBar.style.width = '0%';
+        nsaProgressInfo.innerHTML = 'Checking...';
 
 
         const requestData = {
-            domain: domain.value.trim(),
-            token: apiToken.value.trim(),
-            course: courseID.value.trim(),
+            domain,
+            token,
+            course_id,
             graded: gradedSubmissions
         }
 
         let hasError = false;
         try {
             assignments = await window.axios.getNoSubmissionAssignments(requestData);
-            progressInfo.innerHTML = 'Done';
+            nsaProgressInfo.innerHTML = 'Done';
         }
         catch (error) {
-            errorHandler(error, progressInfo)
+            errorHandler(error, nsaProgressInfo)
             hasError = true;
         } finally {
             checkBtn.disabled = false;
@@ -445,10 +446,10 @@ function noSubmissionAssignments(e) {
 
             //const eContent = document.querySelector('#endpoint-content');
             let gradedText = gradedSubmissions ? 'no submissions.' : 'no submissions or grades.';
-            responseContainer.innerHTML = `
+            nsaResponseContainer.innerHTML = `
                         <div>
                             <div class="row align-items-center">
-                                <div id="response-details" class="col-auto">
+                                <div id="nsa-response-details" class="col-auto">
                                     <span>Found ${assignments.length} assignments with ${gradedText}</span>
                                 </div>
 
@@ -464,7 +465,7 @@ function noSubmissionAssignments(e) {
                         </div>    
                     `;
 
-            const responseDetails = responseContainer.querySelector('#response-details');
+            const nsaResponseDetails = nsaResponseContainer.querySelector('#nsa-response-details');
 
             const cancelBtn = document.querySelector('#cancel-btn');
             cancelBtn.addEventListener('click', (e) => {
@@ -472,7 +473,7 @@ function noSubmissionAssignments(e) {
                 e.stopPropagation();
 
                 courseID.value = '';
-                responseContainer.innerHTML = '';
+                nsaResponseContainer.innerHTML = '';
                 checkBtn.disabled = false;
                 //clearData(courseID, responseContent);
             });
@@ -484,9 +485,9 @@ function noSubmissionAssignments(e) {
 
                 console.log('renderer > getNoSubmissionAssignments > removeBtn');
 
-                responseDetails.innerHTML = ``;
-                progressBar.parentElement.hidden = false;
-                progressInfo.innerHTML = `Removing ${assignments.length} assignments...`;
+                nsaResponseDetails.innerHTML = ``;
+                nsaProgressBar.parentElement.hidden = false;
+                nsaProgressInfo.innerHTML = `Removing ${assignments.length} assignments...`;
 
                 const assignmentIDs = assignments.map((assignment) => {
                     return {
@@ -496,27 +497,28 @@ function noSubmissionAssignments(e) {
                 });
 
                 const messageData = {
-                    url: `https://${domain.value}/api/v1/courses/${courseID.value.trim()}/assignments`,
-                    token: apiToken.value,
+                    domain,
+                    token,
+                    course_id,
                     number: assignmentIDs.length,
                     assignments: assignmentIDs
                 }
 
                 window.progressAPI.onUpdateProgress((progress) => {
-                    progressBar.style.width = `${progress}%`;
+                    nsaProgressBar.style.width = `${progress}%`;
                 });
 
                 try {
                     const deleteNoSubmissionASsignments = await window.axios.deleteAssignments(messageData);
 
                     if (deleteNoSubmissionASsignments.successful.length > 0) {
-                        progressInfo.innerHTML = `Successfully removed ${deleteNoSubmissionASsignments.successful.length} assignments.`;
+                        nsaProgressInfo.innerHTML = `Successfully removed ${deleteNoSubmissionASsignments.successful.length} assignments.`;
                     }
                     if (deleteNoSubmissionASsignments.failed.length > 0) {
-                        progressInfo.innerHTML = `Failed to remove ${deleteNoSubmissionASsignments.failed.length} assignments.`;
+                        nsaProgressInfo.innerHTML = `Failed to remove ${deleteNoSubmissionASsignments.failed.length} assignments.`;
                     }
                 } catch (error) {
-                    errorHandler(error, progressInfo)
+                    errorHandler(error, nsaProgressInfo)
                 } finally {
                     checkBtn.disabled = false;
                 }
@@ -586,13 +588,13 @@ function unpublishedAssignments(e) {
                     <button id="action-btn" class="btn btn-primary mt-3">Check</button>
                 </div>
             </div>
-            <div hidden id="progress-div">
-                <p id="progress-info"></p>
+            <div hidden id="dua-progress-div">
+                <p id="dua-progress-info"></p>
                 <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
                     <div class="progress-bar" style="width: 0%"></div>
                 </div>
             </div>
-            <div id="response-container" class="mt-3">
+            <div id="dua-response-container" class="mt-3">
             </div>
         `;
 
@@ -601,7 +603,12 @@ function unpublishedAssignments(e) {
     deleteUnpublishedAssignmentsForm.hidden = false;
 
     const courseID = document.querySelector('#course-id');
-    checkCourseID(courseID, eContent);
+    courseID.addEventListener('change', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        checkCourseID(courseID, eContent);
+    });
 
     const checkBtn = deleteUnpublishedAssignmentsForm.querySelector('#action-btn');
     checkBtn.addEventListener('click', async function (e) {
@@ -611,16 +618,16 @@ function unpublishedAssignments(e) {
         checkBtn.disabled = true;
         const domain = document.querySelector('#domain').value.trim();
         const apiToken = document.querySelector('#token').value.trim();
-        const responseContainer = eContent.querySelector('#response-container');
-        const progressDiv = eContent.querySelector('#progress-div');
-        const progressBar = progressDiv.querySelector('.progress-bar');
-        const progressInfo = eContent.querySelector('#progress-info');
+        const duaResponseContainer = document.queryselector('#dua-response-container');
+        const duaProgressDiv = document.querySelector('#dua-progress-div');
+        const duaProgressBar = duaProgressDiv.querySelector('.progress-bar');
+        const duaProgressInfo = document.querySelector('#dua-progress-info');
 
         // clean environment
-        progressDiv.hidden = false;
-        progressBar.style.width = '0%';
-        progressBar.parentElement.hidden = true;
-        progressInfo.innerHTML = "Checking...";
+        duaProgressDiv.hidden = false;
+        duaProgressBar.style.width = '0%';
+        duaProgressBar.parentElement.hidden = true;
+        duaProgressInfo.innerHTML = "Checking...";
 
         const requestData = {
             domain: domain,
@@ -631,9 +638,9 @@ function unpublishedAssignments(e) {
         let hasError = false;
         try {
             assignments = await window.axios.getUnpublishedAssignments(requestData);
-            progressInfo.innerHTML = 'Done';
+            duaProgressInfo.innerHTML = 'Done';
         } catch (error) {
-            errorHandler(error, progressInfo);
+            errorHandler(error, duaProgressInfo);
             hasError = true;
         } finally {
             checkBtn.disabled = false;
@@ -644,10 +651,10 @@ function unpublishedAssignments(e) {
             console.log('found assignments', assignments.length);
 
             //const eContent = document.querySelector('#endpoint-content');
-            responseContainer.innerHTML = `
+            duaResponseContainer.innerHTML = `
                 <div>
                     <div class="row align-items-center">
-                        <div id="response-details" class="col-auto">
+                        <div id="dua-response-details" class="col-auto">
                             <span>Found ${assignments.length} unpublished assignments.</span>
                         </div>
 
@@ -663,7 +670,7 @@ function unpublishedAssignments(e) {
                 </div>    
             `;
 
-            const responseDetails = responseContainer.querySelector('#response-details');
+            const duaResponseDetails = responseContainer.querySelector('#dua-response-details');
 
             const cancelBtn = document.querySelector('#cancel-btn');
             cancelBtn.addEventListener('click', (e) => {
@@ -671,7 +678,7 @@ function unpublishedAssignments(e) {
                 e.stopPropagation();
 
                 courseID.value = '';
-                responseContainer.innerHTML = '';
+                duaResponseContainer.innerHTML = '';
                 checkBtn.disabled = false;
                 //clearData(courseID, responseContent);
             });
@@ -684,10 +691,10 @@ function unpublishedAssignments(e) {
                 console.log('inside remove');
 
                 // responseDetails.innerHTML = `Removing ${assignments.length} assignments...`;
-                responseDetails.innerHTML = ``;
-                progressInfo.innerHTML = `Deleting ${assignments.length} assignments...`;
-                progressBar.style.width = '0%';
-                progressBar.parentElement.hidden = false;
+                duaResponseDetails.innerHTML = ``;
+                dueProgressInfo.innerHTML = `Deleting ${assignments.length} assignments...`;
+                duaProgressBar.style.width = '0%';
+                duaProgressBar.parentElement.hidden = false;
 
 
                 // remapping to only include the id from the graphql response
@@ -709,19 +716,19 @@ function unpublishedAssignments(e) {
 
 
                 window.progressAPI.onUpdateProgress((progress) => {
-                    progressBar.style.width = `${progress}%`;
+                    duaProgressBar.style.width = `${progress}%`;
                 });
 
                 try {
                     const deleteUnpublishedAssignments = await window.axios.deleteAssignments(messageData);
                     if (deleteUnpublishedAssignments.successful.length > 0) {
-                        progressInfo.innerHTML = `Successfully removed ${deleteUnpublishedAssignments.successful.length} assignments.`;
+                        duaProgressInfo.innerHTML = `Successfully removed ${deleteUnpublishedAssignments.successful.length} assignments.`;
                     }
                     if (deleteUnpublishedAssignments.failed.length > 0) {
-                        progressInfo.innerHTML = `Failed to remove ${deleteUnpublishedAssignments.failed.length} assignments.`;
+                        duaProgressInfo.innerHTML = `Failed to remove ${deleteUnpublishedAssignments.failed.length} assignments.`;
                     }
                 } catch (error) {
-                    errorHandler(error, progressInfo);
+                    errorHandler(error, duaProgressInfo);
                 } finally {
                     checkBtn.disabled = false;
                 }
@@ -876,14 +883,14 @@ function nonModuleAssignments(e) {
                     <button id="action-btn" class="btn btn-primary mt-3">Check</button>
                 </div>
             </div>
-            <div hidden id="progress-div">
-                <p id="progress-info"></p>
+            <div hidden id="danim-progress-div">
+                <p id="danim-progress-info"></p>
                 <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
     
                     <div class="progress-bar" style="width: 0%"></div>
                 </div>
             </div>
-            <div id="response-container" class="mt-5">
+            <div id="danim-response-container" class="mt-5">
             </div>
         `;
 
@@ -893,7 +900,13 @@ function nonModuleAssignments(e) {
     //checks for valid input in the course id field
 
     const courseID = eContent.querySelector('#course');
-    checkCourseID(courseID, eContent);
+    courseID.addEventListener('change', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+
+        checkCourseID(courseID, eContent);
+
+    })
 
     const checkBtn = deleteAssignmentsNotInModulesForm.querySelector('#action-btn');
     checkBtn.addEventListener('click', async function (e) {
@@ -903,18 +916,18 @@ function nonModuleAssignments(e) {
         checkBtn.disabled = true;
         console.log('Inside renderer check');
 
-        const responseContainer = eContent.querySelector('#response-container');
+        const danimResponseContainer = document.queryselector('#danim-response-container');
         const domain = document.querySelector('#domain').value.trim();
         const apiToken = document.querySelector('#token').value.trim();
-        const progressDiv = eContent.querySelector('#progress-div');
-        const progressBar = progressDiv.querySelector('.progress-bar');
-        const progressInfo = eContent.querySelector('#progress-info');
+        const danimProgressDiv = document.querySelector('#danim-progress-div');
+        const danimProgressBar = danimProgressDiv.querySelector('.progress-bar');
+        const danimProgressInfo = document.querySelector('#danim-progress-info');
 
         // clean environment
-        progressDiv.hidden = false;
-        progressBar.parentElement.hidden = true;
-        progressBar.style.width = '0%';
-        progressInfo.innerHTML = "Checking...";
+        danimProgressDiv.hidden = false;
+        danimProgressBar.parentElement.hidden = true;
+        danimProgressBar.style.width = '0%';
+        danimProgressInfo.innerHTML = "Checking...";
 
         const requestData = {
             domain: domain,
@@ -925,9 +938,9 @@ function nonModuleAssignments(e) {
         let hasError = false;
         try {
             assignments = await window.axios.getNonModuleAssignments(requestData);
-            progressInfo.innerHTML = 'Done';
+            danimProgressInfo.innerHTML = 'Done';
         } catch (error) {
-            errorHandler(error, progressInfo);
+            errorHandler(error, danimProgressInfo);
             hasError = true;
         } finally {
             checkBtn.disabled = false;
@@ -937,10 +950,10 @@ function nonModuleAssignments(e) {
             console.log('found assignments', assignments.length);
 
             //const eContent = document.querySelector('#endpoint-content');
-            responseContainer.innerHTML = `
+            danimResponseContainer.innerHTML = `
                 <div>
                     <div class="row align-items-center">
-                        <div id="response-details" class="col-auto">
+                        <div id="danim-response-details" class="col-auto">
                             <span>Found ${assignments.length} assignments not in modules.</span>
                         </div>
 
@@ -962,7 +975,7 @@ function nonModuleAssignments(e) {
                 e.stopPropagation();
 
                 courseID.value = '';
-                responseContainer.innerHTML = '';
+                danimResponseContainer.innerHTML = '';
                 checkBtn.disabled = false;
                 //clearData(courseID, responseContent);
             });
@@ -974,11 +987,11 @@ function nonModuleAssignments(e) {
 
                 console.log('inside remove');
 
-                const responseDetails = responseContainer.querySelector('#response-details');
-                responseDetails.innerHTML = ``;
+                const danimResponseDetails = responseContainer.querySelector('#danim-response-details');
+                danimResponseDetails.innerHTML = ``;
 
-                progressBar.parentElement.hidden = false;
-                progressInfo.innerHTML = `Removing ${assignments.length} assignments...`;
+                danimProgressBar.parentElement.hidden = false;
+                danimProgressInfo.innerHTML = `Removing ${assignments.length} assignments...`;
 
                 // const messageData = {
                 //     url: `https://${domain}/api/v1/courses/${courseID}/assignments`,
@@ -994,19 +1007,19 @@ function nonModuleAssignments(e) {
                 }
 
                 window.progressAPI.onUpdateProgress((progress) => {
-                    progressBar.style.width = `${progress}%`;
+                    danimProgressBar.style.width = `${progress}%`;
                 });
 
                 try {
                     const deleteNonModuleAssignments = await window.axios.deleteAssignments(messageData);
                     if (deleteNonModuleAssignments.successful.length > 0) {
-                        progressInfo.innerHTML = `Successfully removed ${deleteNonModuleAssignments.successful.length} assignments.`;
+                        danimProgressInfo.innerHTML = `Successfully removed ${deleteNonModuleAssignments.successful.length} assignments.`;
                     }
                     if (deleteNonModuleAssignments.failed.length > 0) {
-                        progressInfo.innerHTML = `Failed to remove ${deleteNonModuleAssignments.failed.length} assignments.`;
+                        danimProgressInfo.innerHTML = `Failed to remove ${deleteNonModuleAssignments.failed.length} assignments.`;
                     }
                 } catch (error) {
-                    errorHandler(error, progressInfo);
+                    errorHandler(error, danimProgressInfo);
                 } finally {
                     checkBtn.disabled = false;
                 }
@@ -1051,13 +1064,13 @@ function deleteOldAssignments(e) {
                     <button id="check-old-assignments-btn" class="btn btn-primary mt-3" disabled>Check</button>
                 </div>
             </div>
-            <div hidden id="progress-div">
-                <p id="progress-info"></p>
+            <div hidden id="doa-progress-div">
+                <p id="doa-progress-info"></p>
                 <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
                     <div class="progress-bar" style="width: 0%"></div>
                 </div>
             </div>
-            <div id="response-container" class="mt-3">
+            <div id="doa-response-container" class="mt-3">
             </div>
         `;
 
@@ -1081,10 +1094,10 @@ function deleteOldAssignments(e) {
         e.stopPropagation();
         deleteOldAssignmentsBtn.disabled = true;
 
-        const responseContainer = eContent.querySelector('#response-container');
-        const progressDiv = eContent.querySelector('#progress-div');
-        const progressBar = progressDiv.querySelector('.progress-bar');
-        const progressInfo = eContent.querySelector('#progress-info');
+        const doaResponseContainer = document.queryselector('#doa-response-container');
+        const doaProgressDiv = document.querySelector('#doa-progress-div');
+        const doaProgressBar = doaProgressDiv.querySelector('.progress-bar');
+        const doaProgressInfo = document.querySelector('#doa-progress-info');
 
         if (dueDate.value !== '') {
 
@@ -1094,11 +1107,11 @@ function deleteOldAssignments(e) {
             const due_Date = deleteOldAssignmentsForm.querySelector('#due-date-input').value;
 
             // clean environment
-            responseContainer.innerHTML = '';
-            progressDiv.hidden = false;
-            progressBar.parentElement.hidden = true;
-            progressBar.style.width = '0%';
-            progressInfo.innerHTML = 'Checking...';
+            doaResponseContainer.innerHTML = '';
+            doaProgressDiv.hidden = false;
+            doaProgressBar.parentElement.hidden = true;
+            doaProgressBar.style.width = '0%';
+            doaProgressInfo.innerHTML = 'Checking...';
 
             const requestData = {
                 domain,
@@ -1115,18 +1128,18 @@ function deleteOldAssignments(e) {
                 assignments = await window.axios.getOldAssignments(requestData);
             } catch (error) {
                 hasError = true;
-                errorHandler(error, progressInfo);
+                errorHandler(error, doaProgressInfo);
             } finally {
                 deleteOldAssignmentsBtn.disabled = false;
             }
 
             if (!hasError) {
-                progressInfo.innerHTML = '';
+                doaProgressInfo.innerHTML = '';
                 if (assignments.length < 1) {
-                    responseContainer.innerHTML = `
+                    doaResponseContainer.innerHTML = `
                         <div>
                             <div class="row align-items-center">
-                                <div id="response-details" class="col-auto">
+                                <div id="doa-response-details" class="col-auto">
                                     <span>Didn't find any assignments due at or before the current selected date.</span>
                                 </div>
                             </div>
@@ -1135,10 +1148,10 @@ function deleteOldAssignments(e) {
                     console.log('found old assignments', assignments.length);
 
                     //const eContent = document.querySelector('#endpoint-content');
-                    responseContainer.innerHTML = `
+                    doaResponseContainer.innerHTML = `
                     <div>
                         <div class="row align-items-center">
-                            <div id="response-details" class="col-auto">
+                            <div id="doa-response-details" class="col-auto">
                                 <span>Found ${assignments.length} old assignments.</span>
                             </div>
     
@@ -1154,7 +1167,7 @@ function deleteOldAssignments(e) {
                     </div>    
                     `;
 
-                    const responseDetails = responseContainer.querySelector('#response-details');
+                    const doaResponseDetails = responseContainer.querySelector('#doa-response-details');
 
                     const cancelBtn = document.querySelector('#cancel-btn');
                     cancelBtn.addEventListener('click', (e) => {
@@ -1162,7 +1175,7 @@ function deleteOldAssignments(e) {
                         e.stopPropagation();
 
                         courseID.value = '';
-                        responseContainer.innerHTML = '';
+                        doaResponseContainer.innerHTML = '';
                         deleteOldAssignmentsBtn.disabled = false;
                         //clearData(courseID, responseContent);
                     });
@@ -1175,10 +1188,10 @@ function deleteOldAssignments(e) {
                         console.log('inside remove');
 
                         // responseDetails.innerHTML = `Removing ${assignments.length} assignments...`;
-                        responseDetails.innerHTML = ``;
-                        progressInfo.innerHTML = `Deleting ${assignments.length} assignments...`;
-                        progressBar.style.width = '0%';
-                        progressBar.parentElement.hidden = false;
+                        doaResponseDetails.innerHTML = ``;
+                        doaProgressInfo.innerHTML = `Deleting ${assignments.length} assignments...`;
+                        doaProgressBar.style.width = '0%';
+                        doaProgressBar.parentElement.hidden = false;
 
 
                         // remapping to only include the id from the graphql response
@@ -1201,19 +1214,19 @@ function deleteOldAssignments(e) {
 
 
                         window.progressAPI.onUpdateProgress((progress) => {
-                            progressBar.style.width = `${progress}%`;
+                            doaProgressBar.style.width = `${progress}%`;
                         });
 
                         try {
                             const deleteOldAssignments = await window.axios.deleteAssignments(messageData);
                             if (deleteOldAssignments.successful.length > 0) {
-                                progressInfo.innerHTML = `Successfully removed ${deleteOldAssignments.successful.length} assignments.`;
+                                doaProgressInfo.innerHTML = `Successfully removed ${deleteOldAssignments.successful.length} assignments.`;
                             }
                             if (deleteOldAssignments.failed.length > 0) {
-                                progressInfo.innerHTML = `Failed to remove ${deleteOldAssignments.failed.length} assignments.`;
+                                doaProgressInfo.innerHTML = `Failed to remove ${deleteOldAssignments.failed.length} assignments.`;
                             }
                         } catch (error) {
-                            errorHandler(error, progressInfo);
+                            errorHandler(error, doaProgressInfo);
                         } finally {
                             deleteOldAssignmentsBtn.disabled = false;
                         }
@@ -1221,11 +1234,11 @@ function deleteOldAssignments(e) {
                 }
             }
         } else {
-            responseContainer.innerHTML = '';
-            progressDiv.hidden = false;
-            progressBar.parentElement.hidden = true;
-            progressBar.style.width = '0%';
-            progressInfo.innerHTML = '<span style="color: red;">Enter a valid due date</span>';
+            doaResponseContainer.innerHTML = '';
+            doaProgressDiv.hidden = false;
+            doaProgressBar.parentElement.hidden = true;
+            doaProgressBar.style.width = '0%';
+            doaProgressInfo.innerHTML = '<span style="color: red;">Enter a valid due date</span>';
 
             deleteOldAssignmentsBtn.disabled = false;
         }
@@ -1275,14 +1288,14 @@ function moveAssignmentsToSingleGroup(e) {
                     <button id="action-btn" class="btn btn-primary mt-3">Check</button>
                 </div>
             </div>
-            <div hidden id="progress-div">
-                <p id="progress-info"></p>
+            <div hidden id="mag-progress-div">
+                <p id="mag-progress-info"></p>
                 <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
     
                     <div class="progress-bar" style="width: 0%"></div>
                 </div>
             </div>
-            <div id="response-container" class="mt-5">
+            <div id="mag-response-container" class="mt-5">
             </div>
         `;
 
@@ -1297,7 +1310,12 @@ function moveAssignmentsToSingleGroup(e) {
     // 4. Loop through all assignments and move them to the first assignment group
 
     const courseID = document.querySelector('#course');
-    checkCourseID(courseID, eContent);
+    courseID.addEventListener('change', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        checkCourseID(courseID, eContent);
+    });
 
     const checkBtn = moveAssignmentsForm.querySelector('#action-btn');
     checkBtn.addEventListener('click', async function (e) {
@@ -1307,18 +1325,18 @@ function moveAssignmentsToSingleGroup(e) {
         checkBtn.disabled = true;
         console.log('Inside renderer check');
 
-        const responseContainer = eContent.querySelector('#response-container');
+        const magResponseContainer = document.queryselector('#mag-response-container');
         const domain = document.querySelector('#domain').value.trim();
         const apiToken = document.querySelector('#token').value.trim();
-        const progressDiv = eContent.querySelector('#progress-div');
-        const progressBar = progressDiv.querySelector('.progress-bar');
-        const progressInfo = eContent.querySelector('#progress-info');
+        const magProgressDiv = document.querySelector('#mag-progress-div');
+        const magProgressBar = magProgressDiv.querySelector('.progress-bar');
+        const magProgressInfo = document.querySelector('#mag-progress-info');
 
         // clean environment
-        progressDiv.hidden = false;
-        progressBar.parentElement.hidden = true;
-        progressBar.style.width = '0%';
-        progressInfo.innerHTML = "Checking...";
+        magProgressDiv.hidden = false;
+        magProgressBar.parentElement.hidden = true;
+        magProgressBar.style.width = '0%';
+        magProgressInfo.innerHTML = "Checking...";
 
         const data = {
             domain: domain,
@@ -1330,9 +1348,9 @@ function moveAssignmentsToSingleGroup(e) {
         let hasError = false;
         try {
             assignments = await window.axios.getAssignmentsToMove(data);
-            progressInfo.innerHTML = 'Done';
+            magProgressInfo.innerHTML = 'Done';
         } catch (error) {
-            errorHandler(error, progressInfo);
+            errorHandler(error, magProgressInfo);
             hasError = true;
         } finally {
             checkBtn.disabled = false;
@@ -1345,10 +1363,10 @@ function moveAssignmentsToSingleGroup(e) {
             console.log('found assignments', assignments.length);
 
             //const eContent = document.querySelector('#endpoint-content');
-            responseContainer.innerHTML = `
+            magResponseContainer.innerHTML = `
                 <div>
                     <div class="row align-items-center">
-                        <div id="response-details" class="col-auto">
+                        <div id="mag-response-details" class="col-auto">
                             <span>Found ${assignments.length} assignments in the course. Do you want to move them all to a since assignment group?</span>
                         </div>
 
@@ -1364,7 +1382,7 @@ function moveAssignmentsToSingleGroup(e) {
                 </div>    
             `;
 
-            const responseDetails = responseContainer.querySelector('#response-details');
+            const magResponseDetails = magResponseContainer.querySelector('#mag-response-details');
 
             const cancelBtn = document.querySelector('#cancel-btn');
             cancelBtn.addEventListener('click', (e) => {
@@ -1372,7 +1390,7 @@ function moveAssignmentsToSingleGroup(e) {
                 e.stopPropagation();
 
                 courseID.value = '';
-                responseContainer.innerHTML = '';
+                magResponseContainer.innerHTML = '';
                 checkBtn.disabled = false;
                 //clearData(courseID, responseContent);
             });
@@ -1384,9 +1402,9 @@ function moveAssignmentsToSingleGroup(e) {
 
                 console.log('inside move');
 
-                responseDetails.innerHTML = '';
-                progressBar.parentElement.hidden = false;
-                progressInfo.innerHTML = `Moving ${assignments.length} assignments...`;
+                magResponseDetails.innerHTML = '';
+                magProgressBar.parentElement.hidden = false;
+                magProgressInfo.innerHTML = `Moving ${assignments.length} assignments...`;
 
                 // const messageData = {
                 //     url: `https://${domain}/api/v1/courses/${courseID}/assignments`,
@@ -1403,21 +1421,21 @@ function moveAssignmentsToSingleGroup(e) {
                 }
 
                 window.progressAPI.onUpdateProgress((progress) => {
-                    progressBar.style.width = `${progress}%`;
+                    magProgressBar.style.width = `${progress}%`;
                 });
 
                 try {
                     const moveAssignmentsToSingleGroup = await window.axios.moveAssignmentsToSingleGroup(messageData);
 
                     if (moveAssignmentsToSingleGroup.successful.length > 0) {
-                        progressInfo.innerHTML = `Successfully removed ${moveAssignmentsToSingleGroup.successful.length} assignments.`;
+                        magProgressInfo.innerHTML = `Successfully removed ${moveAssignmentsToSingleGroup.successful.length} assignments.`;
                     }
                     if (moveAssignmentsToSingleGroup.failed.length > 0) {
-                        progressInfo.innerHTML = `Failed to remove ${moveAssignmentsToSingleGroup.failed.length} assignments.`;
+                        magProgressInfo.innerHTML = `Failed to remove ${moveAssignmentsToSingleGroup.failed.length} assignments.`;
                     }
                     checkBtn.disabled = false;
                 } catch (error) {
-                    errorHandler(error, progressInfo)
+                    errorHandler(error, magProgressInfo)
                 } finally {
                     checkBtn.disabled = false;
                 }
