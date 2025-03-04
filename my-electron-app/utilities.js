@@ -264,7 +264,7 @@ async function errorCheck(request) {
         console.log('there was an error');
         if (error.code && (error.code === 'ERR_TLS_CERT_ALTNAME_INVALID' || error.code === 'ENOTFOUND')) {
             newError = {
-                status: '',
+                status: '404',
                 message: `${error.code} - Check the domain to make sure it's valid.`,
                 request: error.config.url
             }
