@@ -244,10 +244,10 @@ app.whenReady().then(() => {
             mainWindow.webContents.send('update-progress', (completedRequests / totalRequests) * 100);
         }
 
-        const request = async (data) => {
+        const request = async (requestData) => {
             try {
                 // const response = await window.axios.deleteTheThings(messageData);
-                const response = await assignments.deleteAssignments(data);
+                const response = await assignments.deleteAssignments(requestData);
                 return response;
             } catch (error) {
                 console.error('Error: ', error);
@@ -347,7 +347,7 @@ app.whenReady().then(() => {
         console.log('main.js > axios:getNoSubmissionAssignments');
 
         try {
-            const result = await assignments.getNoSubmissionAssignments(data.domain, data.course, data.token, data.graded);
+            const result = await assignments.getNoSubmissionAssignments(data.domain, data.course_id, data.token, data.graded);
 
             return result;
         } catch (error) {
