@@ -71,7 +71,12 @@ async function getPageViews(e) {
     getPageViewsForm.hidden = false;
 
     const uID = document.querySelector('#user-id');
-    checkCourseID(uID, eContent);
+    uID.addEventListener('change', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        checkCourseID(uID, getPageViewsForm);
+    })
 
     const searchBtn = eContent.querySelector('#action-btn');
     searchBtn.addEventListener('click', async function (e) {
