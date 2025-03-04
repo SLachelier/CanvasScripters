@@ -82,7 +82,11 @@ async function deleteConvos(e) {
     deleteSpecificConversationsForm.hidden = false;
 
     const uID = eContent.querySelector('#user-id');
-    checkCourseID(uID, eContent);
+    uID.addEventListener('change', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        checkCourseID(uID, deleteSpecificConversationsForm);
+    })
 
     // 1. Get messages
     // 2. Filter messages
