@@ -56,13 +56,13 @@ function emptyAssignmentGroups(e) {
                     <button id="action-btn" class="btn btn-primary mt-3">Check</button>
                 </div>
             </div>
-            <div hidden id="progress-div">
-                <p id="progress-info"></p>
+            <div hidden id="eag-progress-div">
+                <p id="eag-progress-info"></p>
                 <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
                     <div class="progress-bar" style="width: 0%"></div>
                 </div>
             </div>
-            <div id="response-container" class="mt-5">
+            <div id="eag-response-container" class="mt-5">
             </div>
         `;
 
@@ -83,28 +83,31 @@ function emptyAssignmentGroups(e) {
     // eResponse.classList.add('mt-5');
     // eContent.append(eResponse);
 
-    const checkBtn = deleteEmptyAssignmentGroupsForm.querySelector('#action-btn');
-    checkBtn.addEventListener('click', async function (e) {
+    const deagBtn = deleteEmptyAssignmentGroupsForm.querySelector('#action-btn');
+    deagBtn.removeEventListener('click', handleCheckBtnClick); // Remove previous event listener if any
+    deagBtn.addEventListener('click', handleCheckBtnClick);
+
+    async function handleCheckBtnClick(e) {
         e.stopPropagation();
         e.preventDefault();
 
-        checkBtn.disabled = true;
+        deagBtn.disabled = true;
         console.log('Inside renderer check');
 
-        const responseContainer = eContent.querySelector('#response-container');
+        const eagResponseContainer = eContent.querySelector('#eag-response-container');
         const domain = document.querySelector('#domain').value.trim();
         const apiToken = document.querySelector('#token').value.trim();
         const course = cID.value.trim();
-        const progressDiv = eContent.querySelector('#progress-div');
-        const progressBar = progressDiv.querySelector('.progress-bar');
-        const progressInfo = eContent.querySelector('#progress-info');
+        const eagProgressDiv = eContent.querySelector('#eag-progress-div');
+        const eagProgressBar = eagProgressDiv.querySelector('.progress-bar');
+        const eagProgressInfo = eContent.querySelector('#eag-progress-info');
 
         // clean environment
-        progressDiv.hidden = false;
-        progressBar.parentElement.hidden = true;
-        progressBar.style.width = '0%';
-        progressInfo.innerHTML = "Checking...";
-        responseContainer.innerHTML = '';
+        eagProgressDiv.hidden = false;
+        eagProgressBar.parentElement.hidden = true;
+        eagProgressBar.style.width = '0%';
+        eagProgressInfo.innerHTML = "Checking...";
+        eagResponseContainer.innerHTML = '';
 
         const requestData = {
             domain: domain,
@@ -116,12 +119,12 @@ function emptyAssignmentGroups(e) {
         let emptyAssignmentGroups = [];
         try {
             emptyAssignmentGroups = await window.axios.getEmptyAssignmentGroups(requestData);
-            progressInfo.innerHTML = 'Done'
+            eagProgressInfo.innerHTML = 'Done'
         } catch (error) {
             hasError = true;
-            errorHandler(error, progressInfo);
+            errorHandler(error, eagProgressInfo);
         } finally {
-            checkBtn.disabled = false;
+            deagBtn.disabled = false;
         }
 
 
@@ -129,10 +132,10 @@ function emptyAssignmentGroups(e) {
             console.log('found emtpy groups', emptyAssignmentGroups.length);
 
             //const eContent = document.querySelector('#endpoint-content');
-            responseContainer.innerHTML = `
+            eagResponseContainer.innerHTML = `
                 <div>
                     <div class="row align-items-center">
-                        <div id="response-details" class="col-auto">
+                        <div id="eag-response-details" class="col-auto">
                             <span>Found ${emptyAssignmentGroups.length} empty assignment groups.</span>
                         </div>
 
@@ -148,32 +151,32 @@ function emptyAssignmentGroups(e) {
                 </div>    
             `;
 
-            const cancelBtn = document.querySelector('#cancel-btn');
-            cancelBtn.addEventListener('click', (e) => {
+            const cancelDeagBtn = eagResponseContainer.querySelector('#cancel-btn');
+            cancelDeagBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
 
                 cID.value = '';
                 responseContainer.innerHTML = '';
-                checkBtn.disabled = false;
-                progressDiv.hidden = true;
+                deagBtn.disabled = false;
+                eagProgressDiv.hidden = true;
                 //clearData(courseID, responseContent);
             });
 
-            const removeBtn = document.querySelector('#remove-btn');
-            removeBtn.addEventListener('click', async (e) => {
+            const removeDeagBtn = eagResponseContainer.querySelector('#remove-btn');
+            removeDeagBtn.addEventListener('click', async (e) => {
                 e.preventDefault();
                 e.stopPropagation();
 
                 console.log('inside remove');
-                removeBtn.disabled = true;
-                cancelBtn.disabled = true;
+                removeDeagBtn.disabled = true;
+                cancelDeagBtn.disabled = true;
 
-                const responseDetails = responseContainer.querySelector('#response-details');
-                responseDetails.innerHTML = ``;
+                const eagResponseDetails = eagResponseContainer.querySelector('#eag-response-details');
+                eagResponseDetails.innerHTML = ``;
 
-                progressBar.parentElement.hidden = false;
-                progressInfo.innerHTML = `Removing empty assignment groups....`;
+                eagProgressBar.parentElement.hidden = false;
+                eagProgressInfo.innerHTML = `Removing empty assignment groups....`;
 
                 const messageData = {
                     url: `https://${domain}/api/v1/courses/${course}/assignment_groups`,
@@ -182,32 +185,32 @@ function emptyAssignmentGroups(e) {
                 }
 
                 window.progressAPI.onUpdateProgress((progress) => {
-                    progressBar.style.width = `${progress}%`;
+                    eagProgressBar.style.width = `${progress}%`;
                 });
 
                 try {
                     const result = await window.axios.deleteEmptyAssignmentGroups(messageData);
 
                     if (result.successful.length > 0) {
-                        progressInfo.innerHTML = `Successfully removed ${result.successful.length} assignment group(s).`
+                        eagProgressInfo.innerHTML = `Successfully removed ${result.successful.length} assignment group(s).`
                     }
                     if (result.failed.length > 0) {
-                        progressBar.parentElement.hidden = true;
-                        progressInfo.innerHTML += `Failed to remove ${result.failed.length} empty assignment group(s)`;
-                        errorHandler({ message: `${result.failed[0].reason}` }, progressInfo);
+                        eagProgressBar.parentElement.hidden = true;
+                        eagProgressInfo.innerHTML += `Failed to remove ${result.failed.length} empty assignment group(s)`;
+                        errorHandler({ message: `${result.failed[0].reason}` }, eagProgressInfo);
                     }
                 } catch (error) {
-                    errorHandler(error, progressInfo);
+                    errorHandler(error, eagProgressInfo);
                 } finally {
-                    removeBtn.disabled = false;
-                    cancelBtn.disabled = false;
-                    checkBtn.disabled = false;
-                    progressBar.parentElement.hidden = true;
+                    removeDeagBtn.disabled = false;
+                    cancelDeagBtn.disabled = false;
+                    deagBtn.disabled = false;
+                    eagProgressBar.parentElement.hidden = true;
                 }
                 //const result = await window.axios.deleteTheThings(messageData);
             });
         }
-    })
+    }
 }
 
 function assignmentGroupCreator(e) {
@@ -251,13 +254,13 @@ function assignmentGroupCreator(e) {
                     <button id="action-btn" class="btn btn-primary mt-3">create</button>
                 </div>
             </div>
-            <div hidden id="progress-div">
-                <p id="progress-info"></p>
+            <div hidden id="agc-progress-div">
+                <p id="agc-progress-info"></p>
                 <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
                     <div class="progress-bar" style="width: 0%"></div>
                 </div>
             </div>
-            <div id="response-container" class="mt-5">
+            <div id="agc-response-container" class="mt-5">
             </div>
         `;
 
@@ -267,27 +270,32 @@ function assignmentGroupCreator(e) {
 
     // validate course id
     const cID = eContent.querySelector('#course-id');
-    checkCourseID(cID, eContent);
-
-    const createBtn = eContent.querySelector('#action-btn');
-    createBtn.addEventListener('click', async (e) => {
+    cID.addEventListener('change', (e) => {
         e.preventDefault();
         e.stopPropagation();
 
-        createBtn.disabled = true;
+        checkCourseID(cID, eContent);
+    })
+
+    const agCreateBtn = createAssignmentGroupForm.querySelector('#action-btn');
+    agCreateBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        agCreateBtn.disabled = true;
 
         const domain = document.querySelector('#domain').value.trim();
         const token = document.querySelector('#token').value.trim();
         const courseID = cID.value.trim();
         const number = eContent.querySelector('#assignment-group-number').value;
-        const responseContainer = eContent.querySelector('#response-container');
-        const progressDiv = eContent.querySelector('#progress-div');
-        const progressInfo = eContent.querySelector('#progress-info');
-        const progressBar = eContent.querySelector('.progress-bar');
+        const agcResponseContainer = eContent.querySelector('#agc-response-container');
+        const agcProgressDiv = eContent.querySelector('#agc-progress-div');
+        const agcProgressInfo = eContent.querySelector('#agc-progress-info');
+        const agcProgressBar = agcProgressDiv.querySelector('.progress-bar');
 
 
-        progressDiv.hidden = false;
-        progressInfo.innerHTML = '';
+        agcProgressDiv.hidden = false;
+        agcProgressInfo.innerHTML = '';
 
         const data = {
             domain: domain,
@@ -297,26 +305,26 @@ function assignmentGroupCreator(e) {
         };
 
         window.progressAPI.onUpdateProgress((progress) => {
-            progressBar.style.width = `${progress}%`;
+            agcProgressBar.style.width = `${progress}%`;
         });
 
         try {
             const response = await window.axios.createAssignmentGroups(data);
             if (response.successful.length > 0) {
-                progressInfo.innerHTML = `Successfully created ${response.successful.length} assignment groups.`;
+                agcProgressInfo.innerHTML = `Successfully created ${response.successful.length} assignment groups.`;
             }
             if (response.failed.length > 0) {
-                progressInfo.innerHTML += `Failed to create ${response.failed.length} assignments.`;
-                progressBar.parentElement.hidden = true;
+                agcProgressInfo.innerHTML += `Failed to create ${response.failed.length} assignments.`;
+                agcProgressBar.parentElement.hidden = true;
                 for (let failure of response.failed) {
-                    errorHandler({ message: `${failure.reason}` }, progressInfo);
+                    errorHandler({ message: `${failure.reason}` }, agcProgressInfo);
                 }
             }
         } catch (error) {
-            progressBar.parentElement.hidden = true;
-            errorHandler(error, progressInfo);
+            agcProgressBar.parentElement.hidden = true;
+            errorHandler(error, agcProgressInfo);
         } finally {
-            createBtn.disabled = false;
+            agCreateBtn.disabled = false;
         }
     });
 }
