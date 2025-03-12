@@ -24,6 +24,9 @@ function assignmentTemplate(e) {
         case 'delete-old-assignments':
             deleteOldAssignments(e);
             break;
+        case 'delete-assignments-from-import':
+            deleteAssignmentsFromImport(e);
+            break;
         case 'move-assignments':
             moveAssignmentsToSingleGroup(e);
             break;
@@ -177,12 +180,12 @@ function assignmentCreator(e) {
         checkCourseID(courseID, eContent);
     })
 
-    const createBtn = assignmentCreatorForm.querySelector('#action-btn');
-    createBtn.addEventListener('click', async function (e) {
+    const assignmentCreateBtn = assignmentCreatorForm.querySelector('#action-btn');
+    assignmentCreateBtn.addEventListener('click', async function (e) {
         e.stopPropagation();
         e.preventDefault();
 
-        createBtn.disabled = true;
+        assignmentCreateBtn.disabled = true;
 
         // get values and inputs
         const assigmentCreatorResponseContainer = assignmentCreatorForm.querySelector('#assignment-creator-response-container');
@@ -246,7 +249,7 @@ function assignmentCreator(e) {
             assignmentCreatorProgressBar.parentElement.hidden = true;
             errorHandler(error, assignmentCreatorProgressInfo);
         } finally {
-            createBtn.disabled = false;
+            assignmentCreateBtn.disabled = false;
         }
 
 
@@ -1244,6 +1247,201 @@ function deleteOldAssignments(e) {
         }
 
     });
+}
+
+function deleteAssignmentsFromImport(e) {
+    hideEndpoints(e)
+    console.log('renderer > deleteAssignmentsFromImport');
+
+    const eContent = document.querySelector('#endpoint-content');
+    let deleteAssignmentsFromImportForm = eContent.querySelector('#dafi-form');
+
+    if (!deleteAssignmentsFromImportForm) {
+        deleteAssignmentsFromImportForm = document.createElement('form');
+        deleteAssignmentsFromImportForm.id = 'dafi-form';
+        deleteAssignmentsFromImportForm.innerHTML = `
+            <div>
+                <h3>Delete Assignments Created From Import</h3>
+            </div>
+            <div class="row align-items-center">
+                <div class="col-auto">
+                    <label class="form-label">Course</label>
+                </div>
+                <div class="w-100"></div>
+                <div class="col-2">
+                    <input id="course-id" type="text" class="form-control" aria-describedby="input-checker" />
+                </div>
+                <div class="col-auto" >
+                    <span id="input-checker" class="form-text" style="display: none;">Must only contain numbers</span>
+                </div>
+                <div class="w-100"></div>
+                <div class="col-auto mt-3" >
+                    <label class="form-label">Import ID</label>
+                </di>
+                <div class="col-4">
+                    <input class="form-control" id="import-id" type="text">
+                </div>
+                <div class="col-auto">
+                    <button id="check-import-assignments-btn" class="btn btn-primary mt-3" disabled>Check</button>
+                </div>
+            </div>
+            <div hidden id="dafi-progress-div">
+                <p id="dafi-progress-info"></p>
+                <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar" style="width: 0%"></div>
+                </div>
+            </div>
+            <div id="dafi-response-container" class="mt-3">
+            </div>
+        `;
+
+        eContent.append(deleteAssignmentsFromImportForm);
+    }
+    deleteAssignmentsFromImportForm.hidden = false;
+
+    const courseID = deleteAssignmentsFromImportForm.querySelector('#course-id');
+    const importID = deleteAssignmentsFromImportForm.querySelector('#import-id');
+
+    courseID.addEventListener('change', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        checkCourseID(courseID, deleteAssignmentsFromImportForm);
+    });
+
+    const dafiCheckBtn = deleteAssignmentsFromImportForm.querySelector('button');
+    dafiCheckBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        dafiCheckBtn.disabled = true;
+
+        // getting the elements
+        const dafiResponseContainer = deleteAssignmentsFromImportForm.querySelector('#dafi-response-container');
+        const dafiProgressDiv = deleteAssignmentsFromImportForm.querySelector('#dafi-progress-div');
+        const dafiProgressBar = dafiProgressDiv.querySelector('.progress-bar');
+        const dafiProgressInfo = deleteAssignmentsFromImportForm.querySelector('#dafi-progress-info');
+
+        // clearing values
+        dafiResponseContainer.innerHTML = '';
+        dafiProgressBar.parentElement.hidden = true;
+        dafiProgressBar.style.width = '0%';
+        dafiProgressInfo.innerHTML = '';
+        dafiProgressDiv.hidden = false;
+
+        // getting the values
+        const domain = document.querySelector('#domain').value.trim();
+        const token = document.querySelector('#token').value.trim();
+        const course_id = courseID.value;
+        const import_id = importID.value;
+
+        // creating request object
+        const requestData = {
+            domain,
+            token,
+            course_id,
+            import_id
+        }
+
+        dafiProgressInfo.innerHTML = `Checking for imported assignments from the import ${import_id}...`;
+
+        let importedAssignments = [];
+        let hasError = false;
+        try {
+            importedAssignments = await window.axios.getImportedAssignments(requestData);
+            dafiProgressInfo.innerHTML = 'Done';
+        } catch (error) {
+            errorHandler(error, dafiProgressInfo);
+            hasError = true;
+        } finally {
+            dafiCheckBtn.disabled = false;
+        }
+
+        if (!hasError) {
+            console.log('found assignments', importedAssignments.length);
+
+            //const eContent = document.querySelector('#endpoint-content');
+            dafiResponseContainer.innerHTML = `
+                <div>
+                    <div class="row align-items-center">
+                        <div id="dafi-response-details" class="col-auto">
+                            <span>Found ${importedAssignments.length} assignments in the import.</span>
+                        </div>
+
+                        <div class="w-100"></div>
+
+                        <div class="col-2">
+                            <button id="dafi-remove-btn" type="button" class="btn btn-danger">Remove</button>
+                        </div>
+                        <div class="col-2">
+                            <button id="dafi-cancel-btn" type="button" class="btn btn-secondary">Cancel</button>
+                        </div>
+                    </div>
+                </div>    
+            `;
+
+            const dafiResponseDetails = dafiResponseContainer.querySelector('#dafi-response-details');
+
+            const dafiCancelBtn = document.querySelector('#dafi-cancel-btn');
+            dafiCancelBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                courseID.value = '';
+                dafiResponseContainer.innerHTML = '';
+                dafiCancelBtn.disabled = false;
+                //clearData(courseID, responseContent);
+            });
+
+            const dafiRemoveBtn = document.querySelector('#dafi-remove-btn');
+            dafiRemoveBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                console.log('inside remove');
+                dafiRemoveBtn.disabled = true;
+                dafiCancelBtn.disabled = true;
+
+                dafiResponseDetails.innerHTML = '';
+                dafiProgressBar.parentElement.hidden = false;
+                dafiProgressInfo.innerHTML = `Removing ${assignments.length} assignments...`;
+
+                // const messageData = {
+                //     url: `https://${domain}/api/v1/courses/${courseID}/assignments`,
+                //     token: apiToken,
+                //     content: assignments
+                // }
+
+                const messageData = {
+                    domain,
+                    course_id,
+                    token,
+                    number: importedAssignments.length,
+                    assignments: importedAssignments
+                }
+
+                window.progressAPI.onUpdateProgress((progress) => {
+                    dafiProgressBar.style.width = `${progress}%`;
+                });
+
+                try {
+                    const response = await window.axios.deleteAssignments(messageData);
+
+                    if (response.successful.length > 0) {
+                        dafiProgressInfo.innerHTML = `<p>Successfully removed ${response.successful.length} assignments.</p>`;
+                    }
+                    if (response.failed.length > 0) {
+                        dafiProgressInfo.innerHTML += `<p>Failed to remove ${response.failed.length} assignments.</p>`;
+                    }
+                    dafiCheckBtn.disabled = false;
+                } catch (error) {
+                    errorHandler(error, dafiProgressInfo)
+                } finally {
+                    dafiCheckBtn.disabled = false;
+                }
+            });
+        }
+    })
 }
 
 function moveAssignmentsToSingleGroup(e) {
