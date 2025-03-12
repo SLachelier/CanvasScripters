@@ -166,7 +166,7 @@ async function deleteAssignments(data) {
 
         return response.data.id;
     } catch (error) {
-        console.log(error);
+        console.log(error.request);
         throw error;
     }
 }
@@ -295,6 +295,36 @@ async function getOldAssignmentsGraphQL(data) {
         }
     });
     return filteredAssignments;
+}
+
+async function getImportedAssignments(data) {
+    console.log('inside getImportedAssignments');
+
+    let assignments = [];
+
+    let url = `https://${data.domain}/api/v1/courses/${data.course_id}/content_migrations/${data.import_id}`;
+    const axiosConfig = {
+        method: 'get',
+        url: url,
+        headers: {
+            'Authorization': `Bearer ${data.token}`
+        }
+    };
+
+    try {
+        const request = async (data) => {
+            return await axios(axiosConfig)
+        }
+        const response = await errorCheck(request);
+        const assignmentString = response.data.audit_info.migration_settings.imported_assets.Assignment;
+        assignments = assignmentString.split(',');
+        return assignments;
+    } catch (error) {
+        console.log('There was an error.', error);
+        throw error;
+    }
+
+
 }
 
 async function getNoSubmissionAssignments(domain, courseID, token, graded) {
@@ -805,5 +835,5 @@ async function getNonModuleAssignments(domain, courseID, token) {
 // }) ();
 
 module.exports = {
-    createAssignments, deleteAssignments, getAssignments, getNoSubmissionAssignments, getUnpublishedAssignments, deleteNoSubmissionAssignments, getNonModuleAssignments, getAssignmentsToMove, moveAssignmentToGroup, getOldAssignmentsGraphQL
+    createAssignments, deleteAssignments, getAssignments, getNoSubmissionAssignments, getUnpublishedAssignments, deleteNoSubmissionAssignments, getNonModuleAssignments, getAssignmentsToMove, moveAssignmentToGroup, getOldAssignmentsGraphQL, getImportedAssignments
 }
