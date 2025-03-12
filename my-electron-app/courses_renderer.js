@@ -341,7 +341,7 @@ async function createSupportCourse(e) {
                     </div>
                 </div>
             <button type="button" class="btn btn-primary mt-3" id="create-course-btn">Create</button>
-            <div id='response-container'></div>`
+            <div id='csc-response-container'></div>`
 
         eContent.append(createSupportCourseForm);
     }
@@ -352,7 +352,7 @@ async function createSupportCourse(e) {
     // eResponse.classList.add('mt-5');
     // eContent.append(eResponse);
 
-    const courseOptions = eContent.querySelector('#course-options');
+    const courseOptions = createSupportCourseForm.querySelector('#course-options');
     courseOptions.addEventListener('change', (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -473,64 +473,64 @@ async function createSupportCourse(e) {
     //     }
     // }
 
-    const createBtn = eContent.querySelector('#create-course-btn');
-    createBtn.addEventListener('click', async (e) => {
+    const createCourseBtn = createSupportCourseForm.querySelector('#create-course-btn');
+    createCourseBtn.addEventListener('click', async (e) => {
         e.preventDefault();
         e.stopPropagation();
 
-        createBtn.disabled = true;
+        createCourseBtn.disabled = true;
 
         const domain = document.querySelector('#domain').value;
         const apiToken = document.querySelector('#token').value;
 
-        const responseContainer = eContent.querySelector('#response-container');
-        responseContainer.innerHTML = '';
+        const createCourseResponseContainer = eContent.querySelector('#csc-response-container');
+        createCourseResponseContainer.innerHTML = '';
 
         // basic course stuff
-        const courseName = eContent.querySelector('#course-name').value;
-        const coursePublishChbx = eContent.querySelector('#course-publish').checked;
+        const courseName = createSupportCourseForm.querySelector('#course-name').value;
+        const coursePublishChbx = createSupportCourseForm.querySelector('#course-publish').checked;
 
         // blueprint stuff
-        const courseBlueprintChbx = eContent.querySelector('#course-blueprint').checked;
+        const courseBlueprintChbx = createSupportCourseForm.querySelector('#course-blueprint').checked;
         // Courses to associate
-        const numACCoursesValue = eContent.querySelector('#csc-ac-input').value;
-        const acErrorText = eContent.querySelector('#ac-course-text');
+        const numACCoursesValue = createSupportCourseForm.querySelector('#csc-ac-input').value;
+        const acErrorText = createSupportCourseForm.querySelector('#ac-course-text');
 
         // Add users stuff
-        const courseAddUsersChbx = eContent.querySelector('#course-add-users').checked;
+        const courseAddUsersChbx = createSupportCourseForm.querySelector('#course-add-users').checked;
         // Users to add
-        const emailInput = eContent.querySelector('#user-email').value;
+        const emailInput = createSupportCourseForm.querySelector('#user-email').value;
         const emailMatch = emailInput.match(/^[^@]+/);
         const emailPrefix = emailMatch ? emailMatch[0] : null;
-        const addStudents = eContent.querySelector('#course-add-students').value;
-        const addStudentsText = eContent.querySelector('#add-students-text');
-        const addTeachers = eContent.querySelector('#course-add-teachers').value;
-        const addTeachersText = eContent.querySelector('#add-teachers-text');
+        const addStudents = createSupportCourseForm.querySelector('#course-add-students').value;
+        const addStudentsText = createSupportCourseForm.querySelector('#add-students-text');
+        const addTeachers = createSupportCourseForm.querySelector('#course-add-teachers').value;
+        const addTeachersText = createSupportCourseForm.querySelector('#add-teachers-text');
 
         // add assignment stuff
-        const courseAddAssignmentsChbx = eContent.querySelector('#course-assignments').checked;
-        const numOfAssignments = eContent.querySelector('#course-add-assignments').value;
+        const courseAddAssignmentsChbx = createSupportCourseForm.querySelector('#course-assignments').checked;
+        const numOfAssignments = createSupportCourseForm.querySelector('#course-add-assignments').value;
 
         // add Classic quizzes stuf
-        const courseAddCQChbx = eContent.querySelector('#course-add-cq').checked;
+        const courseAddCQChbx = createSupportCourseForm.querySelector('#course-add-cq').checked;
 
         // add New Quizzes stuff
-        const courseAddNQChbx = eContent.querySelector('#course-add-nq').checked;
+        const courseAddNQChbx = createSupportCourseForm.querySelector('#course-add-nq').checked;
 
         // add discussion stuff
-        const courseAddDiscussionsChbx = eContent.querySelector('#course-add-discussions').checked;
+        const courseAddDiscussionsChbx = createSupportCourseForm.querySelector('#course-add-discussions').checked;
 
         // add pages stuff
-        const courseAddPagesChbx = eContent.querySelector('#course-add-pages').checked;
+        const courseAddPagesChbx = createSupportCourseForm.querySelector('#course-add-pages').checked;
 
         // add module stuff
-        const courseAddModulesChbx = eContent.querySelector('#course-add-modules').checked;
+        const courseAddModulesChbx = createSupportCourseForm.querySelector('#course-add-modules').checked;
 
         // add section stuff
-        const courseAddSectionsChbx = eContent.querySelector('#course-add-sections').checked;
+        const courseAddSectionsChbx = createSupportCourseForm.querySelector('#course-add-sections').checked;
 
         // create submisison stuff
-        const courseSubmissionsChbx = eContent.querySelector('#course-submissions').checked;
+        const courseSubmissionsChbx = createSupportCourseForm.querySelector('#course-submissions').checked;
 
 
         const data = {
@@ -584,10 +584,10 @@ async function createSupportCourse(e) {
         console.log('The data is: ', data);
 
         try {
-            responseContainer.innerHTML = 'Creating course....';
+            createCourseResponseContainer.innerHTML = 'Creating course....';
             const response = await window.axios.createSupportCourse(data);
-            responseContainer.innerHTML += `Done.<p>Course ID: <a id="course-link" href="https://${domain}/courses/${response.course_id}" target="_blank">${response.course_id}`;
-            const courseLink = responseContainer.querySelector('#course-link');
+            createCourseResponseContainer.innerHTML += `Done.<p>Course ID: <a id="course-link" href="https://${domain}/courses/${response.course_id}" target="_blank">${response.course_id}`;
+            const courseLink = createCourseResponseContainer.querySelector('#course-link');
             courseLink.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -598,9 +598,9 @@ async function createSupportCourse(e) {
             })
         } catch (error) {
             console.log('Error: ', error);
-            errorHandler(error, responseContainer);
+            errorHandler(error, createCourseResponseContainer);
         } finally {
-            createBtn.disabled = false;
+            createCourseBtn.disabled = false;
         }
 
     });
@@ -656,8 +656,8 @@ async function createAssociatedCourses(e) {
                 </div>
             </div>
             <button type="button" class="btn btn-primary mt-3" id="associateBtn">Associate</button>
-            <div id="progress-div" hidden>
-                <p id="progress-info"></p>
+            <div id="assc-progress-div" hidden>
+                <p id="assc-progress-info"></p>
                 <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
                     <div class="progress-bar" style="width: 0%"></div>
                 </div>
@@ -668,14 +668,14 @@ async function createAssociatedCourses(e) {
     createAssociatedCoursesForm.hidden = false;
 
 
-    const associateBtn = eContent.querySelector('#associateBtn');
-    const bpCourseText = eContent.querySelector('#bp-course-text');
-    const acCourseText = eContent.querySelector('#ac-course-text');
+    const associateBtn = createAssociatedCoursesForm.querySelector('#associateBtn');
+    const bpCourseText = createAssociatedCoursesForm.querySelector('#bp-course-text');
+    const acCourseText = createAssociatedCoursesForm.querySelector('#ac-course-text');
 
-    const acContainer = eContent.querySelector('#ac-container');
+    const acContainer = createAssociatedCoursesForm.querySelector('#ac-container');
 
-    const bpInput = eContent.querySelector('#bp-course-id');
-    const acInput = eContent.querySelector('#num-ac-courses');
+    const bpInput = createAssociatedCoursesForm.querySelector('#bp-course-id');
+    const acInput = createAssociatedCoursesForm.querySelector('#num-ac-courses');
 
     associateBtn.addEventListener('click', async (e) => {
         e.preventDefault();
@@ -695,9 +695,9 @@ async function createAssociatedCourses(e) {
         if (bpValid && acValid) {
             const domain = document.querySelector('#domain').value;
             const token = document.querySelector('#token').value;
-            const progressDiv = eContent.querySelector('#progress-div');
-            const progressInfo = eContent.querySelector('#progress-info');
-            const progressBar = eContent.querySelector('.progress-bar');
+            const asscProgressDiv = createAssociatedCoursesForm.querySelector('#assc-progress-div');
+            const asscProgressInfo = createAssociatedCoursesForm.querySelector('#assc-progress-info');
+            const asscProgressBar = asscProgressDiv.querySelector('.progress-bar');
 
             const data = {
                 domain: domain,
@@ -712,7 +712,7 @@ async function createAssociatedCourses(e) {
                 const request = await window.axios.getCourseInfo(data);
                 isBluePrint = request.blueprint;
             } catch (error) {
-                errorHandler(error, progressInfo);
+                errorHandler(error, asscProgressInfo);
             }
 
             if (isBluePrint) {
@@ -726,18 +726,18 @@ async function createAssociatedCourses(e) {
 
                     const associate = await window.axios.associateCourses(data);
                     if (associate.workflow_state === 'queued') {
-                        progressInfo.innerHTML = `Finished associating ${acValue} courses to the Blueprint, sync has started.`;
+                        asscProgressInfo.innerHTML = `Finished associating ${acValue} courses to the Blueprint, sync has started.`;
                     }
                     console.log('Finished associating courses.');
 
                     // const acResponse = await window.axios.addAssociateCourse(data);
                 } catch (error) {
-                    errorHandler(error, progressInfo);
+                    errorHandler(error, asscProgressInfo);
                 } finally {
                     associateBtn.disabled = false;
                 }
             } else {
-                progressInfo.innerHTML = 'BluePrint course isn\'t setup as blueprint. Unable to associate courses.';
+                asscProgressInfo.innerHTML = 'BluePrint course isn\'t setup as blueprint. Unable to associate courses.';
                 associateBtn.disabled = false;
             }
         } else {
