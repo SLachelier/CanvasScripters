@@ -87,6 +87,11 @@ contextBridge.exposeInMainWorld('axios', {
 
         return await ipcRenderer.invoke('axios:deleteOldAssignments', data);
     },
+    getImportedAssignments: async (data) => {
+        console.log('preload > getImportedAssignments');
+
+        return await ipcRenderer.invoke('axios:getImportedAssignments', data);
+    },
     getAssignmentsToMove: async (data) => {
         console.log('preload > getAssignmentsToMove');
 
