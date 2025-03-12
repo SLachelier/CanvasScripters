@@ -250,7 +250,7 @@ app.whenReady().then(() => {
                 const response = await assignments.deleteAssignments(requestData);
                 return response;
             } catch (error) {
-                console.error('Error: ', error);
+                // console.error('Error: ', error);
                 throw error;
             } finally {
                 updateProgress();
@@ -263,7 +263,7 @@ app.whenReady().then(() => {
                 domain: data.domain,
                 token: data.token,
                 course_id: data.course_id,
-                id: data.assignments[i].id
+                id: data.assignments[i]?.id || data.assignments[i] 
             };
             requests.push({ id: i + 1, request: () => request(requestData) });
         }
@@ -397,6 +397,17 @@ app.whenReady().then(() => {
         console.log('The data in main: ', data);
         return;
     });
+
+    ipcMain.handle('axios:getImportedAssignments', async (event, data) => {
+        console.log('main.js > axios:getImportedAssignments');
+
+        try {
+            const importedAssignments = await assignments.getImportedAssignments(data);
+            return importedAssignments;
+        } catch (error) {
+            throw error.message;
+        }
+    });
     
     ipcMain.handle('axios:getAssignmentsToMove', async (event, data) => {
         console.log('main.js > axios:getAssignmentsToMove');
@@ -446,6 +457,7 @@ app.whenReady().then(() => {
     });
 
     ipcMain.handle('axios:createAssignmentGroups', async (event, data) => {
+        console.log('Inside axios:createAssignmentGroups')
 
         let completedRequests = 0;
         let totalRequests = data.number;
@@ -555,6 +567,7 @@ app.whenReady().then(() => {
     });
 
     ipcMain.handle('axios:createSupportCourse', async (event, data) => {
+        console.log("Inside axios:createSupportCourse");
         // 1. Create the course
         // 2. Add options
 
@@ -562,6 +575,7 @@ app.whenReady().then(() => {
         let response;
         try {
             response = await createSupportCourse(data);
+            console.log('Finished creating course. Checking options....');
         } catch (error) {
             throw `${error.message}`;
         }
@@ -572,6 +586,7 @@ app.whenReady().then(() => {
         // check other options 
         try {
             if (data.course.blueprint.state) { // do we need to make it a blueprint course 
+                console.log('Enabling blueprint...');
                 await enableBlueprint(data);
                 const associatedCourses = data.course.blueprint.associated_courses;
                 
@@ -595,8 +610,10 @@ app.whenReady().then(() => {
                 }
 
                 // create the courses to be used to associate
+                console.log('Creating any associated courses...');
                 const newCourses = await batchHandler(requests);
                 const newCourseIDS = newCourses.successful.map(course => course.value.id);
+                console.log('Finished creating associated courses.')
 
                 const acCourseData = {
                     domain: data.domain,
@@ -605,9 +622,11 @@ app.whenReady().then(() => {
                     associated_course_ids: newCourseIDS
                 };
                 
+                console.log('Linking associated courses to blueprint...')
                 const associateRequest = await associateCourses(acCourseData); // associate the courses to the BP
                 // await waitFunc(2000);
                 const migrationRequest = await syncBPCourses(acCourseData);
+                console.log('Finished associating courses.');
             }
             
             if (data.course.addUsers.state) { // do we need to add users
