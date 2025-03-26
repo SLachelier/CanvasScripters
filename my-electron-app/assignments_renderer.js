@@ -30,6 +30,9 @@ function assignmentTemplate(e) {
         case 'move-assignments':
             moveAssignmentsToSingleGroup(e);
             break;
+        case 'delete-assignments-from-group':
+            deleteAssignmentsInGroup(e);
+            break;
         default:
             break;
     }
@@ -1640,4 +1643,174 @@ function moveAssignmentsToSingleGroup(e) {
             });
         }
     });
+}
+
+function deleteAssignmentsInGroup(e) {
+    hideEndpoints(e)
+    console.log('renderer > deleteAssignmentsInGroup');
+
+    // create form
+    const eContent = document.querySelector('#endpoint-content');
+    let deleteAssignmentsInGroupForm = eContent.querySelector('#delete-assignments-in-group');
+
+    if (!deleteAssignmentsInGroupForm) {
+        deleteAssignmentsInGroupForm = document.createElement('form');
+        deleteAssignmentsInGroupForm.id = 'delete-assignments-in-group';
+        // eContent.innerHTML = `
+        //     <div>
+        //         <h3>Move Assignments to a Single Group</h3>
+        //     </div>
+        // `;
+        // // setHeader('Move Assignments to Single Group', eContent);
+        // // createForm('moveAssignmentsToSingleGroup', eContent);
+
+        // // find someway to generate the form
+
+        // const eForm = document.createElement('form');
+        deleteAssignmentsInGroupForm.innerHTML = `
+            <div>
+                <h3>Delete Assignments in a Single Group</h3>
+            </div>
+            <div class="row align-items-center">
+                <div class="col-auto">
+                    <label class="form-label">Course</label>
+                </div>
+                <div class="w-100"></div>
+                <div class="col-2">
+                    <input id="course-id" type="text" class="form-control" aria-describedby="course-checker" />
+                </div>
+                <div class="col-auto" >
+                    <span id="course-checker" class="form-text" style="display: none;">Must only contain numbers</span>
+                </div>
+            </div>
+            <div class="row align-item-center">
+                <div class="col-auto">
+                    <label class="form-label">Group ID</label>
+                </div>
+                <div class="w-100"></div>
+                <div class="col-2">
+                    <input id="group-id" type="text" class="form-control" aria-describedby="group-checker" />
+                </div>
+                <div class="col-auto" >
+                    <span id="group-checker" class="form-text" style="display: none;">Must only contain numbers</span>
+                </div>
+                <div class="w-100"></div>
+            </div>
+                <div class="col-auto">
+                    <button id="daig-btn" class="btn btn-primary mt-3" disabled>Check</button>
+                </div>
+            <div hidden id="daig-progress-div">
+                <p id="daig-progress-info"></p>
+                <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+    
+                    <div class="progress-bar" style="width: 0%"></div>
+                </div>
+            </div>
+            <div id="daig-response-container" class="mt-5">
+            </div>
+        `;
+
+        eContent.append(deleteAssignmentsInGroupForm);
+    }
+    deleteAssignmentsInGroupForm.hidden = false;
+
+    // Objectives:
+    // 1. Get inputs
+    // 2. Try to delete group and all assignments in it
+    // 3. If 2 fails get all assignments in the group
+    // 4. Delete all those assignments
+    // 5. Delete group
+
+    // check course ID is a number
+    // const courseID = deleteAssignmentsInGroupForm.querySelector('#course');
+    // courseID.addEventListener('change', (e) => {
+    //     e.preventDefault();
+    //     e.stopPropagation();
+
+    //     checkCourseID(courseID, eContent);
+    // });
+
+    // // check group ID is a number and exists
+    // const groupID = deleteAssignmentsInGroupForm.querySelector('#group-id');
+    // groupID.addEventListener('change', (e) => {
+    //     e.preventDefault();
+    //     e.stopPropagation();
+
+    //     const groupChecker = deleteAssignmentsInGroupForm.querySelector(`#group-checker`);
+    //     const trimmedValue = groupID.value.trim();
+    //     if (trimmedValue === '') {
+    //         groupChecker.style.display = 'none';
+    //         deleteAssignmentsInGroupForm.querySelector('button').disabled = true;
+    //     } else if (!isNaN(Number(trimmedValue))) {
+    //         groupChecker.style.display = 'none';
+    //         deleteAssignmentsInGroupForm.querySelector('button').disabled = false;
+    //     } else {
+    //         groupChecker.style.display = 'inline';
+    //         deleteAssignmentsInGroupForm.querySelector('button').disabled = true;
+    //     }
+    // });
+
+    //checking valid input
+    deleteAssignmentsInGroupForm.addEventListener('change', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const daigCheckBtn = deleteAssignmentsInGroupForm.querySelector('#daig-btn');
+        const courseChecker = deleteAssignmentsInGroupForm.querySelector('#course-checker')
+        const courseID = deleteAssignmentsInGroupForm.querySelector('#course-id')
+        const groupChecker = deleteAssignmentsInGroupForm.querySelector('#group-checker')
+        const groupID = deleteAssignmentsInGroupForm.querySelector('#group-id')
+        const input = e.target.value;
+
+        console.log(e.target);
+
+        if (courseID.value.trim() !== '' && groupID.value.trim() !== '') {
+            if (isNaN(Number(input))) {
+                if (e.target.id === 'group-id') {
+                    groupChecker.style.display = 'inline';
+                } else {
+                    courseChecker.style.display = 'inline';
+                }
+                // daigCheckBtn.disabled = true;
+            } else {
+                if (e.target.id === 'group-id') {
+                    groupChecker.style.display = 'none';
+                } else {
+                    courseChecker.style.display = 'none';
+                }
+            }
+
+            if (groupChecker.style.display === 'inline' || courseChecker.style.display === 'inline') {
+                daigCheckBtn.disabled = true;
+            } else {
+                daigCheckBtn.disabled = false;
+            }
+        } else {
+            daigCheckBtn.disabled = true;
+        }
+    })
+
+    const daigCheckBtn = deleteAssignmentsInGroupForm.querySelector('#daig-btn');
+    daigCheckBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        daigCheckBtn.disabled = true;
+
+        // get domain, token, course, and group ID info
+        const domain = document.querySelector('#domain').value.trim();
+        const token = document.querySelector('#token').value.trim();
+        const course_id = deleteAssignmentsInGroupForm.querySelector('#course-id').value.trim();
+        const group_id = deleteAssignmentsInGroupForm.querySelector('#group-id').value.trim();
+
+        const requestData = {
+            domain,
+            token,
+            course_id,
+            group_id
+        }
+
+        const deleteAssignmentGroupAssignments = await window.axios.deleteAssignmentGroupAssignments(requestData);
+        console.log(deleteAssignmentGroupAssignments);
+    })
 }
