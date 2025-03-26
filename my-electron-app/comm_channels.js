@@ -173,6 +173,7 @@ async function resetEmail(data) {
     } catch (error) {
         resetStatus.bounce = error;
     }
+
     try {
         resetStatus.suppression = await awsReset(data);
     } catch (error) {

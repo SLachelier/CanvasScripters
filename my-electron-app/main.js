@@ -440,7 +440,6 @@ app.whenReady().then(() => {
                 const response = await assignments.moveAssignmentToGroup(data)
                 return response;
             } catch (error) {
-                console.error('Error in getNonModuleAssignments: ', error);
                 throw `status code ${error.status} - ${error.message}`;
             } finally {
                 updateProgress();
@@ -448,13 +447,60 @@ app.whenReady().then(() => {
         }
 
         const requests = [];
+        let requestCounter = 1;
         for (let assignment of data.assignments) {
-            requests.push(() => request({ url: data.url, token: data.token, id: assignment._id, groupID: data.groupID }))
+            const requestData = {
+                url: data.url,
+                token: data.token,
+                id: assignment._id,
+                groupID: data.groupID
+            }
+            requests.push({ id: requestCounter, request: () => request(requestData) });
+            requestCounter++;
         }
 
         const batchResponse = await batchHandler(requests);
         return batchResponse;
     });
+    ipcMain.handle('axios:deleteAssignmentGroupAssignments', async (event, data) => {
+        console.log('main.js > axios:deleteAssignmentGroupAssignments');
+
+        let completedRequests = 0;
+        let totalRequests = data.number;
+
+        const updateProgress = () => {
+            completedRequests++;
+            mainWindow.webContents.send('update-progress', (completedRequests / totalRequests) * 100);
+        }
+
+        // try to delete the assignment group and all assignments
+        const request = async (requestData) => {
+                return await assignments.deleteAssignmentGroupWithAssignments(requestData)
+        }
+        try {
+            const response = await request(data);
+            return response.data;
+        } catch (error) {
+            console.log(error);
+        }
+
+        // const requests = [];
+        // let requestCounter = 1;
+        // for (let assignment of data.assignments) {
+        //     const requestData = {
+        //         url: data.url,
+        //         token: data.token,
+        //         id: assignment._id,
+        //         groupID: data.groupID
+        //     }
+        //     requests.push({ id: requestCounter, request: () => request(requestData) });
+        //     requestCounter++;
+        // }
+
+        // const batchResponse = await batchHandler(requests);
+        // return batchResponse;
+    });
+
 
     ipcMain.handle('axios:createAssignmentGroups', async (event, data) => {
         console.log('Inside axios:createAssignmentGroups')
