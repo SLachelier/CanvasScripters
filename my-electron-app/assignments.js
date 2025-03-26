@@ -660,6 +660,30 @@ async function moveAssignmentToGroup(data) {
     }
 }
 
+// deletes the assignment group and any assignments inside
+async function deleteAssignmentGroupWithAssignments(data) {
+    let url = `https://${data.domain}/api/v1/courses/${data.course_id}/assignment_groups/${data.group_id}`;
+
+    const axiosConfig = {
+        method: 'delete',
+        url: url,
+        headers: {
+            'Authorization': `Bearer ${data.token}`
+        }
+    };
+
+    const request = async () => {
+        return await axios(axiosConfig);
+    }
+
+    try {
+        const response = await errorCheck(request);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
 // async function deleteUnPublishedAssignments(data) {
 //     console.log('Deleting unpublished assignments');
 //     const assignments = await getAssignments(data.domain, data.course, data.token);
@@ -835,5 +859,5 @@ async function getNonModuleAssignments(domain, courseID, token) {
 // }) ();
 
 module.exports = {
-    createAssignments, deleteAssignments, getAssignments, getNoSubmissionAssignments, getUnpublishedAssignments, deleteNoSubmissionAssignments, getNonModuleAssignments, getAssignmentsToMove, moveAssignmentToGroup, getOldAssignmentsGraphQL, getImportedAssignments
+    createAssignments, deleteAssignments, getAssignments, getNoSubmissionAssignments, getUnpublishedAssignments, deleteNoSubmissionAssignments, getNonModuleAssignments, getAssignmentsToMove, moveAssignmentToGroup, getOldAssignmentsGraphQL, getImportedAssignments, deleteAssignmentGroupWithAssignments
 }
