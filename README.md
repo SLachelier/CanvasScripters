@@ -1,2 +1,2 @@
-# electron_testing
-Learning how to use electron with NodeJS
+# A Canvas Scripting Chrome Web Store Extension
+Adds streamlined functionality for Canvas LMS administrative purposes.
