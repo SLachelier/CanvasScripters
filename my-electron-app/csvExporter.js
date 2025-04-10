@@ -14,8 +14,12 @@ async function exportToCSV(data, filePath = 'MyCSV') {
     const headers = getHeaders(data[0]);
     //console.log(headers);
 
+    const reMappedHeaders = headers.map((header) => {
+        const lastIndex = header.lastIndexOf('>');
+        return header.slice(lastIndex + 1);
+    })
     //const writeStream = fs.createWriteStream('my_file.csv', { flag: 'a' });
-    wStream.write(headers.toString() + '\n');
+    wStream.write(reMappedHeaders.toString() + '\n');
 
     writeValues(data, headers);
     //console.log(values);
@@ -179,11 +183,24 @@ async function exportToCSV(data, filePath = 'MyCSV') {
     // }
 }
 
+function exportToTxt(data, filePath = 'MyTXT') {
+    console.log('Inside exportToTxt');
+
+    const wStream = fs.createWriteStream(filePath);
+    try {
+        wStream.write(data.join('\n'));
+        return true;
+    } catch (error) {
+        throw error;
+    } finally {
+        wStream.end();
+    }
+}
 // (async () => {
 //     const response = await axios.get('https://ckruger.instructure.com/api/v1/users/26/page_views?start_time=2023-02-15&end_time=2023-02-16');
 //     exportToCSV(response.data);
 // })();
 
 module.exports = {
-    exportToCSV
+    exportToCSV, exportToTxt
 };

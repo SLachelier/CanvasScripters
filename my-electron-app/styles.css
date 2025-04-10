@@ -2,7 +2,41 @@
     width: 575px;
 }
 
+body {
+    padding-top: 110px;
+}
+
+.fixed-top {
+    background-color: white;
+}
+
+.scrollable {
+    height: 80vh;
+    overflow: auto;
+}
+
 .custom-border-bottom {
     border-bottom-width: 3px;
     border-bottom-style: solid;
+}
+
+.hidden {
+    visibility: hidden;
+    opacity: 0;
+    height: 0;
+}
+
+.visible {
+    visibility: visible;
+    opacity: 1;
+    transform: scale(1);
+    transition: opacity 0.5s linear;
+}
+
+.custom-select-width {
+    width: 25%;
+}
+
+.error {
+    color: red;
 }

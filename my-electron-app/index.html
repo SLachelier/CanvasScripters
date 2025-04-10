@@ -11,25 +11,35 @@
     <link rel="stylesheet" href="./node_modules/bootstrap/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="styles.css">
     <script src="./node_modules/bootstrap/dist/js/bootstrap.min.js" defer></script>
+    <script src="./assignments_renderer.js" defer></script>
+    <script src="./assignment_group_renderer.js" defer></script>
+    <script src="./user_renderer.js" defer></script>
+    <script src="./conversations_renderer.js" defer></script>
+    <script src="./commchannels_renderer.js" defer></script>
+    <script src="./courses_renderer.js" defer></script>
+    <script src="./quizzes_renderer.js" defer></script>
+    <script src="./modules_renderer.js" defer></script>
     <script src="./renderer.js" defer></script>
 </head>
 
 <body>
-    <header>
+    <header class="fixed-top">
         <div class="container-fluid custom-border-bottom mb-3">
             <div class="row justify-content-start">
                 <div class="col">
                     <div class="input-group flex-nowrap mt-2 mb-3">
                         <span class="input-group-text">https://</span>
                         <div class="form-floating ">
-                            <input type="text" class="form-control" placeholder="doman" id="domain" />
+                            <input type="text" class="form-control" placeholder="doman" id="domain"
+                                value="ckruger.beta.instructure.com" />
                             <label for="domain">Canvas Domain</label>
                         </div>
                     </div>
                 </div>
                 <div class="col">
                     <div class="form-floating mt-2 mb-3">
-                        <input type=" text" class="form-control" placeholder="Token" id="token">
+                        <input type=" text" class="form-control" placeholder="Token" id="token"
+                            value="17~wTkY3E78BBQuTuhmCwukQrfuTxmHfcrYykQuLnGxGJwWKzkaUB4MEh4ftPhEmnuU">
                         <label for="token">Token</label>
                     </div>
 
@@ -39,7 +49,7 @@
     </header>
     <div class="container-fluid">
         <div class="row">
-            <div class="col-4">
+            <div class="col-4 scrollable">
                 <div class="accordion" id="endpoints">
                     <!-- <div class="accordion-item">
                         <h2 class="accordion-header">
@@ -77,6 +87,50 @@
                                         class="list-group-item list-group-item-action border-start-0 border-end-0">
                                         Create Assignments
                                     </button>
+                                    <button id="delete-nosubmission-assignments"
+                                        class="list-group-item list-group-item-action border-start-0 border-end-0">
+                                        Delete assignments without
+                                        submissions
+                                    </button>
+                                    <button id="delete-unpublished-assignments"
+                                        class="list-group-item list-group-item-action border-start-0 border-end-0">
+                                        Delete Unpublished Assignments
+                                    </button>
+                                    <button id="delete-nonmodule-assignments"
+                                        class="list-group-item list-group-item-action border-start-0 border-end-0">
+                                        Delete Assignments not in Modules
+                                    </button>
+                                    <button id="delete-assignments-from-import"
+                                        class="list-group-item list-group-item-action border-start-0 border-end-0">
+                                        Delete Assignments Created From Import
+                                    </button>
+                                    <button id="delete-old-assignments"
+                                        class="list-group-item list-group-item-action border-start-0 border-end-0">
+                                        Delete old (passed a certain due date) Assignments
+                                    </button>
+                                    <button id="move-assignments"
+                                        class="list-group-item list-group-item-action border-start-0 border-end-0">
+                                        Move assignments to a single group
+                                    </button>
+                                    <button id="delete-assignments-from-group"
+                                        class="list-group-item list-group-item-action border-start-0 border-end-0">
+                                        Delete Assignments From a Single Group
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#assignment_groups" aria-expanded="false"
+                                aria-controls="assignment_groups">
+                                Assignment Groups
+                            </button>
+                        </h2>
+                        <div id="assignment_groups" class="accordion-collapse collapse">
+                            <div class="accordion-body">
+                                <div id="assignment-group-endpoints" class="list-group">
                                     <button id="create-assignment-groups"
                                         class="list-group-item list-group-item-action border-start-0 border-end-0">
                                         Create Assignment Groups
@@ -84,15 +138,6 @@
                                     <button id="delete-empty-assignment-groups"
                                         class="list-group-item list-group-item-action border-start-0 border-end-0">
                                         Delete empty Assignment Groups
-                                    </button>
-                                    <button id="delete-nosubmission-assignments"
-                                        class="list-group-item list-group-item-action border-start-0 border-end-0">
-                                        Delete assignments without
-                                        submissions
-                                    </button>
-                                    <button id="delete-nonmodule-assignments"
-                                        class="list-group-item list-group-item-action border-start-0 border-end-0">
-                                        Delete Assignments not in Modules
                                     </button>
                                 </div>
                             </div>
@@ -132,8 +177,8 @@
                                         subject
                                     </button>
                                     <button id="download-conversations-csv"
-                                        class="list-group-item list-group-item-action border-start-0 border-end-0">
-                                        Download Conversations
+                                        class="list-group-item list-group-item-action border-start-0 border-end-0 disabled">
+                                        Download Conversations - <em>disabled</em>
                                     </button>
                                     <!-- <button id="gc-between-users"
                                         class="list-group-item list-group-item-action border-start-0 border-end-0">
@@ -143,15 +188,127 @@
                             </div>
                         </div>
                     </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#commchannel" aria-expanded="false" aria-controls="conversations">
+                                Comm Channels
+                            </button>
+                        </h2>
+                        <div id="commchannel" class="accordion-collapse collapse">
+                            <div class="accordion-body">
+                                <div id="commchannel-endpoints" class="list-group">
+                                    <button id="check-commchannel"
+                                        class="list-group-item list-group-item-action border-start-0 border-end-0">
+                                        Check Bounce and Suppression list
+                                    </button>
+                                    <button id="reset-commchannel"
+                                        class="list-group-item list-group-item-action border-start-0 border-end-0">
+                                        Reset Communication Channels
+                                    </button>
+                                    <button id="unconfirm-commchannels"
+                                        class="list-group-item list-group-item-action border-start-0 border-end-0">
+                                        Unconfirmed emails
+                                    </button>
+                                    <!-- <button id="gc-between-users"
+                                        class="list-group-item list-group-item-action border-start-0 border-end-0">
+                                        Get Conversations between two users
+                                    </button> -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#courses" aria-expanded="false" aria-controls="courses">
+                                Courses
+                            </button>
+                        </h2>
+                        <div id="courses" class="accordion-collapse collapse">
+                            <div class="accordion-body">
+                                <div id="course-endpoints" class="list-group">
+                                    <button id="reset-courses"
+                                        class="list-group-item list-group-item-action border-start-0 border-end-0">
+                                        Reset Courses
+                                    </button>
+                                    <button id="create-support-course"
+                                        class="list-group-item list-group-item-action border-start-0 border-end-0">
+                                        Create Support Courses
+                                    </button>
+                                    <button id="create-associated-courses"
+                                        class="list-group-item list-group-item-action border-start-0 border-end-0">
+                                        Create Associated Courses
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#quizzes" aria-expanded="false" aria-controls="quizzes">
+                                Quizzes
+                            </button>
+                        </h2>
+                        <div id="quizzes" class="accordion-collapse collapse">
+                            <div class="accordion-body">
+                                <div id="quiz-endpoints" class="list-group">
+                                    <button id="create-classic-quiz"
+                                        class="list-group-item list-group-item-action border-start-0 border-end-0">
+                                        Create Classic Quiz
+                                    </button>
+                                    <button id="create-new-quiz"
+                                        class="list-group-item list-group-item-action border-start-0 border-end-0">
+                                        Create New Quiz
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#modules" aria-expanded="false" aria-controls="modules">
+                                Modules
+                            </button>
+                        </h2>
+                        <div id="modules" class="accordion-collapse collapse">
+                            <div class="accordion-body">
+                                <div id="module-endpoints" class="list-group">
+                                    <button id="delete-modules"
+                                        class="list-group-item list-group-item-action border-start-0 border-end-0">
+                                        Delete Module
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="col border-start" id="endpoint-content">
-                <!-- <div class="row">
-                    <div class="col">Col 1</div>
-                    <div class="col">Col 2</div>
-                </div> -->
+            <div class="col-8 border-start" id="endpoint-content">
+
             </div>
-        </div> <!-- end of row -->
+            <!-- <div class="col-8 border-start" id="content-container"> -->
+            <!-- <div class="row">
+                            <div class="col">Col 1</div>
+                            <div class="col">Col 2</div>
+                        </div> -->
+            <!-- </div>
+                <hr class="mt-2" style="width: 100vw;max-width: 100vw;" />
+                <div class="col border-start" id="response-content">
+                    <div hidden id="progress-div">
+                        <p id="progress-info"></p>
+                        <div class="progress mt-3" style="width: 75%" role="progressbar" aria-label="progress bar"
+                            aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                            <div class="progress-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div id="response-container" class="mt-3">
+                    </div>
+                </div> -->
+        </div>
+    </div> <!-- end of row -->
     </div>
 </body>
 
